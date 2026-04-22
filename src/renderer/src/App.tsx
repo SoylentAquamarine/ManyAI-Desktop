@@ -4,9 +4,10 @@ import SettingsScreen from './screens/SettingsScreen'
 import SavedScreen from './screens/SavedScreen'
 import ApiScreen from './screens/ApiScreen'
 import ProvidersScreen from './screens/ProvidersScreen'
+import RoutingScreen from './screens/RoutingScreen'
 import RightPanel from './components/RightPanel'
 
-type Tab = 'chat' | 'saved' | 'api' | 'providers' | 'settings'
+type Tab = 'chat' | 'saved' | 'routing' | 'api' | 'providers' | 'settings'
 
 export default function App() {
   const [tab, setTab] = useState<Tab>('chat')
@@ -22,10 +23,11 @@ export default function App() {
     <div className="app-shell">
       <div className="app-main">
         <div className="tabs">
-          {(['chat','saved','api','providers','settings'] as Tab[]).map(t => (
+          {(['chat','saved','routing','api','providers','settings'] as Tab[]).map(t => (
             <button key={t} className={`tab-btn ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
               {t === 'chat'      && '✦ Chat'}
               {t === 'saved'     && '📂 Saved'}
+              {t === 'routing'   && '🔀 Routing'}
               {t === 'api'       && '🔑 API'}
               {t === 'providers' && '⚡ Providers'}
               {t === 'settings'  && '⚙ Settings'}
@@ -35,6 +37,7 @@ export default function App() {
         <div className="tab-content">
           {tab === 'chat'      && <ChatScreen injectPromptRef={injectPromptRef} />}
           {tab === 'saved'     && <SavedScreen />}
+          {tab === 'routing'   && <RoutingScreen />}
           {tab === 'api'       && <ApiScreen />}
           {tab === 'providers' && <ProvidersScreen />}
           {tab === 'settings'  && <SettingsScreen />}

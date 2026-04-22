@@ -1,9 +1,14 @@
 import { useState, useRef, useEffect, MutableRefObject } from 'react'
-import { PROVIDERS, ROUTING_ORDER, ProviderKey, pickProvider } from '../lib/providers'
+import { PROVIDERS, ProviderKey } from '../lib/providers'
 import { callProvider, HistoryMessage } from '../lib/callProvider'
 import { loadAllKeys } from '../lib/keyStore'
-import { loadEnabledProviders, loadSelectedModels } from '../lib/providerPrefs'
+import { loadEnabledProviders } from '../lib/providerPrefs'
 import { saveResponse } from '../lib/savedResponses'
+import {
+  detectTaskType, resolveProvider, loadRoutingPrefs,
+  TASK_META, TASK_TYPES,
+} from '../lib/routing'
+import type { TaskType } from '../lib/providers'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -22,8 +27,9 @@ export default function ChatScreen({ injectPromptRef }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [manualProvider, setManualProvider] = useState<ProviderKey | 'auto'>('auto')
   const [savedMsg, setSavedMsg] = useState<string | null>(null)
+  const [detectedType, setDetectedType] = useState<TaskType>('general')
+  const [manualType, setManualType] = useState<TaskType | 'auto'>('auto')
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -40,6 +46,16 @@ export default function ChatScreen({ injectPromptRef }: Props) {
     }
   }, [injectPromptRef])
 
+  // Update detected type as user types
+  useEffect(() => {
+    if (input.length > 8) {
+      const prefs = loadRoutingPrefs()
+      if (prefs.autoDetect) setDetectedType(detectTaskType(input))
+    }
+  }, [input])
+
+  const activeType: TaskType = manualType === 'auto' ? detectedType : manualType
+
   const send = async () => {
     const text = input.trim()
     if (!text || loading) return
@@ -51,33 +67,31 @@ export default function ChatScreen({ injectPromptRef }: Props) {
     try {
       const keys = loadAllKeys()
       const enabled = loadEnabledProviders()
-      const models = loadSelectedModels()
+      const prefs = loadRoutingPrefs()
       const availableKeys = new Set(Object.keys(keys) as ProviderKey[])
-      // always include pollinations as fallback
       availableKeys.add('pollinations')
 
-      let providerKey: ProviderKey | null
-      if (manualProvider === 'auto') {
-        providerKey = pickProvider(availableKeys, 'general', new Set(), ROUTING_ORDER, enabled)
-      } else {
-        providerKey = manualProvider
-      }
+      const taskType = manualType === 'auto'
+        ? (prefs.autoDetect ? detectTaskType(text) : 'general')
+        : manualType
 
-      if (!providerKey) {
+      const route = resolveProvider(taskType, prefs, availableKeys, enabled)
+
+      if (!route) {
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: 'No providers available. Add an API key in Settings.',
+          content: 'No providers available. Add an API key in the API tab.',
           error: true,
         }])
         return
       }
 
-      const provider = { ...PROVIDERS[providerKey], model: models[providerKey] }
+      const provider = { ...PROVIDERS[route.provider], model: route.model }
       const history: HistoryMessage[] = messages
         .slice(-10)
         .map(m => ({ role: m.role, content: m.content }))
 
-      const result = await callProvider(provider, text, keys[providerKey], undefined, undefined, history)
+      const result = await callProvider(provider, text, keys[route.provider], undefined, undefined, history)
 
       setMessages(prev => [...prev, {
         role: 'assistant',
@@ -107,28 +121,31 @@ export default function ChatScreen({ injectPromptRef }: Props) {
     setTimeout(() => setSavedMsg(null), 2000)
   }
 
-  const clearChat = () => setMessages([])
-
-  const enabledProviders = ROUTING_ORDER.filter(k => {
-    const enabled = loadEnabledProviders()
-    if (enabled[k] === false) return false
-    const keys = loadAllKeys()
-    return k === 'pollinations' || !!keys[k]
-  })
+  const meta = TASK_META[activeType]
 
   return (
     <div className="screen">
-      <div className="provider-bar">
-        <span>Provider:</span>
-        <select value={manualProvider} onChange={e => setManualProvider(e.target.value as ProviderKey | 'auto')}>
-          <option value="auto">Auto</option>
-          {enabledProviders.map(k => (
-            <option key={k} value={k}>{PROVIDERS[k].name}</option>
-          ))}
-        </select>
-        {savedMsg && <span style={{ color: 'var(--accent)', marginLeft: 'auto' }}>{savedMsg}</span>}
+      {/* Type bar */}
+      <div className="type-bar">
+        <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>Task:</span>
+        {TASK_TYPES.map(t => (
+          <button
+            key={t}
+            className={`type-pill ${activeType === t ? 'active' : ''}`}
+            onClick={() => setManualType(t === activeType && manualType !== 'auto' ? 'auto' : t)}
+            title={TASK_META[t].description}
+          >
+            {TASK_META[t].icon} {TASK_META[t].label}
+          </button>
+        ))}
+        {manualType !== 'auto' && (
+          <button className="type-pill" onClick={() => setManualType('auto')} title="Switch back to auto-detect">
+            ↺ Auto
+          </button>
+        )}
+        {savedMsg && <span style={{ color: 'var(--accent)', marginLeft: 'auto', fontSize: 12 }}>{savedMsg}</span>}
         {messages.length > 0 && !savedMsg && (
-          <button className="btn-ghost" onClick={clearChat} style={{ marginLeft: 'auto', fontSize: 11, padding: '4px 8px' }}>
+          <button className="btn-ghost" onClick={() => setMessages([])} style={{ marginLeft: 'auto', fontSize: 11, padding: '3px 8px' }}>
             Clear
           </button>
         )}
@@ -137,9 +154,13 @@ export default function ChatScreen({ injectPromptRef }: Props) {
       <div className="chat-messages">
         {messages.length === 0 && (
           <div className="empty-state">
-            <div style={{ fontSize: 32, marginBottom: 12 }}>✦</div>
-            <div style={{ fontWeight: 600, marginBottom: 6 }}>ManyAI Desktop</div>
-            <div style={{ fontSize: 12 }}>Ask anything. Auto-routes to the best available provider.</div>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>{meta.icon}</div>
+            <div style={{ fontWeight: 600, marginBottom: 4 }}>ManyAI Desktop</div>
+            <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+              {manualType === 'auto'
+                ? 'Auto-routing active — task type detected from your prompt.'
+                : `Routing to ${meta.label} provider.`}
+            </div>
           </div>
         )}
         {messages.map((msg, idx) => (
@@ -163,7 +184,9 @@ export default function ChatScreen({ injectPromptRef }: Props) {
         ))}
         {loading && (
           <div className="message assistant">
-            <div className="message-bubble" style={{ color: 'var(--text-dim)' }}>Thinking…</div>
+            <div className="message-bubble" style={{ color: 'var(--text-dim)' }}>
+              {meta.icon} Thinking ({meta.label})…
+            </div>
           </div>
         )}
         <div ref={bottomRef} />
@@ -175,7 +198,7 @@ export default function ChatScreen({ injectPromptRef }: Props) {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask anything… (Enter to send, Shift+Enter for newline)"
+          placeholder={`Ask anything… detected as ${meta.label} · Enter to send`}
           rows={1}
           style={{ lineHeight: '1.5' }}
         />
