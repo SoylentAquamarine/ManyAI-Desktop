@@ -5,8 +5,9 @@
 export type ImageProvider = 'pollinations' | 'openai-dalle';
 
 export interface ImageResult {
-  imageUrl: string;   // data URL (base64) or direct URL
+  imageUrl: string;
   provider: ImageProvider;
+  model: string;
   error?: string;
 }
 
@@ -24,15 +25,15 @@ export async function callImageProvider(
 ): Promise<ImageResult> {
   try {
     if (provider === 'pollinations') {
-      // Pollinations returns the image directly as a binary stream
-      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=512&nologo=true&enhance=true`;
+      // Params: width/height for reasonable size, nologo removes watermark
+      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=512&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
       const res = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
       const imageUrl = await blobToDataURL(blob);
-      return { imageUrl, provider };
+      return { imageUrl, provider, model: 'Pollinations' };
     }
 
     if (provider === 'openai-dalle') {
@@ -61,7 +62,7 @@ export async function callImageProvider(
       const json = await res.json();
       const imageUrl: string = json?.data?.[0]?.url ?? '';
       if (!imageUrl) throw new Error('No image URL returned');
-      return { imageUrl, provider };
+      return { imageUrl, provider, model: 'DALL-E 3' };
     }
 
     throw new Error(`Unknown image provider: ${provider}`);
@@ -69,6 +70,7 @@ export async function callImageProvider(
     return {
       imageUrl: '',
       provider,
+      model: '',
       error: err instanceof Error ? err.message : String(err),
     };
   }

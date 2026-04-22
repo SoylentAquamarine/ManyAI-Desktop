@@ -87,6 +87,7 @@ export default function ChatScreen({ injectPromptRef }: Props) {
           content: result.error ? `Image error: ${result.error}` : '',
           imageUrl: result.error ? undefined : result.imageUrl,
           provider: imgProvider,
+          model: result.model,
           error: !!result.error,
         }])
         return
@@ -193,9 +194,9 @@ export default function ChatScreen({ injectPromptRef }: Props) {
                 {msg.content}
               </div>
             )}
-            {msg.role === 'assistant' && (
+            {msg.role === 'assistant' && (msg.provider || msg.latencyMs) && (
               <div className="message-meta">
-                {msg.provider && `${PROVIDERS[msg.provider as ProviderKey]?.name ?? msg.provider} · ${msg.model}`}
+                {msg.provider && `${PROVIDERS[msg.provider as ProviderKey]?.name ?? msg.provider}${msg.model ? ' · ' + msg.model : ''}`}
                 {msg.latencyMs && ` · ${msg.latencyMs}ms`}
               </div>
             )}
