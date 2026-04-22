@@ -18,7 +18,26 @@ interface Message {
   model?: string
   latencyMs?: number
   error?: boolean
-  imageUrl?: string   // set for image generation responses
+  imageUrl?: string
+  fileRef?: string   // label shown when a file was injected with this message
+}
+
+interface AttachedFile {
+  path: string      // original file path
+  tmpPath: string   // path + '.tmp'
+  name: string      // basename
+  content: string   // current working content (updated when AI gives new version)
+}
+
+/** Extract the first fenced code block's content, or the full text if none. */
+function extractCode(text: string): string {
+  const match = text.match(/```(?:\w+)?\n?([\s\S]*?)```/)
+  return match ? match[1].trimEnd() : text
+}
+
+/** True if the response contains at least one fenced code block. */
+function hasCodeBlock(text: string): boolean {
+  return /```[\s\S]*?```/.test(text)
 }
 
 interface Props {
@@ -28,8 +47,8 @@ interface Props {
 }
 
 export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Props) {
-  const msgsKey  = tabId ? `manyai_msgs_${tabId}`    : null
-  const histKey  = tabId ? `manyai_history_${tabId}` : null
+  const msgsKey = tabId ? `manyai_msgs_${tabId}`    : null
+  const histKey = tabId ? `manyai_history_${tabId}` : null
 
   const [messages, setMessages] = useState<Message[]>(() => {
     if (!msgsKey) return []
@@ -40,17 +59,23 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
   const [savedMsg, setSavedMsg] = useState<string | null>(null)
   const [detectedType, setDetectedType] = useState<TaskType>('general')
   const [manualType, setManualType] = useState<TaskType | 'auto'>('auto')
+  const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null)
+  const [tmpStatus, setTmpStatus] = useState<string | null>(null)
+
+  // fileInjected: true after the first send with this attachment (so we don't
+  // re-send the full file on every message — history already has it)
+  const fileInjected = useRef(false)
+
   // Command buffer — per tab, persisted
   const [cmdHistory, setCmdHistory] = useState<string[]>(() => {
     if (!histKey) return []
     try { return JSON.parse(localStorage.getItem(histKey) ?? '[]') } catch { return [] }
   })
-  const historyIdx = useRef(-1)   // -1 = not navigating
-  const draftInput = useRef('')   // saved draft while navigating history
+  const historyIdx = useRef(-1)
+  const draftInput = useRef('')
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Persist messages whenever they change
   useEffect(() => {
     if (msgsKey) localStorage.setItem(msgsKey, JSON.stringify(messages))
   }, [messages, msgsKey])
@@ -66,7 +91,6 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
     })
   }, [onInjectReady])
 
-  // Update detected type as user types
   useEffect(() => {
     if (input.length > 8) {
       const prefs = loadRoutingPrefs()
@@ -76,6 +100,46 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
 
   const activeType: TaskType = manualType === 'auto' ? detectedType : manualType
 
+  // ── Open a file and attach it to this chat ─────────────────────────────────
+  const handleOpenFile = async () => {
+    const result = await window.api.openFile()
+    if ('error' in result) {
+      if (result.error !== 'Cancelled') setSavedMsg(`Open failed: ${result.error}`)
+      return
+    }
+    const tmpPath = result.path + '.tmp'
+    setAttachedFile({ path: result.path, tmpPath, name: result.name, content: result.content })
+    fileInjected.current = false   // fresh attach — inject on next send
+    textareaRef.current?.focus()
+  }
+
+  // ── Detach file without clearing conversation ──────────────────────────────
+  const handleDetachFile = () => {
+    setAttachedFile(null)
+    fileInjected.current = false
+  }
+
+  // ── Re-inject: next message will include the current working content again ─
+  const handleReInject = () => {
+    fileInjected.current = false
+    setSavedMsg('File will be re-injected on next send')
+    setTimeout(() => setSavedMsg(null), 2000)
+    textareaRef.current?.focus()
+  }
+
+  // ── Update the working copy (.tmp) with extracted code from a response ─────
+  const handleUpdateTmp = async (code: string) => {
+    if (!attachedFile) return
+    const result = await window.api.writeFileDirect(attachedFile.tmpPath, code)
+    if ('ok' in result) {
+      setAttachedFile(prev => prev ? { ...prev, content: code } : null)
+      setTmpStatus(`✓ Saved to ${attachedFile.name}.tmp`)
+    } else {
+      setTmpStatus(`Error: ${result.error}`)
+    }
+    setTimeout(() => setTmpStatus(null), 3000)
+  }
+
   const send = async () => {
     const text = input.trim()
     if (!text || loading) return
@@ -83,15 +147,25 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
     setInput('')
     historyIdx.current = -1
     draftInput.current = ''
-    // Add to command history (most recent first, deduplicate)
+
     setCmdHistory(prev => {
       const next = [text, ...prev.filter(h => h !== text)].slice(0, 100)
       if (histKey) localStorage.setItem(histKey, JSON.stringify(next))
       return next
     })
+
+    // Build the actual prompt sent to the AI
+    let aiPrompt = text
+    let fileRef: string | undefined
+    if (attachedFile && !fileInjected.current) {
+      aiPrompt = `Here is my current script (\`${attachedFile.name}\`):\n\`\`\`\n${attachedFile.content}\n\`\`\`\n\n${text}`
+      fileRef = attachedFile.name
+      fileInjected.current = true
+    }
+
     setMessages(prev => {
       if (prev.length === 0) onFirstMessage?.(text)
-      return [...prev, { role: 'user', content: text }]
+      return [...prev, { role: 'user', content: text, fileRef }]
     })
     setLoading(true)
 
@@ -106,7 +180,7 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
         ? (prefs.autoDetect ? detectTaskType(text) : 'general')
         : manualType
 
-      // ── Image generation path ──────────────────────────────────────────────
+      // ── Image generation ──────────────────────────────────────────────────
       if (taskType === 'image') {
         const imgProvider = prefs.imageProvider ?? 'pollinations'
         const apiKey = imgProvider === 'openai-dalle' ? keys['openai'] : undefined
@@ -122,9 +196,8 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
         return
       }
 
-      // ── Text generation path ───────────────────────────────────────────────
+      // ── Text generation ───────────────────────────────────────────────────
       const route = resolveProvider(taskType, prefs, availableKeys, enabled)
-
       if (!route) {
         setMessages(prev => [...prev, {
           role: 'assistant',
@@ -135,16 +208,30 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
       }
 
       const provider = { ...PROVIDERS[route.provider], model: route.model }
+      // History for context — callProvider appends aiPrompt as the new user turn
       const history: HistoryMessage[] = messages
         .slice(-10)
-        .filter(m => !m.imageUrl)   // skip image messages from history
+        .filter(m => !m.imageUrl)
         .map(m => ({ role: m.role, content: m.content }))
 
-      const result = await callProvider(provider, text, keys[route.provider], undefined, undefined, history)
+      const result = await callProvider(provider, aiPrompt, keys[route.provider], undefined, undefined, history)
+
+      // If file is attached and response has code, auto-save to .tmp
+      const responseContent = result.error ? `Error: ${result.error}` : result.content
+      if (attachedFile && !result.error && hasCodeBlock(responseContent)) {
+        const code = extractCode(responseContent)
+        window.api.writeFileDirect(attachedFile.tmpPath, code).then(r => {
+          if ('ok' in r) {
+            setAttachedFile(prev => prev ? { ...prev, content: code } : null)
+            setTmpStatus(`✓ Auto-saved to ${attachedFile.name}.tmp`)
+            setTimeout(() => setTmpStatus(null), 3000)
+          }
+        })
+      }
 
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: result.error ? `Error: ${result.error}` : result.content,
+        content: responseContent,
         provider: result.provider,
         model: result.model,
         latencyMs: result.latencyMs,
@@ -218,8 +305,12 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
             ↺ Auto
           </button>
         )}
-        {savedMsg && <span style={{ color: 'var(--accent)', marginLeft: 'auto', fontSize: 12 }}>{savedMsg}</span>}
-        {messages.length > 0 && !savedMsg && (
+        {(savedMsg || tmpStatus) && (
+          <span style={{ color: 'var(--accent)', marginLeft: 'auto', fontSize: 12 }}>
+            {tmpStatus ?? savedMsg}
+          </span>
+        )}
+        {messages.length > 0 && !savedMsg && !tmpStatus && (
           <button className="btn-ghost" onClick={() => setMessages([])} style={{ marginLeft: 'auto', fontSize: 11, padding: '3px 8px' }}>
             Clear
           </button>
@@ -232,9 +323,11 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
             <div style={{ fontSize: 32, marginBottom: 12 }}>{meta.icon}</div>
             <div style={{ fontWeight: 600, marginBottom: 4 }}>ManyAI Desktop</div>
             <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
-              {manualType === 'auto'
-                ? 'Auto-routing active — task type detected from your prompt.'
-                : `Routing to ${meta.label} provider.`}
+              {attachedFile
+                ? `📎 ${attachedFile.name} attached — describe what you want to do with it.`
+                : manualType === 'auto'
+                  ? 'Auto-routing active — task type detected from your prompt.'
+                  : `Routing to ${meta.label} provider.`}
             </div>
           </div>
         )}
@@ -246,6 +339,11 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
               </div>
             ) : (
               <div className="message-bubble" style={msg.error ? { borderColor: 'var(--accent2)', color: 'var(--accent2)' } : {}}>
+                {msg.fileRef && (
+                  <div style={{ fontSize: 11, color: 'var(--accent)', marginBottom: 6, opacity: 0.8 }}>
+                    📎 {msg.fileRef} injected
+                  </div>
+                )}
                 {msg.content}
               </div>
             )}
@@ -269,6 +367,13 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
                     a.click()
                   }}>Download</button>
                 )}
+                {!msg.imageUrl && attachedFile && hasCodeBlock(msg.content) && (
+                  <button className="btn-ghost" style={{ color: 'var(--accent)' }}
+                    onClick={() => handleUpdateTmp(extractCode(msg.content))}
+                    title={`Save this code to ${attachedFile.name}.tmp`}>
+                    💾 Update Working Copy
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -283,13 +388,49 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
         <div ref={bottomRef} />
       </div>
 
+      {/* Attached file banner */}
+      {attachedFile && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '5px 12px', background: 'var(--bg2)',
+          borderTop: '1px solid var(--border)',
+          fontSize: 12, color: 'var(--text-dim)',
+        }}>
+          <span style={{ color: 'var(--accent)' }}>📎</span>
+          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {attachedFile.name}
+            <span style={{ opacity: 0.5, marginLeft: 6 }}>→ {attachedFile.name}.tmp</span>
+          </span>
+          <button className="btn-ghost" style={{ fontSize: 11, padding: '2px 6px' }}
+            onClick={handleReInject} title="Re-send current file content on next message">
+            ↺ Re-inject
+          </button>
+          <button className="btn-ghost" style={{ fontSize: 11, padding: '2px 6px' }}
+            onClick={handleDetachFile} title="Detach file">
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="chat-input-row">
+        <button
+          className="btn-ghost"
+          onClick={handleOpenFile}
+          title="Attach a script file to this conversation"
+          style={{ padding: '0 10px', fontSize: 16, flexShrink: 0 }}
+        >
+          📎
+        </button>
         <textarea
           ref={textareaRef}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={`Ask anything… detected as ${meta.label} · Enter to send`}
+          placeholder={
+            attachedFile
+              ? `What do you want to do with ${attachedFile.name}?`
+              : `Ask anything… detected as ${meta.label} · Enter to send`
+          }
           rows={1}
           style={{ lineHeight: '1.5' }}
         />

@@ -111,6 +111,45 @@ app.whenReady().then(() => {
   })
 
   /**
+   * Show a native Open dialog and read a text file.
+   * Returns { path, name, content } or { error }.
+   */
+  ipcMain.handle('open-file', async (_event) => {
+    const win = BrowserWindow.getFocusedWindow()
+    const result = await dialog.showOpenDialog(win!, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'All Files',   extensions: ['*'] },
+        { name: 'Scripts',     extensions: ['py', 'js', 'ts', 'sh', 'bat', 'ps1', 'rb', 'go', 'rs'] },
+        { name: 'Text / Markdown', extensions: ['txt', 'md'] },
+      ],
+    })
+    if (result.canceled || !result.filePaths[0]) return { error: 'Cancelled' }
+    const filePath = result.filePaths[0]
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8')
+      const name = filePath.split(/[\\/]/).pop() ?? filePath
+      return { path: filePath, name, content }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
+  /**
+   * Write content directly to a path without showing a dialog.
+   * Used for auto-saving .tmp working copies.
+   * Returns { ok: true } or { error }.
+   */
+  ipcMain.handle('write-file-direct', (_event, filePath: string, content: string) => {
+    try {
+      fs.writeFileSync(filePath, content, 'utf-8')
+      return { ok: true }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
+  /**
    * Show a native Save dialog and write text content to the chosen path.
    * defaultName: suggested filename (e.g. "script.py")
    * content: the text to write

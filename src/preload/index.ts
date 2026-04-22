@@ -12,6 +12,16 @@ const api = {
    *  Returns { path: string } on success or { error: string } on cancel/failure. */
   saveFile: (defaultName: string, content: string): Promise<{ path: string } | { error: string }> =>
     ipcRenderer.invoke('save-file', defaultName, content),
+
+  /** Show a native Open dialog and read a text file.
+   *  Returns { path, name, content } or { error }. */
+  openFile: (): Promise<{ path: string; name: string; content: string } | { error: string }> =>
+    ipcRenderer.invoke('open-file'),
+
+  /** Write content directly to a path (no dialog). For .tmp auto-saves.
+   *  Returns { ok: true } or { error }. */
+  writeFileDirect: (filePath: string, content: string): Promise<{ ok: boolean } | { error: string }> =>
+    ipcRenderer.invoke('write-file-direct', filePath, content),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
