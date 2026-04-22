@@ -1,8 +1,13 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
-const api = {}
+const api = {
+  /** Fetch a URL via Node.js in the main process (no browser headers/cookies).
+   *  Returns { base64: string, mime: string } on success or { error: string } on failure. */
+  fetchImage: (url: string): Promise<{ base64: string; mime: string } | { error: string }> =>
+    ipcRenderer.invoke('fetch-image', url),
+}
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise

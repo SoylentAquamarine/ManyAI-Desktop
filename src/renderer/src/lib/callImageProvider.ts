@@ -1,10 +1,11 @@
 /**
  * callImageProvider.ts — Image generation via Pollinations (free) or OpenAI DALL-E.
  *
- * Pollinations note: Electron's Chromium renderer sends cookies, which makes
- * Pollinations think we're an authenticated user and return HTTP 500 "use
- * enter.pollinations.ai".  Fix: credentials:'omit' strips cookies so the
- * request looks anonymous — exactly how React Native / mobile fetches work.
+ * Pollinations note: Electron's Chromium renderer adds browser headers
+ * (User-Agent, Sec-Fetch-*, etc.) that make Pollinations think it's an
+ * authenticated user and return HTTP 500.  Fix: route Pollinations fetches
+ * through the main process via IPC (window.api.fetchImage) which uses plain
+ * Node.js https with no browser headers — exactly like React Native.
  */
 
 export type ImageProvider = 'pollinations' | 'openai-dalle';
@@ -16,30 +17,11 @@ export interface ImageResult {
   error?: string;
 }
 
-const TIMEOUT_MS = 60_000; // image gen can be slow
-
-/** Fetch with timeout + anonymous credentials (no cookies sent) */
-function anonFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  return fetch(url, {
-    ...options,
-    credentials: 'omit',   // ← prevents cookies that trigger Pollinations auth check
-    signal: controller.signal,
-  }).finally(() => clearTimeout(timer));
-}
-
-/**
- * Converts an ArrayBuffer to a base64 string.
- * Works in Electron renderer (Chromium) and React Native alike.
- */
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return btoa(binary);
+/** Fetch an image URL via the main process (Node.js — no browser headers). */
+async function fetchImageViaMain(url: string): Promise<{ base64: string; mime: string }> {
+  const result = await window.api.fetchImage(url);
+  if ('error' in result) throw new Error(result.error);
+  return result;
 }
 
 export async function callImageProvider(
@@ -49,22 +31,10 @@ export async function callImageProvider(
 ): Promise<ImageResult> {
   try {
     // ── Pollinations (free, no key) ─────────────────────────────────────────
+    // Fetch via main process so Node.js http (not Chromium) makes the request.
     if (provider === 'pollinations') {
       const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&nologo=true`;
-      const res = await anonFetch(url);
-
-      if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        throw new Error(`HTTP ${res.status}${body ? ': ' + body.slice(0, 120) : ''}`);
-      }
-
-      const contentType = res.headers.get('content-type') ?? 'image/jpeg';
-      if (!contentType.startsWith('image/')) {
-        throw new Error(`Unexpected content-type: ${contentType}`);
-      }
-
-      const mime = contentType.split(';')[0].trim();
-      const base64 = arrayBufferToBase64(await res.arrayBuffer());
+      const { base64, mime } = await fetchImageViaMain(url);
       return { imageUrl: `data:${mime};base64,${base64}`, provider, model: 'Pollinations · Flux' };
     }
 
@@ -85,12 +55,9 @@ export async function callImageProvider(
       const imgUrl: string = json?.data?.[0]?.url ?? '';
       if (!imgUrl) throw new Error('No image URL returned');
 
-      // Fetch the URL and convert to data URI so download works offline
-      const imgRes = await anonFetch(imgUrl);
-      if (!imgRes.ok) throw new Error(`Failed to fetch image: HTTP ${imgRes.status}`);
-      const ct = (imgRes.headers.get('content-type') ?? 'image/png').split(';')[0].trim();
-      const base64 = arrayBufferToBase64(await imgRes.arrayBuffer());
-      return { imageUrl: `data:${ct};base64,${base64}`, provider, model: 'DALL-E 3' };
+      // Fetch via main process as well to get a stable data URI
+      const { base64, mime } = await fetchImageViaMain(imgUrl);
+      return { imageUrl: `data:${mime};base64,${base64}`, provider, model: 'DALL-E 3' };
     }
 
     throw new Error(`Unknown image provider: ${provider}`);
