@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, MutableRefObject } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { PROVIDERS, ProviderKey } from '../lib/providers'
 import { callProvider, HistoryMessage } from '../lib/callProvider'
 import { loadAllKeys } from '../lib/keyStore'
@@ -22,10 +22,12 @@ interface Message {
 }
 
 interface Props {
-  injectPromptRef?: MutableRefObject<((p: string) => void) | null>
+  tabId?: string
+  onInjectReady?: (fn: (p: string) => void) => void
+  onFirstMessage?: (text: string) => void
 }
 
-export default function ChatScreen({ injectPromptRef }: Props) {
+export default function ChatScreen({ tabId: _tabId, onInjectReady, onFirstMessage }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -40,13 +42,11 @@ export default function ChatScreen({ injectPromptRef }: Props) {
   }, [messages])
 
   useEffect(() => {
-    if (injectPromptRef) {
-      injectPromptRef.current = (p: string) => {
-        setInput(p)
-        textareaRef.current?.focus()
-      }
-    }
-  }, [injectPromptRef])
+    onInjectReady?.((p: string) => {
+      setInput(p)
+      textareaRef.current?.focus()
+    })
+  }, [onInjectReady])
 
   // Update detected type as user types
   useEffect(() => {
@@ -63,7 +63,10 @@ export default function ChatScreen({ injectPromptRef }: Props) {
     if (!text || loading) return
 
     setInput('')
-    setMessages(prev => [...prev, { role: 'user', content: text }])
+    setMessages(prev => {
+      if (prev.length === 0) onFirstMessage?.(text)
+      return [...prev, { role: 'user', content: text }]
+    })
     setLoading(true)
 
     try {

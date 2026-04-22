@@ -26,11 +26,14 @@ export async function callImageProvider(
   try {
     if (provider === 'pollinations') {
       // Params: width/height for reasonable size, nologo removes watermark
-      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=512&model=flux&seed=${Math.floor(Math.random() * 99999)}`;
+      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
       const res = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status}${body ? ': ' + body.slice(0, 120) : ''}`);
+      }
       const blob = await res.blob();
       const imageUrl = await blobToDataURL(blob);
       return { imageUrl, provider, model: 'Pollinations' };
