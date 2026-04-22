@@ -255,9 +255,12 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
                   <button className="btn-ghost" onClick={() => navigator.clipboard.writeText(msg.content)}>Copy</button>
                 )}
                 {msg.imageUrl && (
-                  <a href={msg.imageUrl} download="manyai-image.png" className="btn-ghost" style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, textDecoration: 'none' }}>
-                    Download
-                  </a>
+                  <button className="btn-ghost" onClick={() => {
+                    const a = document.createElement('a')
+                    a.href = msg.imageUrl!
+                    a.download = 'manyai-image.png'
+                    a.click()
+                  }}>Download</button>
                 )}
               </div>
             )}
