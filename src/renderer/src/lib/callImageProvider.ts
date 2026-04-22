@@ -26,7 +26,7 @@ export async function callImageProvider(
   try {
     if (provider === 'pollinations') {
       // Params: width/height for reasonable size, nologo removes watermark
-      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=512&nologo=true&seed=${Math.floor(Math.random() * 99999)}`;
+      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=512&model=flux&seed=${Math.floor(Math.random() * 99999)}`;
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
       const res = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
