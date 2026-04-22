@@ -17,9 +17,26 @@ interface ChatTab {
 let tabCounter = 1
 const newTab = (): ChatTab => ({ id: `tab-${Date.now()}`, label: `Chat ${tabCounter++}` })
 
+const TABS_KEY = 'manyai_chat_tabs'
+const ACTIVE_KEY = 'manyai_active_tab'
+
+function loadPersistedTabs(): { tabs: ChatTab[]; activeTabId: string } {
+  try {
+    const raw = localStorage.getItem(TABS_KEY)
+    const tabs: ChatTab[] = raw ? JSON.parse(raw) : null
+    if (tabs && tabs.length > 0) {
+      const activeTabId = localStorage.getItem(ACTIVE_KEY) ?? tabs[0].id
+      return { tabs, activeTabId }
+    }
+  } catch {}
+  const t = newTab()
+  return { tabs: [t], activeTabId: t.id }
+}
+
 export default function App() {
-  const [tabs, setTabs] = useState<ChatTab[]>([newTab()])
-  const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id)
+  const initial = loadPersistedTabs()
+  const [tabs, setTabs] = useState<ChatTab[]>(initial.tabs)
+  const [activeTabId, setActiveTabId] = useState<string>(initial.activeTabId)
   const [panel, setPanel] = useState<PanelType | null>(null)
 
   const injectFns = useRef<Record<string, (p: string) => void>>({})
@@ -29,27 +46,39 @@ export default function App() {
     setTimeout(() => injectFns.current[activeTabId]?.(prompt), 50)
   }
 
+  const persistTabs = (tabs: ChatTab[], activeId: string) => {
+    localStorage.setItem(TABS_KEY, JSON.stringify(tabs))
+    localStorage.setItem(ACTIVE_KEY, activeId)
+  }
+
   const addTab = () => {
     const t = newTab()
-    setTabs(prev => [...prev, t])
+    setTabs(prev => { const next = [...prev, t]; persistTabs(next, t.id); return next })
     setActiveTabId(t.id)
     setPanel(null)
   }
 
   const closeTab = (id: string) => {
     setTabs(prev => {
-      if (prev.length === 1) return prev  // never close last tab
+      if (prev.length === 1) return prev
       const next = prev.filter(t => t.id !== id)
+      let nextActive = activeTabId
       if (activeTabId === id) {
         const idx = prev.findIndex(t => t.id === id)
-        setActiveTabId(next[Math.max(0, idx - 1)].id)
+        nextActive = next[Math.max(0, idx - 1)].id
+        setActiveTabId(nextActive)
       }
+      persistTabs(next, nextActive)
+      // clean up stored messages for closed tab
+      localStorage.removeItem(`manyai_msgs_${id}`)
+      localStorage.removeItem(`manyai_history_${id}`)
       return next
     })
   }
 
   const switchToChat = (id: string) => {
     setActiveTabId(id)
+    localStorage.setItem(ACTIVE_KEY, id)
     setPanel(null)
   }
 
@@ -58,7 +87,11 @@ export default function App() {
   }
 
   const updateTabLabel = (id: string, label: string) => {
-    setTabs(prev => prev.map(t => t.id === id ? { ...t, label } : t))
+    setTabs(prev => {
+      const next = prev.map(t => t.id === id ? { ...t, label } : t)
+      persistTabs(next, activeTabId)
+      return next
+    })
   }
 
   return (

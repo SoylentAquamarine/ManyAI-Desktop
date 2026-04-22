@@ -11,13 +11,8 @@ export interface ImageResult {
   error?: string;
 }
 
-const TIMEOUT_MS = 45_000; // image gen can be slow
+const TIMEOUT_MS = 45_000;
 
-/**
- * Generate an image from a text prompt.
- * provider: 'pollinations' — free, no key needed
- * provider: 'openai-dalle' — requires OpenAI API key, uses DALL-E 3
- */
 export async function callImageProvider(
   prompt: string,
   provider: ImageProvider = 'pollinations',
@@ -25,18 +20,11 @@ export async function callImageProvider(
 ): Promise<ImageResult> {
   try {
     if (provider === 'pollinations') {
-      // Params: width/height for reasonable size, nologo removes watermark
-      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-      const res = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
-      if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        throw new Error(`HTTP ${res.status}${body ? ': ' + body.slice(0, 120) : ''}`);
-      }
-      const blob = await res.blob();
-      const imageUrl = await blobToDataURL(blob);
-      return { imageUrl, provider, model: 'Pollinations' };
+      // Return the URL directly — Electron renders cross-origin images fine (webSecurity: false)
+      // Random seed ensures each call generates a fresh image
+      const seed = Math.floor(Math.random() * 999999);
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?seed=${seed}&width=768&height=512`;
+      return { imageUrl, provider, model: 'Pollinations · Flux' };
     }
 
     if (provider === 'openai-dalle') {
@@ -77,13 +65,4 @@ export async function callImageProvider(
       error: err instanceof Error ? err.message : String(err),
     };
   }
-}
-
-function blobToDataURL(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 }

@@ -27,15 +27,33 @@ interface Props {
   onFirstMessage?: (text: string) => void
 }
 
-export default function ChatScreen({ tabId: _tabId, onInjectReady, onFirstMessage }: Props) {
-  const [messages, setMessages] = useState<Message[]>([])
+export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Props) {
+  const msgsKey  = tabId ? `manyai_msgs_${tabId}`    : null
+  const histKey  = tabId ? `manyai_history_${tabId}` : null
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (!msgsKey) return []
+    try { return JSON.parse(localStorage.getItem(msgsKey) ?? '[]') } catch { return [] }
+  })
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [savedMsg, setSavedMsg] = useState<string | null>(null)
   const [detectedType, setDetectedType] = useState<TaskType>('general')
   const [manualType, setManualType] = useState<TaskType | 'auto'>('auto')
+  // Command buffer — per tab, persisted
+  const [cmdHistory, setCmdHistory] = useState<string[]>(() => {
+    if (!histKey) return []
+    try { return JSON.parse(localStorage.getItem(histKey) ?? '[]') } catch { return [] }
+  })
+  const historyIdx = useRef(-1)   // -1 = not navigating
+  const draftInput = useRef('')   // saved draft while navigating history
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Persist messages whenever they change
+  useEffect(() => {
+    if (msgsKey) localStorage.setItem(msgsKey, JSON.stringify(messages))
+  }, [messages, msgsKey])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -63,6 +81,14 @@ export default function ChatScreen({ tabId: _tabId, onInjectReady, onFirstMessag
     if (!text || loading) return
 
     setInput('')
+    historyIdx.current = -1
+    draftInput.current = ''
+    // Add to command history (most recent first, deduplicate)
+    setCmdHistory(prev => {
+      const next = [text, ...prev.filter(h => h !== text)].slice(0, 100)
+      if (histKey) localStorage.setItem(histKey, JSON.stringify(next))
+      return next
+    })
     setMessages(prev => {
       if (prev.length === 0) onFirstMessage?.(text)
       return [...prev, { role: 'user', content: text }]
@@ -134,6 +160,25 @@ export default function ChatScreen({ tabId: _tabId, onInjectReady, onFirstMessag
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       send()
+      return
+    }
+    if (e.key === 'ArrowUp' && cmdHistory.length > 0) {
+      e.preventDefault()
+      if (historyIdx.current === -1) draftInput.current = input
+      const next = Math.min(historyIdx.current + 1, cmdHistory.length - 1)
+      historyIdx.current = next
+      setInput(cmdHistory[next])
+      return
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      if (historyIdx.current <= 0) {
+        historyIdx.current = -1
+        setInput(draftInput.current)
+      } else {
+        historyIdx.current -= 1
+        setInput(cmdHistory[historyIdx.current])
+      }
     }
   }
 
