@@ -4,6 +4,7 @@ import {
   TASK_TYPES, TASK_META, DEFAULT_ROUTES,
   loadRoutingPrefs, saveRoutingPrefs, RouteEntry, RoutingPrefs,
 } from '../lib/routing'
+import type { ImageProvider } from '../lib/callImageProvider'
 import { loadAllKeys } from '../lib/keyStore'
 import { loadEnabledProviders } from '../lib/providerPrefs'
 
@@ -42,7 +43,7 @@ export default function RoutingScreen() {
   }
 
   const resetDefaults = () => {
-    const reset = { autoDetect: true, routes: { ...DEFAULT_ROUTES } }
+    const reset: RoutingPrefs = { autoDetect: true, imageProvider: 'pollinations', routes: { ...DEFAULT_ROUTES } }
     setPrefs(reset)
     saveRoutingPrefs(reset)
     setSaved(true)
@@ -84,8 +85,34 @@ export default function RoutingScreen() {
           </label>
         </div>
 
+        {/* Image generation provider */}
+        <div className="route-card">
+          <div className="route-card-header">
+            <span style={{ fontSize: 20 }}>🎨</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600 }}>Image Generation</div>
+              <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Provider used when task type is detected as Image</div>
+            </div>
+          </div>
+          <div className="route-selectors">
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 10, color: 'var(--text-dim)', marginBottom: 3 }}>PROVIDER</div>
+              <select
+                value={prefs.imageProvider}
+                onChange={e => setPrefs(p => ({ ...p, imageProvider: e.target.value as ImageProvider }))}
+              >
+                <option value="pollinations">Pollinations (free, no key)</option>
+                <option value="openai-dalle">OpenAI DALL-E 3 (requires OpenAI key)</option>
+              </select>
+            </div>
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 6 }}>
+            Keywords detected: <em>generate image of, draw, paint, create a picture…</em>
+          </div>
+        </div>
+
         {/* Per-task-type routing */}
-        {TASK_TYPES.map(task => {
+        {TASK_TYPES.filter(t => t !== 'image').map(task => {
           const meta = TASK_META[task]
           const route = prefs.routes[task] ?? DEFAULT_ROUTES[task]
           const selectedProvider = route.provider

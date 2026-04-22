@@ -259,6 +259,21 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   font-size: 13px;
 }
 
+/* ── Image messages ───────────────────────────────────────── */
+.image-bubble {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 480px;
+}
+.generated-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 11px;
+}
+
 /* ── Task type bar (Chat) ─────────────────────────────────── */
 .type-bar {
   display: flex;

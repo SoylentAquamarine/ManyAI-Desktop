@@ -3,6 +3,7 @@
  */
 
 import { ProviderKey, TaskType, PROVIDERS, ROUTING_ORDER } from './providers';
+import type { ImageProvider } from './callImageProvider';
 
 // ── Task type metadata ────────────────────────────────────────────────────────
 
@@ -14,6 +15,12 @@ export interface TaskMeta {
 }
 
 export const TASK_META: Record<TaskType, TaskMeta> = {
+  image: {
+    label: 'Image',
+    icon: '🎨',
+    description: 'Generate images from text descriptions',
+    keywords: /\b(generate|create|draw|paint|render|image|picture|photo|illustration|artwork|portrait|landscape|design|logo|icon|visualize|imagine)\b.*\b(of|a|an|the|me|showing)\b|\b(image|picture|photo|illustration|artwork|painting|drawing) of\b/i,
+  },
   coding: {
     label: 'Code',
     icon: '💻',
@@ -52,13 +59,15 @@ export const TASK_META: Record<TaskType, TaskMeta> = {
   },
 };
 
-export const TASK_TYPES: TaskType[] = ['coding', 'reasoning', 'creative', 'summarization', 'translation', 'general'];
+export const TASK_TYPES: TaskType[] = ['image', 'coding', 'reasoning', 'creative', 'summarization', 'translation', 'general'];
 
 // ── Auto-detection ────────────────────────────────────────────────────────────
 
 export function detectTaskType(prompt: string): TaskType {
+  // Check image first (before creative, since "draw a story" etc could match both)
+  if (TASK_META['image'].keywords.test(prompt)) return 'image';
   for (const t of TASK_TYPES) {
-    if (t === 'general') continue;
+    if (t === 'general' || t === 'image') continue;
     if (TASK_META[t].keywords.test(prompt)) return t;
   }
   return 'general';
@@ -74,31 +83,35 @@ export interface RouteEntry {
 export interface RoutingPrefs {
   autoDetect: boolean;
   routes: Partial<Record<TaskType, RouteEntry>>;
+  imageProvider: ImageProvider;   // 'pollinations' | 'openai-dalle'
 }
 
 const ROUTING_KEY = 'manyai_routing_prefs';
 
 // Sensible defaults — free-tier providers matched to their strengths
+// image is handled separately via imageProvider, but needs a placeholder entry
 export const DEFAULT_ROUTES: Record<TaskType, RouteEntry> = {
-  coding:        { provider: 'mistral',    model: 'mistral-large-latest' },
-  reasoning:     { provider: 'sambanova',  model: 'Meta-Llama-3.3-70B-Instruct' },
-  creative:      { provider: 'mistral',    model: 'mistral-small-latest' },
-  summarization: { provider: 'gemini',     model: 'gemini-2.5-flash' },
-  translation:   { provider: 'gemini',     model: 'gemini-2.5-flash' },
-  general:       { provider: 'cerebras',   model: 'llama3.1-8b' },
+  image:         { provider: 'pollinations', model: 'pollinations-image' }, // placeholder — not used for text
+  coding:        { provider: 'mistral',      model: 'mistral-large-latest' },
+  reasoning:     { provider: 'sambanova',    model: 'Meta-Llama-3.3-70B-Instruct' },
+  creative:      { provider: 'mistral',      model: 'mistral-small-latest' },
+  summarization: { provider: 'gemini',       model: 'gemini-2.5-flash' },
+  translation:   { provider: 'gemini',       model: 'gemini-2.5-flash' },
+  general:       { provider: 'cerebras',     model: 'llama3.1-8b' },
 };
 
 export function loadRoutingPrefs(): RoutingPrefs {
   const raw = localStorage.getItem(ROUTING_KEY);
-  if (!raw) return { autoDetect: true, routes: { ...DEFAULT_ROUTES } };
+  if (!raw) return { autoDetect: true, imageProvider: 'pollinations', routes: { ...DEFAULT_ROUTES } };
   try {
     const stored = JSON.parse(raw) as Partial<RoutingPrefs>;
     return {
       autoDetect: stored.autoDetect ?? true,
+      imageProvider: stored.imageProvider ?? 'pollinations',
       routes: { ...DEFAULT_ROUTES, ...(stored.routes ?? {}) },
     };
   } catch {
-    return { autoDetect: true, routes: { ...DEFAULT_ROUTES } };
+    return { autoDetect: true, imageProvider: 'pollinations', routes: { ...DEFAULT_ROUTES } };
   }
 }
 

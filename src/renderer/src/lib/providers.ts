@@ -29,6 +29,7 @@ export type TaskType =
   | 'creative'
   | 'reasoning'
   | 'translation'
+  | 'image'
   | 'general';
 
 export interface ProviderModel {

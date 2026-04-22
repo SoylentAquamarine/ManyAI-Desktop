@@ -8,6 +8,7 @@ import {
   detectTaskType, resolveProvider, loadRoutingPrefs,
   TASK_META, TASK_TYPES,
 } from '../lib/routing'
+import { callImageProvider } from '../lib/callImageProvider'
 import type { TaskType } from '../lib/providers'
 
 interface Message {
@@ -17,6 +18,7 @@ interface Message {
   model?: string
   latencyMs?: number
   error?: boolean
+  imageUrl?: string   // set for image generation responses
 }
 
 interface Props {
@@ -75,6 +77,22 @@ export default function ChatScreen({ injectPromptRef }: Props) {
         ? (prefs.autoDetect ? detectTaskType(text) : 'general')
         : manualType
 
+      // ── Image generation path ──────────────────────────────────────────────
+      if (taskType === 'image') {
+        const imgProvider = prefs.imageProvider ?? 'pollinations'
+        const apiKey = imgProvider === 'openai-dalle' ? keys['openai'] : undefined
+        const result = await callImageProvider(text, imgProvider, apiKey)
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: result.error ? `Image error: ${result.error}` : '',
+          imageUrl: result.error ? undefined : result.imageUrl,
+          provider: imgProvider,
+          error: !!result.error,
+        }])
+        return
+      }
+
+      // ── Text generation path ───────────────────────────────────────────────
       const route = resolveProvider(taskType, prefs, availableKeys, enabled)
 
       if (!route) {
@@ -89,6 +107,7 @@ export default function ChatScreen({ injectPromptRef }: Props) {
       const provider = { ...PROVIDERS[route.provider], model: route.model }
       const history: HistoryMessage[] = messages
         .slice(-10)
+        .filter(m => !m.imageUrl)   // skip image messages from history
         .map(m => ({ role: m.role, content: m.content }))
 
       const result = await callProvider(provider, text, keys[route.provider], undefined, undefined, history)
@@ -165,9 +184,15 @@ export default function ChatScreen({ injectPromptRef }: Props) {
         )}
         {messages.map((msg, idx) => (
           <div key={idx} className={`message ${msg.role}`}>
-            <div className="message-bubble" style={msg.error ? { borderColor: 'var(--accent2)', color: 'var(--accent2)' } : {}}>
-              {msg.content}
-            </div>
+            {msg.imageUrl ? (
+              <div className="image-bubble">
+                <img src={msg.imageUrl} alt="Generated image" className="generated-image" />
+              </div>
+            ) : (
+              <div className="message-bubble" style={msg.error ? { borderColor: 'var(--accent2)', color: 'var(--accent2)' } : {}}>
+                {msg.content}
+              </div>
+            )}
             {msg.role === 'assistant' && (
               <div className="message-meta">
                 {msg.provider && `${PROVIDERS[msg.provider as ProviderKey]?.name ?? msg.provider} · ${msg.model}`}
@@ -177,7 +202,14 @@ export default function ChatScreen({ injectPromptRef }: Props) {
             {msg.role === 'assistant' && !msg.error && (
               <div className="message-actions">
                 <button className="btn-ghost" onClick={() => handleSave(msg, idx)}>Save</button>
-                <button className="btn-ghost" onClick={() => navigator.clipboard.writeText(msg.content)}>Copy</button>
+                {!msg.imageUrl && (
+                  <button className="btn-ghost" onClick={() => navigator.clipboard.writeText(msg.content)}>Copy</button>
+                )}
+                {msg.imageUrl && (
+                  <a href={msg.imageUrl} download="manyai-image.png" className="btn-ghost" style={{ fontSize: 11, padding: '4px 8px', borderRadius: 6, textDecoration: 'none' }}>
+                    Download
+                  </a>
+                )}
               </div>
             )}
           </div>
