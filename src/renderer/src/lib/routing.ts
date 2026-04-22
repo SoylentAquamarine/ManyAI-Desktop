@@ -82,22 +82,34 @@ export interface RouteEntry {
 
 export interface RoutingPrefs {
   autoDetect: boolean;
-  routes: Partial<Record<TaskType, RouteEntry>>;
-  imageProvider: ImageProvider;   // 'pollinations' | 'openai-dalle'
+  routes: Partial<Record<TaskType, RouteEntry[]>>;  // ordered fallback chain, tried top-to-bottom
+  imageProvider: ImageProvider;
 }
 
 const ROUTING_KEY = 'manyai_routing_prefs';
 
 // Sensible defaults — free-tier providers matched to their strengths
 // image is handled separately via imageProvider, but needs a placeholder entry
-export const DEFAULT_ROUTES: Record<TaskType, RouteEntry> = {
-  image:         { provider: 'pollinations', model: 'pollinations-image' }, // placeholder — not used for text
-  coding:        { provider: 'mistral',      model: 'mistral-large-latest' },
-  reasoning:     { provider: 'sambanova',    model: 'Meta-Llama-3.3-70B-Instruct' },
-  creative:      { provider: 'mistral',      model: 'mistral-small-latest' },
-  summarization: { provider: 'gemini',       model: 'gemini-2.5-flash' },
-  translation:   { provider: 'gemini',       model: 'gemini-2.5-flash' },
-  general:       { provider: 'cerebras',     model: 'llama3.1-8b' },
+// Each entry is now an ordered array — system tries them top-to-bottom, skips unavailable ones
+export const DEFAULT_ROUTES: Record<TaskType, RouteEntry[]> = {
+  image:         [{ provider: 'pollinations', model: 'pollinations-image' }],
+  coding:        [{ provider: 'mistral',   model: 'mistral-large-latest' },
+                  { provider: 'openai',    model: 'gpt-4o' },
+                  { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' }],
+  reasoning:     [{ provider: 'sambanova', model: 'Meta-Llama-3.3-70B-Instruct' },
+                  { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+                  { provider: 'openai',    model: 'gpt-4o' }],
+  creative:      [{ provider: 'mistral',   model: 'mistral-small-latest' },
+                  { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
+                  { provider: 'openai',    model: 'gpt-4o' }],
+  summarization: [{ provider: 'gemini',    model: 'gemini-2.5-flash' },
+                  { provider: 'cohere',    model: 'command-r-plus-08-2024' },
+                  { provider: 'groq',      model: 'llama-3.3-70b-versatile' }],
+  translation:   [{ provider: 'gemini',    model: 'gemini-2.5-flash' },
+                  { provider: 'mistral',   model: 'mistral-large-latest' }],
+  general:       [{ provider: 'cerebras',  model: 'llama3.1-8b' },
+                  { provider: 'groq',      model: 'llama-3.1-8b-instant' },
+                  { provider: 'pollinations', model: 'openai' }],
 };
 
 export function loadRoutingPrefs(): RoutingPrefs {
@@ -105,10 +117,16 @@ export function loadRoutingPrefs(): RoutingPrefs {
   if (!raw) return { autoDetect: true, imageProvider: 'pollinations', routes: { ...DEFAULT_ROUTES } };
   try {
     const stored = JSON.parse(raw) as Partial<RoutingPrefs>;
+    // Migrate old single-entry format to array if needed
+    const routes: Partial<Record<TaskType, RouteEntry[]>> = {};
+    for (const t of Object.keys(stored.routes ?? {}) as TaskType[]) {
+      const v = stored.routes![t];
+      routes[t] = Array.isArray(v) ? v : [v as unknown as RouteEntry];
+    }
     return {
       autoDetect: stored.autoDetect ?? true,
       imageProvider: stored.imageProvider ?? 'pollinations',
-      routes: { ...DEFAULT_ROUTES, ...(stored.routes ?? {}) },
+      routes: { ...DEFAULT_ROUTES, ...routes },
     };
   } catch {
     return { autoDetect: true, imageProvider: 'pollinations', routes: { ...DEFAULT_ROUTES } };
@@ -130,32 +148,24 @@ export function resolveProvider(
   availableKeys: Set<ProviderKey>,
   enabledProviders: Partial<Record<ProviderKey, boolean>>,
 ): RouteEntry | null {
-  const route = prefs.routes[taskType] ?? DEFAULT_ROUTES[taskType];
+  const isUsable = (pk: ProviderKey) =>
+    (pk === 'pollinations' || availableKeys.has(pk)) && enabledProviders[pk] !== false;
 
-  // Use preferred route if provider is available
-  const pk = route.provider;
-  const isAvailable = pk === 'pollinations' || availableKeys.has(pk);
-  const isEnabled = enabledProviders[pk] !== false;
-  if (isAvailable && isEnabled) {
-    return route;
+  // Walk the user's configured chain first
+  const chain = prefs.routes[taskType] ?? DEFAULT_ROUTES[taskType];
+  for (const entry of chain) {
+    if (isUsable(entry.provider)) return entry;
   }
 
-  // Fall back: find first available provider that's good at this task type
+  // Auto-fallback: providers with bestFor matching task type
   for (const k of ROUTING_ORDER) {
-    const p = PROVIDERS[k];
-    const avail = k === 'pollinations' || availableKeys.has(k);
-    if (!avail || enabledProviders[k] === false) continue;
-    if (p.bestFor.includes(taskType)) {
-      return { provider: k, model: p.model };
-    }
+    if (!isUsable(k)) continue;
+    if (PROVIDERS[k].bestFor.includes(taskType)) return { provider: k, model: PROVIDERS[k].model };
   }
 
   // Last resort: any available provider
   for (const k of ROUTING_ORDER) {
-    const avail = k === 'pollinations' || availableKeys.has(k);
-    if (avail && enabledProviders[k] !== false) {
-      return { provider: k, model: PROVIDERS[k].model };
-    }
+    if (isUsable(k)) return { provider: k, model: PROVIDERS[k].model };
   }
 
   return null;

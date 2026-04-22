@@ -194,7 +194,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   border: 1px solid var(--border);
   border-left-width: 3px;
   border-radius: var(--radius);
-  overflow: hidden;
 }
 .api-card-header {
   display: flex;
@@ -311,11 +310,49 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   gap: 10px;
   margin-bottom: 10px;
 }
-.route-selectors {
+.chain-row {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  gap: 6px;
 }
-.route-selectors select { width: 100%; }
+.chain-num {
+  font-size: 10px;
+  color: var(--text-dim);
+  width: 26px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.chain-remove {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--accent2);
+  font-size: 11px;
+  padding: 3px 6px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.chain-remove:hover { background: rgba(255,107,107,0.15); }
+.chain-add {
+  margin-top: 8px;
+  background: none;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--accent);
+  font-size: 11px;
+  padding: 5px 10px;
+  width: 100%;
+  cursor: pointer;
+}
+.chain-add:hover { border-color: var(--accent); background: rgba(78,205,196,0.07); }
+.no-key-badge {
+  font-size: 10px;
+  color: var(--accent2);
+  background: rgba(255,107,107,0.1);
+  padding: 2px 5px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
 
 /* ── Old Settings (now API) ───────────────────────────────── */
 .settings-list {
