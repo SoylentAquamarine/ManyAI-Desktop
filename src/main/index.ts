@@ -1,7 +1,8 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import https from 'https'
 import http from 'http'
+import fs from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
@@ -107,6 +108,34 @@ app.whenReady().then(() => {
       req.on('error', (e) => resolve({ error: e.message }))
       req.setTimeout(60000, () => { req.destroy(); resolve({ error: 'Timeout' }) })
     })
+  })
+
+  /**
+   * Show a native Save dialog and write text content to the chosen path.
+   * defaultName: suggested filename (e.g. "script.py")
+   * content: the text to write
+   * Returns { path } on success or { error } on failure/cancel.
+   */
+  ipcMain.handle('save-file', async (_event, defaultName: string, content: string) => {
+    const win = BrowserWindow.getFocusedWindow()
+    const result = await dialog.showSaveDialog(win!, {
+      defaultPath: defaultName,
+      filters: [
+        { name: 'All Files', extensions: ['*'] },
+        { name: 'Python',     extensions: ['py'] },
+        { name: 'JavaScript', extensions: ['js', 'mjs'] },
+        { name: 'TypeScript', extensions: ['ts'] },
+        { name: 'Shell',      extensions: ['sh', 'bat', 'ps1'] },
+        { name: 'Text',       extensions: ['txt', 'md'] },
+      ],
+    })
+    if (result.canceled || !result.filePath) return { error: 'Cancelled' }
+    try {
+      fs.writeFileSync(result.filePath, content, 'utf-8')
+      return { path: result.filePath }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
   })
 
   createWindow()

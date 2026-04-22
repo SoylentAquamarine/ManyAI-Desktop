@@ -7,6 +7,11 @@ const api = {
    *  Returns { base64: string, mime: string } on success or { error: string } on failure. */
   fetchImage: (url: string): Promise<{ base64: string; mime: string } | { error: string }> =>
     ipcRenderer.invoke('fetch-image', url),
+
+  /** Show a native Save dialog and write text to the chosen path.
+   *  Returns { path: string } on success or { error: string } on cancel/failure. */
+  saveFile: (defaultName: string, content: string): Promise<{ path: string } | { error: string }> =>
+    ipcRenderer.invoke('save-file', defaultName, content),
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to
