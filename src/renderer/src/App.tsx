@@ -5,19 +5,31 @@ import SavedScreen from './screens/SavedScreen'
 import ApiScreen from './screens/ApiScreen'
 import ProvidersScreen from './screens/ProvidersScreen'
 import RoutingScreen from './screens/RoutingScreen'
+import WorkflowsScreen from './screens/WorkflowsScreen'
 import RightPanel from './components/RightPanel'
+import WorkflowPickerModal from './components/WorkflowPickerModal'
+import { TASK_META } from './lib/routing'
+import type { TaskType } from './lib/providers'
 
-export type PanelType = 'saved' | 'routing' | 'api' | 'providers' | 'settings'
+export type PanelType = 'saved' | 'workflows' | 'routing' | 'api' | 'providers' | 'settings'
 
 interface ChatTab {
   id: string
   label: string
+  workflowType: TaskType
 }
 
-let tabCounter = 1
-const newTab = (): ChatTab => ({ id: `tab-${Date.now()}`, label: `Chat ${tabCounter++}` })
+let tabCounter = 2   // starts at 2 because the first tab is created at load
+const newTab = (type: TaskType): ChatTab => {
+  const meta = TASK_META[type]
+  return {
+    id: `tab-${Date.now()}`,
+    label: `${meta.label} ${tabCounter++}`,
+    workflowType: type,
+  }
+}
 
-const TABS_KEY = 'manyai_chat_tabs'
+const TABS_KEY   = 'manyai_chat_tabs'
 const ACTIVE_KEY = 'manyai_active_tab'
 
 function loadPersistedTabs(): { tabs: ChatTab[]; activeTabId: string } {
@@ -25,11 +37,14 @@ function loadPersistedTabs(): { tabs: ChatTab[]; activeTabId: string } {
     const raw = localStorage.getItem(TABS_KEY)
     const tabs: ChatTab[] = raw ? JSON.parse(raw) : null
     if (tabs && tabs.length > 0) {
-      const activeTabId = localStorage.getItem(ACTIVE_KEY) ?? tabs[0].id
-      return { tabs, activeTabId }
+      // Migrate old tabs that have no workflowType
+      const migrated = tabs.map(t => ({ workflowType: 'general' as TaskType, ...t }))
+      const activeTabId = localStorage.getItem(ACTIVE_KEY) ?? migrated[0].id
+      return { tabs: migrated, activeTabId }
     }
   } catch {}
-  const t = newTab()
+  // Default first tab: General
+  const t: ChatTab = { id: `tab-${Date.now()}`, label: 'General', workflowType: 'general' }
   return { tabs: [t], activeTabId: t.id }
 }
 
@@ -38,6 +53,7 @@ export default function App() {
   const [tabs, setTabs] = useState<ChatTab[]>(initial.tabs)
   const [activeTabId, setActiveTabId] = useState<string>(initial.activeTabId)
   const [panel, setPanel] = useState<PanelType | null>(null)
+  const [showPicker, setShowPicker] = useState(false)
 
   const injectFns = useRef<Record<string, (p: string) => void>>({})
 
@@ -51,11 +67,12 @@ export default function App() {
     localStorage.setItem(ACTIVE_KEY, activeId)
   }
 
-  const addTab = () => {
-    const t = newTab()
+  const addTab = (type: TaskType) => {
+    const t = newTab(type)
     setTabs(prev => { const next = [...prev, t]; persistTabs(next, t.id); return next })
     setActiveTabId(t.id)
     setPanel(null)
+    setShowPicker(false)
   }
 
   const closeTab = (id: string) => {
@@ -69,7 +86,6 @@ export default function App() {
         setActiveTabId(nextActive)
       }
       persistTabs(next, nextActive)
-      // clean up stored messages for closed tab
       localStorage.removeItem(`manyai_msgs_${id}`)
       localStorage.removeItem(`manyai_history_${id}`)
       return next
@@ -99,27 +115,37 @@ export default function App() {
       <div className="app-main">
         {/* Chat tab bar */}
         <div className="chat-tab-bar">
-          {tabs.map(t => (
-            <div
-              key={t.id}
-              className={`chat-tab ${activeTabId === t.id && !panel ? 'active' : ''}`}
-              onClick={() => switchToChat(t.id)}
-            >
-              <span className="chat-tab-label">✦ {t.label}</span>
-              {tabs.length > 1 && (
-                <button
-                  className="chat-tab-close"
-                  onClick={e => { e.stopPropagation(); closeTab(t.id) }}
-                >×</button>
-              )}
-            </div>
-          ))}
-          <button className="chat-tab-add" onClick={addTab} title="New chat">+</button>
+          {tabs.map(t => {
+            const meta = TASK_META[t.workflowType]
+            return (
+              <div
+                key={t.id}
+                className={`chat-tab ${activeTabId === t.id && !panel ? 'active' : ''}`}
+                onClick={() => switchToChat(t.id)}
+                title={`${meta.label} — ${t.label}`}
+              >
+                <span className="chat-tab-label">
+                  <span style={{ marginRight: 4 }}>{meta.icon}</span>
+                  {t.label}
+                </span>
+                {tabs.length > 1 && (
+                  <button
+                    className="chat-tab-close"
+                    onClick={e => { e.stopPropagation(); closeTab(t.id) }}
+                  >×</button>
+                )}
+              </div>
+            )
+          })}
+          <button
+            className="chat-tab-add"
+            onClick={() => setShowPicker(true)}
+            title="New tab — choose workflow type"
+          >+</button>
         </div>
 
         {/* Content area */}
         <div className="tab-content">
-          {/* Chat instances — all mounted, only active one visible */}
           {tabs.map(t => (
             <div
               key={t.id}
@@ -127,14 +153,15 @@ export default function App() {
             >
               <ChatScreen
                 tabId={t.id}
+                workflowType={t.workflowType}
                 onInjectReady={(fn) => { injectFns.current[t.id] = fn }}
                 onFirstMessage={(text) => updateTabLabel(t.id, text.slice(0, 24) || t.label)}
               />
             </div>
           ))}
 
-          {/* Settings panels */}
           {panel === 'saved'     && <SavedScreen />}
+          {panel === 'workflows' && <WorkflowsScreen onOpenRouting={() => setPanel('routing')} />}
           {panel === 'routing'   && <RoutingScreen />}
           {panel === 'api'       && <ApiScreen />}
           {panel === 'providers' && <ProvidersScreen />}
@@ -147,6 +174,13 @@ export default function App() {
         activePanel={panel}
         onTogglePanel={togglePanel}
       />
+
+      {showPicker && (
+        <WorkflowPickerModal
+          onSelect={addTab}
+          onCancel={() => setShowPicker(false)}
+        />
+      )}
     </div>
   )
 }

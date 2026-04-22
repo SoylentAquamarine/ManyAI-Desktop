@@ -4,10 +4,7 @@ import { callProvider, HistoryMessage } from '../lib/callProvider'
 import { loadAllKeys } from '../lib/keyStore'
 import { loadEnabledProviders } from '../lib/providerPrefs'
 import { saveResponse } from '../lib/savedResponses'
-import {
-  detectTaskType, resolveProvider, loadRoutingPrefs,
-  TASK_META, TASK_TYPES,
-} from '../lib/routing'
+import { resolveProvider, loadRoutingPrefs, TASK_META } from '../lib/routing'
 import { callImageProvider } from '../lib/callImageProvider'
 import type { TaskType } from '../lib/providers'
 
@@ -42,11 +39,12 @@ function hasCodeBlock(text: string): boolean {
 
 interface Props {
   tabId?: string
+  workflowType?: TaskType
   onInjectReady?: (fn: (p: string) => void) => void
   onFirstMessage?: (text: string) => void
 }
 
-export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Props) {
+export default function ChatScreen({ tabId, workflowType = 'general', onInjectReady, onFirstMessage }: Props) {
   const msgsKey = tabId ? `manyai_msgs_${tabId}`    : null
   const histKey = tabId ? `manyai_history_${tabId}` : null
 
@@ -57,8 +55,6 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [savedMsg, setSavedMsg] = useState<string | null>(null)
-  const [detectedType, setDetectedType] = useState<TaskType>('general')
-  const [manualType, setManualType] = useState<TaskType | 'auto'>('auto')
   const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null)
   const [tmpStatus, setTmpStatus] = useState<string | null>(null)
 
@@ -91,14 +87,7 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
     })
   }, [onInjectReady])
 
-  useEffect(() => {
-    if (input.length > 8) {
-      const prefs = loadRoutingPrefs()
-      if (prefs.autoDetect) setDetectedType(detectTaskType(input))
-    }
-  }, [input])
-
-  const activeType: TaskType = manualType === 'auto' ? detectedType : manualType
+  const activeType: TaskType = workflowType
 
   // ── Open a file and attach it to this chat ─────────────────────────────────
   const handleOpenFile = async () => {
@@ -176,9 +165,7 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
       const availableKeys = new Set(Object.keys(keys) as ProviderKey[])
       availableKeys.add('pollinations')
 
-      const taskType = manualType === 'auto'
-        ? (prefs.autoDetect ? detectTaskType(text) : 'general')
-        : manualType
+      const taskType = workflowType
 
       // ── Image generation ──────────────────────────────────────────────────
       if (taskType === 'image') {
@@ -287,24 +274,11 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
 
   return (
     <div className="screen">
-      {/* Type bar */}
+      {/* Workflow bar */}
       <div className="type-bar">
-        <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>Task:</span>
-        {TASK_TYPES.map(t => (
-          <button
-            key={t}
-            className={`type-pill ${activeType === t ? 'active' : ''}`}
-            onClick={() => setManualType(t === activeType && manualType !== 'auto' ? 'auto' : t)}
-            title={TASK_META[t].description}
-          >
-            {TASK_META[t].icon} {TASK_META[t].label}
-          </button>
-        ))}
-        {manualType !== 'auto' && (
-          <button className="type-pill" onClick={() => setManualType('auto')} title="Switch back to auto-detect">
-            ↺ Auto
-          </button>
-        )}
+        <span style={{ fontSize: 15 }}>{meta.icon}</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{meta.label}</span>
+        <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{meta.description}</span>
         {(savedMsg || tmpStatus) && (
           <span style={{ color: 'var(--accent)', marginLeft: 'auto', fontSize: 12 }}>
             {tmpStatus ?? savedMsg}
@@ -325,9 +299,7 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
             <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
               {attachedFile
                 ? `📎 ${attachedFile.name} attached — describe what you want to do with it.`
-                : manualType === 'auto'
-                  ? 'Auto-routing active — task type detected from your prompt.'
-                  : `Routing to ${meta.label} provider.`}
+                : `Routing to the best available ${meta.label.toLowerCase()} provider.`}
             </div>
           </div>
         )}

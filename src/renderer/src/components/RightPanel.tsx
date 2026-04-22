@@ -20,7 +20,7 @@ const WORKFLOWS: Workflow[] = [
 
 const NAV: { key: PanelType; icon: string; label: string }[] = [
   { key: 'saved',     icon: '📂', label: 'Saved' },
-  { key: 'routing',   icon: '🔀', label: 'Routing' },
+  { key: 'workflows', icon: '🧩', label: 'Workflows' },
   { key: 'api',       icon: '🔑', label: 'API' },
   { key: 'providers', icon: '⚡', label: 'Providers' },
   { key: 'settings',  icon: '⚙',  label: 'Settings' },
