@@ -46,16 +46,18 @@ export function saveResponse(
   provider: string,
   category: string = 'General',
   title?: string,
+  imageUri?: string,
 ): SavedResponse {
   const all = loadAllResponses();
   const item: SavedResponse = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    title: title ?? defaultTitle(response, prompt),
+    title: title ?? (imageUri ? (prompt.slice(0, 50) || 'Generated image') : defaultTitle(response, prompt)),
     prompt,
     response,
     provider,
     category,
     savedAt: new Date().toISOString(),
+    ...(imageUri ? { imageUri } : {}),
   };
   localStorage.setItem(RESPONSES_KEY, JSON.stringify([item, ...all]));
   return item;

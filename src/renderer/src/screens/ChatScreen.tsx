@@ -184,7 +184,14 @@ export default function ChatScreen({ tabId, onInjectReady, onFirstMessage }: Pro
 
   const handleSave = (msg: Message, idx: number) => {
     const userMsg = messages.slice(0, idx).reverse().find(m => m.role === 'user')
-    saveResponse(userMsg?.content ?? '', msg.content, msg.provider ?? 'unknown')
+    saveResponse(
+      userMsg?.content ?? '',
+      msg.imageUrl ? '' : msg.content,
+      msg.provider ?? 'unknown',
+      'General',
+      undefined,
+      msg.imageUrl,
+    )
     setSavedMsg('Saved!')
     setTimeout(() => setSavedMsg(null), 2000)
   }

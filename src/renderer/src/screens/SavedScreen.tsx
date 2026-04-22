@@ -18,6 +18,13 @@ export default function SavedScreen() {
     if (detail?.id === id) setDetail(null)
   }
 
+  const handleDownload = (item: SavedResponse) => {
+    const a = document.createElement('a')
+    a.href = item.imageUri!
+    a.download = `manyai-${item.id}.png`
+    a.click()
+  }
+
   return (
     <div className="screen">
       <div className="saved-toolbar">
@@ -45,7 +52,11 @@ export default function SavedScreen() {
               <span>{item.category}</span>
               <span>{new Date(item.savedAt).toLocaleDateString()}</span>
             </div>
-            <div className="saved-card-preview">{item.response}</div>
+            {item.imageUri ? (
+              <img src={item.imageUri} alt={item.title} style={{ maxWidth: '100%', maxHeight: 120, borderRadius: 6, marginTop: 6, objectFit: 'cover' }} />
+            ) : (
+              <div className="saved-card-preview">{item.response}</div>
+            )}
           </div>
         ))}
       </div>
@@ -58,9 +69,17 @@ export default function SavedScreen() {
               {detail.provider} · {detail.category} · {new Date(detail.savedAt).toLocaleString()}
             </div>
             <div className="saved-detail-prompt">{detail.prompt}</div>
-            <div className="saved-detail-response">{detail.response}</div>
+            {detail.imageUri ? (
+              <img src={detail.imageUri} alt={detail.title} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 12 }} />
+            ) : (
+              <div className="saved-detail-response">{detail.response}</div>
+            )}
             <div className="saved-detail-actions">
-              <button className="btn-ghost" onClick={() => navigator.clipboard.writeText(detail.response)}>Copy</button>
+              {detail.imageUri ? (
+                <button className="btn-ghost" onClick={() => handleDownload(detail)}>Download</button>
+              ) : (
+                <button className="btn-ghost" onClick={() => navigator.clipboard.writeText(detail.response)}>Copy</button>
+              )}
               <button className="btn-danger" onClick={() => handleDelete(detail.id)}>Delete</button>
               <button className="btn-ghost" onClick={() => setDetail(null)}>Close</button>
             </div>
