@@ -5,9 +5,10 @@
 
 import { ROUTING_ORDER, PROVIDERS, ProviderKey } from './providers';
 
-const ORDER_KEY   = 'manyai_provider_order';
-const ENABLED_KEY = 'manyai_provider_enabled';
-const MODELS_KEY  = 'manyai_provider_models';
+const ORDER_KEY        = 'manyai_provider_order';
+const ENABLED_KEY      = 'manyai_provider_enabled';
+const MODELS_KEY       = 'manyai_provider_models';
+const MODEL_ENABLED_KEY = 'manyai_model_enabled'; // "providerKey:modelId" -> boolean
 
 export function saveProviderOrder(order: ProviderKey[]): void {
   localStorage.setItem(ORDER_KEY, JSON.stringify(order));
@@ -42,6 +43,29 @@ export function loadEnabledProviders(): Record<ProviderKey, boolean> {
 
 export function saveSelectedModels(models: Partial<Record<ProviderKey, string>>): void {
   localStorage.setItem(MODELS_KEY, JSON.stringify(models));
+}
+
+// Per-model enabled state — key is "providerKey:modelId"
+export function loadEnabledModels(): Record<string, boolean> {
+  const raw = localStorage.getItem(MODEL_ENABLED_KEY);
+  if (!raw) return {};
+  try { return JSON.parse(raw); } catch { return {}; }
+}
+
+export function saveEnabledModels(enabled: Record<string, boolean>): void {
+  localStorage.setItem(MODEL_ENABLED_KEY, JSON.stringify(enabled));
+}
+
+export function isModelEnabled(providerKey: ProviderKey, modelId: string): boolean {
+  const all = loadEnabledModels();
+  const k = `${providerKey}:${modelId}`;
+  return all[k] !== false; // default true
+}
+
+export function setModelEnabled(providerKey: ProviderKey, modelId: string, enabled: boolean): void {
+  const all = loadEnabledModels();
+  all[`${providerKey}:${modelId}`] = enabled;
+  saveEnabledModels(all);
 }
 
 export function loadSelectedModels(): Record<ProviderKey, string> {

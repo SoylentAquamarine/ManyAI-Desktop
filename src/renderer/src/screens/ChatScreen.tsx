@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, MutableRefObject } from 'react'
 import { PROVIDERS, ROUTING_ORDER, ProviderKey, pickProvider } from '../lib/providers'
 import { callProvider, HistoryMessage } from '../lib/callProvider'
 import { loadAllKeys } from '../lib/keyStore'
@@ -14,7 +14,11 @@ interface Message {
   error?: boolean
 }
 
-export default function ChatScreen() {
+interface Props {
+  injectPromptRef?: MutableRefObject<((p: string) => void) | null>
+}
+
+export default function ChatScreen({ injectPromptRef }: Props) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -26,6 +30,15 @@ export default function ChatScreen() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    if (injectPromptRef) {
+      injectPromptRef.current = (p: string) => {
+        setInput(p)
+        textareaRef.current?.focus()
+      }
+    }
+  }, [injectPromptRef])
 
   const send = async () => {
     const text = input.trim()
