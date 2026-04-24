@@ -92,6 +92,12 @@ input, textarea, select {
   outline: none;
   width: 100%;
 }
+input[type=checkbox], input[type=radio] {
+  width: auto;
+  padding: 0;
+  border: none;
+  background: none;
+}
 input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 
 button {
@@ -138,13 +144,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .chat-input-row {
   display: flex;
   gap: 8px;
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
+  padding: 8px 16px;
   background: var(--surface);
   align-items: flex-end;
+  flex-shrink: 0;
 }
-.chat-input-row textarea { flex: 1; resize: none; min-height: 40px; max-height: 120px; }
-.chat-input-row button { flex-shrink: 0; align-self: flex-end; height: 40px; }
+.chat-input-row textarea { flex: 1; resize: none; }
+.chat-input-row button { flex-shrink: 0; height: 40px; }
 
 .provider-bar {
   display: flex;
@@ -167,15 +173,34 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ── Right panel ──────────────────────────────────────────── */
 .right-panel {
-  width: 180px;
-  flex-shrink: 0;
+  width: 100%;
+  height: 100%;
   background: var(--surface);
-  border-left: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   padding: 10px 8px;
   overflow-y: auto;
   gap: 4px;
+}
+.right-panel-wrapper {
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  display: flex;
+  position: relative;
+  height: 100%;
+}
+.panel-resize-handle {
+  position: absolute;
+  left: -3px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 10;
+}
+.panel-resize-handle:hover,
+.panel-resize-handle.dragging {
+  background: rgba(78, 205, 196, 0.25);
 }
 .right-panel-title {
   font-size: 10px;

@@ -2,27 +2,31 @@
  * keyStore.ts — API key storage using localStorage (Electron desktop).
  */
 
-import { ROUTING_ORDER, ProviderKey } from './providers';
-
 const PREFIX = 'manyai_key_';
 
-export function saveKey(provider: ProviderKey, key: string): void {
+export function saveKey(provider: string, key: string): void {
   localStorage.setItem(`${PREFIX}${provider}`, key);
 }
 
-export function loadKey(provider: ProviderKey): string | null {
+export function loadKey(provider: string): string | null {
   return localStorage.getItem(`${PREFIX}${provider}`);
 }
 
-export function deleteKey(provider: ProviderKey): void {
+export function deleteKey(provider: string): void {
   localStorage.removeItem(`${PREFIX}${provider}`);
 }
 
-export function loadAllKeys(): Partial<Record<ProviderKey, string>> {
-  const result: Partial<Record<ProviderKey, string>> = {};
-  for (const p of ROUTING_ORDER.filter(k => k !== 'pollinations')) {
-    const key = loadKey(p);
-    if (key) result[p] = key;
+export function loadAllKeys(): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (k?.startsWith(PREFIX)) {
+      const providerKey = k.slice(PREFIX.length);
+      if (providerKey !== 'pollinations') {
+        const val = localStorage.getItem(k);
+        if (val) result[providerKey] = val;
+      }
+    }
   }
   return result;
 }

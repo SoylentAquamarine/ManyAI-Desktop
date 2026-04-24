@@ -8,6 +8,8 @@ declare global {
       saveFile: (defaultName: string, content: string) => Promise<{ path: string } | { error: string }>
       openFile: () => Promise<{ path: string; name: string; content: string } | { error: string }>
       writeFileDirect: (filePath: string, content: string) => Promise<{ ok: boolean } | { error: string }>
+      openFiles: () => Promise<{ files: { path: string; name: string }[] } | { error: string }>
+      readFileByPath: (filePath: string) => Promise<{ content: string } | { error: string }>
     }
   }
 }

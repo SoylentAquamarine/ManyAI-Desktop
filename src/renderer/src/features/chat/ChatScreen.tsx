@@ -1,12 +1,21 @@
-import { useState, useRef, useEffect } from 'react'
-import { PROVIDERS, ProviderKey } from '../lib/providers'
-import { callProvider, HistoryMessage } from '../lib/callProvider'
-import { loadAllKeys } from '../lib/keyStore'
-import { loadEnabledProviders } from '../lib/providerPrefs'
-import { saveResponse } from '../lib/savedResponses'
-import { resolveProvider, loadRoutingPrefs, TASK_META } from '../lib/routing'
-import { callImageProvider } from '../lib/callImageProvider'
-import type { TaskType } from '../lib/providers'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { getAllProviders } from '../../lib/providers'
+import { callProvider, HistoryMessage } from '../../lib/callProvider'
+import { loadAllKeys } from '../../lib/keyStore'
+import { loadEnabledProviders } from '../../lib/providerPrefs'
+import { saveResponse } from '../../lib/savedResponses'
+import { resolveProvider, loadRoutingPrefs, TASK_META } from '../../lib/routing'
+import { getWorkflow } from '../../lib/workflows'
+import { callImageProvider, IMAGE_PROVIDER_CONFIGS, type ImageProvider } from '../../lib/callImageProvider'
+import type { TaskType } from '../../lib/providers'
+import {
+  type AttachedFile,
+  extractCode,
+  hasCodeBlock,
+  buildFilePrompt,
+  openFile,
+  updateTmpFile,
+} from './fileHandler'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -16,47 +25,74 @@ interface Message {
   latencyMs?: number
   error?: boolean
   imageUrl?: string
-  fileRef?: string   // label shown when a file was injected with this message
-}
-
-interface AttachedFile {
-  path: string      // original file path
-  tmpPath: string   // path + '.tmp'
-  name: string      // basename
-  content: string   // current working content (updated when AI gives new version)
-}
-
-/** Extract the first fenced code block's content, or the full text if none. */
-function extractCode(text: string): string {
-  const match = text.match(/```(?:\w+)?\n?([\s\S]*?)```/)
-  return match ? match[1].trimEnd() : text
-}
-
-/** True if the response contains at least one fenced code block. */
-function hasCodeBlock(text: string): boolean {
-  return /```[\s\S]*?```/.test(text)
+  fileRef?: string
 }
 
 interface Props {
   tabId?: string
   workflowType?: TaskType
+  continuousState?: boolean
   onInjectReady?: (fn: (p: string) => void) => void
   onFirstMessage?: (text: string) => void
 }
 
-export default function ChatScreen({ tabId, workflowType = 'general', onInjectReady, onFirstMessage }: Props) {
-  const msgsKey = tabId ? `manyai_msgs_${tabId}`    : null
-  const histKey = tabId ? `manyai_history_${tabId}` : null
+export default function ChatScreen({ tabId, workflowType = 'general', continuousState = true, onInjectReady, onFirstMessage }: Props) {
+  const msgsKey  = tabId ? `manyai_msgs_${tabId}`    : null
+  const histKey  = tabId ? `manyai_history_${tabId}` : null
+  const inputKey = tabId ? `manyai_input_${tabId}`   : null
 
   const [messages, setMessages] = useState<Message[]>(() => {
     if (!msgsKey) return []
     try { return JSON.parse(localStorage.getItem(msgsKey) ?? '[]') } catch { return [] }
   })
-  const [input, setInput] = useState('')
+  const [input, setInput] = useState(() => {
+    if (!inputKey) return ''
+    return localStorage.getItem(inputKey) ?? ''
+  })
   const [loading, setLoading] = useState(false)
   const [savedMsg, setSavedMsg] = useState<string | null>(null)
   const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null)
   const [tmpStatus, setTmpStatus] = useState<string | null>(null)
+  const [inputHeight, setInputHeight] = useState(() =>
+    parseInt(localStorage.getItem(`manyai_input_h_${tabId ?? 'default'}`) ?? '80', 10)
+  )
+  const inputDragging = useRef(false)
+  const inputDragStartY = useRef(0)
+  const inputDragStartH = useRef(0)
+
+  const onInputResizeMouseDown = useCallback((e: React.MouseEvent) => {
+    inputDragging.current = true
+    inputDragStartY.current = e.clientY
+    inputDragStartH.current = inputHeight
+    document.body.style.cursor = 'row-resize'
+    document.body.style.userSelect = 'none'
+    e.preventDefault()
+  }, [inputHeight])
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!inputDragging.current) return
+      const delta = inputDragStartY.current - e.clientY
+      const next = Math.max(40, Math.min(400, inputDragStartH.current + delta))
+      setInputHeight(next)
+    }
+    const onUp = () => {
+      if (!inputDragging.current) return
+      inputDragging.current = false
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      setInputHeight(h => {
+        localStorage.setItem(`manyai_input_h_${tabId ?? 'default'}`, String(h))
+        return h
+      })
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+    }
+  }, [])
 
   // fileInjected: true after the first send with this attachment (so we don't
   // re-send the full file on every message — history already has it)
@@ -77,6 +113,10 @@ export default function ChatScreen({ tabId, workflowType = 'general', onInjectRe
   }, [messages, msgsKey])
 
   useEffect(() => {
+    if (inputKey) localStorage.setItem(inputKey, input)
+  }, [input, inputKey])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
@@ -89,26 +129,20 @@ export default function ChatScreen({ tabId, workflowType = 'general', onInjectRe
 
   const activeType: TaskType = workflowType
 
-  // ── Open a file and attach it to this chat ─────────────────────────────────
   const handleOpenFile = async () => {
-    const result = await window.api.openFile()
-    if ('error' in result) {
-      if (result.error !== 'Cancelled') setSavedMsg(`Open failed: ${result.error}`)
-      return
-    }
-    const tmpPath = result.path + '.tmp'
-    setAttachedFile({ path: result.path, tmpPath, name: result.name, content: result.content })
-    fileInjected.current = false   // fresh attach — inject on next send
+    const result = await openFile()
+    if (result === null) return
+    if ('error' in result) { setSavedMsg(`Open failed: ${result.error}`); return }
+    setAttachedFile(result)
+    fileInjected.current = false
     textareaRef.current?.focus()
   }
 
-  // ── Detach file without clearing conversation ──────────────────────────────
   const handleDetachFile = () => {
     setAttachedFile(null)
     fileInjected.current = false
   }
 
-  // ── Re-inject: next message will include the current working content again ─
   const handleReInject = () => {
     fileInjected.current = false
     setSavedMsg('File will be re-injected on next send')
@@ -116,12 +150,11 @@ export default function ChatScreen({ tabId, workflowType = 'general', onInjectRe
     textareaRef.current?.focus()
   }
 
-  // ── Update the working copy (.tmp) with extracted code from a response ─────
   const handleUpdateTmp = async (code: string) => {
     if (!attachedFile) return
-    const result = await window.api.writeFileDirect(attachedFile.tmpPath, code)
+    const result = await updateTmpFile(attachedFile, code)
     if ('ok' in result) {
-      setAttachedFile(prev => prev ? { ...prev, content: code } : null)
+      setAttachedFile(result.updatedFile)
       setTmpStatus(`✓ Saved to ${attachedFile.name}.tmp`)
     } else {
       setTmpStatus(`Error: ${result.error}`)
@@ -143,13 +176,28 @@ export default function ChatScreen({ tabId, workflowType = 'general', onInjectRe
       return next
     })
 
-    // Build the actual prompt sent to the AI
     let aiPrompt = text
     let fileRef: string | undefined
     if (attachedFile && !fileInjected.current) {
-      aiPrompt = `Here is my current script (\`${attachedFile.name}\`):\n\`\`\`\n${attachedFile.content}\n\`\`\`\n\n${text}`
+      aiPrompt = buildFilePrompt(text, attachedFile)
       fileRef = attachedFile.name
       fileInjected.current = true
+    }
+
+    // Silently prepend workflow context (system prompt + context files)
+    const wfDef = workflowType ? getWorkflow(workflowType) : undefined
+    if (wfDef) {
+      const parts: string[] = []
+      if (wfDef.systemPrompt?.trim()) parts.push(wfDef.systemPrompt.trim())
+      for (const cf of wfDef.contextFiles ?? []) {
+        try {
+          const result = await window.api.readFileByPath(cf.path)
+          if (!('error' in result)) {
+            parts.push(`[${cf.name}]\n${result.content}`)
+          }
+        } catch { /* skip unreadable files silently */ }
+      }
+      if (parts.length) aiPrompt = parts.join('\n\n---\n\n') + '\n\n---\n\n' + aiPrompt
     }
 
     setMessages(prev => {
@@ -162,24 +210,45 @@ export default function ChatScreen({ tabId, workflowType = 'general', onInjectRe
       const keys = loadAllKeys()
       const enabled = loadEnabledProviders()
       const prefs = loadRoutingPrefs()
-      const availableKeys = new Set(Object.keys(keys) as ProviderKey[])
+      const allProviders = getAllProviders()
+      const availableKeys = new Set(Object.keys(keys))
       availableKeys.add('pollinations')
 
       const taskType = workflowType
 
       // ── Image generation ──────────────────────────────────────────────────
       if (taskType === 'image') {
-        const imgProvider = prefs.imageProvider ?? 'pollinations'
-        const apiKey = imgProvider === 'openai-dalle' ? keys['openai'] : undefined
-        const result = await callImageProvider(text, imgProvider, apiKey)
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: result.error ? `Image error: ${result.error}` : '',
-          imageUrl: result.error ? undefined : result.imageUrl,
-          provider: imgProvider,
-          model: result.model,
-          error: !!result.error,
-        }])
+        const route = resolveProvider(taskType, prefs, availableKeys, enabled)
+        if (!route) {
+          setMessages(prev => [...prev, { role: 'assistant', content: 'No providers available. Add an API key in the API tab.', error: true }])
+          return
+        }
+        const imgCfg = IMAGE_PROVIDER_CONFIGS[route.provider as ImageProvider]
+        if (imgCfg) {
+          // Provider supports image generation — call image API
+          const apiKey = route.provider === 'openai' ? keys['openai'] : undefined
+          const result = await callImageProvider(text, route.provider as ImageProvider, route.model, apiKey)
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: result.error ? `Image error: ${result.error}` : '',
+            imageUrl: result.error ? undefined : result.imageUrl,
+            provider: result.provider,
+            model: result.model,
+            error: !!result.error,
+          }])
+        } else {
+          // Text provider selected for image workflow — respond with text
+          const provider = { ...allProviders[route.provider], model: route.model }
+          const result = await callProvider(provider, aiPrompt, keys[route.provider])
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: result.error ? `Error: ${result.error}` : result.content,
+            provider: result.provider,
+            model: result.model,
+            latencyMs: result.latencyMs,
+            error: !!result.error,
+          }])
+        }
         return
       }
 
@@ -194,22 +263,20 @@ export default function ChatScreen({ tabId, workflowType = 'general', onInjectRe
         return
       }
 
-      const provider = { ...PROVIDERS[route.provider], model: route.model }
+      const provider = { ...allProviders[route.provider], model: route.model }
       // History for context — callProvider appends aiPrompt as the new user turn
-      const history: HistoryMessage[] = messages
-        .slice(-10)
-        .filter(m => !m.imageUrl)
-        .map(m => ({ role: m.role, content: m.content }))
+      const history: HistoryMessage[] = continuousState
+        ? messages.slice(-10).filter(m => !m.imageUrl).map(m => ({ role: m.role, content: m.content }))
+        : []
 
       const result = await callProvider(provider, aiPrompt, keys[route.provider], undefined, undefined, history)
 
-      // If file is attached and response has code, auto-save to .tmp
       const responseContent = result.error ? `Error: ${result.error}` : result.content
       if (attachedFile && !result.error && hasCodeBlock(responseContent)) {
         const code = extractCode(responseContent)
-        window.api.writeFileDirect(attachedFile.tmpPath, code).then(r => {
+        updateTmpFile(attachedFile, code).then(r => {
           if ('ok' in r) {
-            setAttachedFile(prev => prev ? { ...prev, content: code } : null)
+            setAttachedFile(r.updatedFile)
             setTmpStatus(`✓ Auto-saved to ${attachedFile.name}.tmp`)
             setTimeout(() => setTmpStatus(null), 3000)
           }
@@ -270,7 +337,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', onInjectRe
     setTimeout(() => setSavedMsg(null), 2000)
   }
 
-  const meta = TASK_META[activeType]
+  const meta = TASK_META[activeType] ?? getWorkflow(activeType) ?? { label: activeType, icon: '🔧', description: '' }
 
   return (
     <div className="screen">
@@ -321,7 +388,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', onInjectRe
             )}
             {msg.role === 'assistant' && (msg.provider || msg.latencyMs) && (
               <div className="message-meta">
-                {msg.provider && `${PROVIDERS[msg.provider as ProviderKey]?.name ?? msg.provider}${msg.model ? ' · ' + msg.model : ''}`}
+                {msg.provider && `${getAllProviders()[msg.provider]?.name ?? msg.provider}${msg.model ? ' · ' + msg.model : ''}`}
                 {msg.latencyMs && ` · ${msg.latencyMs}ms`}
               </div>
             )}
@@ -384,12 +451,20 @@ export default function ChatScreen({ tabId, workflowType = 'general', onInjectRe
         </div>
       )}
 
-      <div className="chat-input-row">
+      <div
+        onMouseDown={onInputResizeMouseDown}
+        style={{
+          height: 5, cursor: 'row-resize', flexShrink: 0,
+          background: 'transparent', borderTop: '1px solid var(--border)',
+        }}
+        title="Drag to resize input"
+      />
+      <div className="chat-input-row" style={{ height: inputHeight }}>
         <button
           className="btn-ghost"
           onClick={handleOpenFile}
           title="Attach a script file to this conversation"
-          style={{ padding: '0 10px', fontSize: 16, flexShrink: 0 }}
+          style={{ padding: '0 10px', fontSize: 16, flexShrink: 0, alignSelf: 'flex-end' }}
         >
           📎
         </button>
@@ -398,15 +473,11 @@ export default function ChatScreen({ tabId, workflowType = 'general', onInjectRe
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={
-            attachedFile
-              ? `What do you want to do with ${attachedFile.name}?`
-              : `Ask anything… detected as ${meta.label} · Enter to send`
-          }
-          rows={1}
-          style={{ lineHeight: '1.5' }}
+          placeholder=""
+          style={{ lineHeight: '1.5', height: '100%', resize: 'none' }}
         />
-        <button className="btn-primary" onClick={send} disabled={loading || !input.trim()}>
+        <button className="btn-primary" onClick={send} disabled={loading || !input.trim()}
+          style={{ alignSelf: 'flex-end' }}>
           {loading ? '…' : 'Send'}
         </button>
       </div>

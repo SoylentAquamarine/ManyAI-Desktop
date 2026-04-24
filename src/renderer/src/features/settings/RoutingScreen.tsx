@@ -1,12 +1,13 @@
 import { useState } from 'react'
-import { PROVIDERS, ROUTING_ORDER, ProviderKey } from '../lib/providers'
+import { getAllProviders, getAllProviderOrder } from '../../lib/providers'
 import {
-  TASK_TYPES, TASK_META, DEFAULT_ROUTES,
+  TASK_META, DEFAULT_ROUTES,
   loadRoutingPrefs, saveRoutingPrefs, RouteEntry, RoutingPrefs,
-} from '../lib/routing'
-import type { ImageProvider } from '../lib/callImageProvider'
-import { loadAllKeys } from '../lib/keyStore'
-import { loadEnabledProviders } from '../lib/providerPrefs'
+} from '../../lib/routing'
+import { IMAGE_PROVIDER_CONFIGS } from '../../lib/callImageProvider'
+import { loadAllKeys } from '../../lib/keyStore'
+import { loadEnabledProviders } from '../../lib/providerPrefs'
+import { loadWorkflows } from '../../lib/workflows'
 
 const MAX_CHAIN = 4
 
@@ -14,15 +15,19 @@ export default function RoutingScreen() {
   const [prefs, setPrefs] = useState<RoutingPrefs>(() => loadRoutingPrefs())
   const [saved, setSaved] = useState(false)
 
-  const availableKeys = new Set(Object.keys(loadAllKeys()) as ProviderKey[])
+  const allProviders = getAllProviders()
+  const allProviderOrder = getAllProviderOrder()
+  const availableKeys = new Set(Object.keys(loadAllKeys()))
   availableKeys.add('pollinations')
   const enabledMap = loadEnabledProviders()
-  const availableProviders = ROUTING_ORDER.filter(k =>
+  const availableProviders = allProviderOrder.filter(k =>
     (k === 'pollinations' || availableKeys.has(k)) && enabledMap[k] !== false
   )
 
+  const allWorkflows = loadWorkflows()
+
   const getChain = (task: string): RouteEntry[] =>
-    prefs.routes[task as keyof typeof prefs.routes] ?? DEFAULT_ROUTES[task as keyof typeof DEFAULT_ROUTES]
+    prefs.routes[task] ?? DEFAULT_ROUTES[task] ?? DEFAULT_ROUTES['general']
 
   const setChain = (task: string, chain: RouteEntry[]) =>
     setPrefs(prev => ({ ...prev, routes: { ...prev.routes, [task]: chain } }))
@@ -33,22 +38,26 @@ export default function RoutingScreen() {
     setChain(task, chain)
   }
 
-  const onProviderChange = (task: string, idx: number, pk: ProviderKey) => {
-    updateEntry(task, idx, { provider: pk, model: PROVIDERS[pk].model })
+  const onProviderChange = (task: string, idx: number, pk: string) => {
+    const imgCfg = task === 'image' ? IMAGE_PROVIDER_CONFIGS[pk as keyof typeof IMAGE_PROVIDER_CONFIGS] : null
+    const model = imgCfg ? imgCfg.defaultModel : (allProviders[pk]?.model ?? '')
+    updateEntry(task, idx, { provider: pk, model })
   }
 
   const addEntry = (task: string) => {
     const chain = getChain(task)
     if (chain.length >= MAX_CHAIN) return
-    // pick a provider not already in the chain
     const used = new Set(chain.map(e => e.provider))
-    const next = ROUTING_ORDER.find(k => !used.has(k)) ?? 'pollinations'
-    setChain(task, [...chain, { provider: next, model: PROVIDERS[next].model }])
+    const next = allProviderOrder.find(k => !used.has(k)) ?? 'pollinations'
+    const imgCfg = task === 'image' ? IMAGE_PROVIDER_CONFIGS[next as keyof typeof IMAGE_PROVIDER_CONFIGS] : null
+    const model = imgCfg ? imgCfg.defaultModel : (allProviders[next]?.model ?? '')
+    setChain(task, [...chain, { provider: next, model }])
   }
 
   const removeEntry = (task: string, idx: number) => {
     const chain = getChain(task).filter((_, i) => i !== idx)
-    setChain(task, chain.length ? chain : [DEFAULT_ROUTES[task as keyof typeof DEFAULT_ROUTES][0]])
+    const fallback = DEFAULT_ROUTES[task] ?? DEFAULT_ROUTES['general']
+    setChain(task, chain.length ? chain : [fallback[0]])
   }
 
   const handleSave = () => {
@@ -58,7 +67,7 @@ export default function RoutingScreen() {
   }
 
   const resetDefaults = () => {
-    const reset: RoutingPrefs = { autoDetect: true, imageProvider: 'pollinations', routes: { ...DEFAULT_ROUTES } }
+    const reset: RoutingPrefs = { autoDetect: true, routes: { ...DEFAULT_ROUTES } }
     setPrefs(reset)
     saveRoutingPrefs(reset)
     setSaved(true)
@@ -95,29 +104,12 @@ export default function RoutingScreen() {
           </label>
         </div>
 
-        {/* Image generation */}
-        <div className="route-card">
-          <div className="route-card-header">
-            <span style={{ fontSize: 20 }}>🎨</span>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600 }}>Image Generation</div>
-              <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Used when task type is Image</div>
-            </div>
-          </div>
-          <select value={prefs.imageProvider} style={{ width: '100%' }}
-            onChange={e => setPrefs(p => ({ ...p, imageProvider: e.target.value as ImageProvider }))}>
-            <option value="pollinations">Pollinations (free, no key needed)</option>
-            <option value="openai-dalle">OpenAI DALL-E 3 (requires OpenAI key)</option>
-          </select>
-          <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 6 }}>
-            Keywords: <em>generate image of, draw, paint, create a picture…</em>
-          </div>
-        </div>
-
-        {/* Per-task chains */}
-        {TASK_TYPES.filter(t => t !== 'image').map(task => {
-          const meta = TASK_META[task]
+        {/* Per-task chains — all workflows including image */}
+        {allWorkflows.map(w => {
+          const task = w.type
+          const meta = TASK_META[task] ?? w
           const chain = getChain(task)
+          const isImage = !!(w as { isImage?: boolean }).isImage
 
           return (
             <div key={task} className="route-card">
@@ -132,20 +124,22 @@ export default function RoutingScreen() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {chain.map((entry, idx) => {
                   const avail = availableProviders.includes(entry.provider)
+                  const imgCfg = isImage ? IMAGE_PROVIDER_CONFIGS[entry.provider as keyof typeof IMAGE_PROVIDER_CONFIGS] : null
+                  const modelList = imgCfg ? imgCfg.models : (allProviders[entry.provider]?.models ?? [])
                   return (
                     <div key={idx} className="chain-row">
                       <span className="chain-num">{idx === 0 ? '1st' : idx === 1 ? '2nd' : idx === 2 ? '3rd' : `${idx+1}th`}</span>
                       <select value={entry.provider} style={{ flex: 1 }}
-                        onChange={e => onProviderChange(task, idx, e.target.value as ProviderKey)}>
-                        {ROUTING_ORDER.map(pk => (
+                        onChange={e => onProviderChange(task, idx, e.target.value)}>
+                        {allProviderOrder.map(pk => (
                           <option key={pk} value={pk}>
-                            {PROVIDERS[pk].name}{availableProviders.includes(pk) ? '' : ' (no key)'}
+                            {allProviders[pk]?.name ?? pk}{availableProviders.includes(pk) ? '' : ' (no key)'}
                           </option>
                         ))}
                       </select>
                       <select value={entry.model} style={{ flex: 1 }}
                         onChange={e => updateEntry(task, idx, { model: e.target.value })}>
-                        {PROVIDERS[entry.provider].models.map(m => (
+                        {modelList.map(m => (
                           <option key={m.id} value={m.id}>{m.name}</option>
                         ))}
                       </select>
@@ -175,6 +169,7 @@ export default function RoutingScreen() {
 
 function getKeywordExamples(task: string): string {
   const ex: Record<string, string> = {
+    image: 'generate image of, draw, paint, create a picture…',
     coding: 'code, function, bug, debug, python, javascript, sql…',
     reasoning: 'calculate, solve, analyze, logic, math, step-by-step…',
     creative: 'write a story, poem, creative, brainstorm, fiction…',

@@ -8,11 +8,41 @@
  * Node.js https with no browser headers — exactly like React Native.
  */
 
-export type ImageProvider = 'pollinations' | 'openai-dalle';
+// 'openai' matches the ProviderKey in providers.ts so routing is unified.
+export type ImageProvider = 'pollinations' | 'openai';
+
+export interface ImageProviderConfig {
+  label: string;
+  defaultModel: string;
+  models: { id: string; name: string }[];
+}
+
+export const IMAGE_PROVIDER_CONFIGS: Record<ImageProvider, ImageProviderConfig> = {
+  'pollinations': {
+    label: 'Pollinations (free)',
+    defaultModel: 'flux',
+    models: [
+      { id: 'flux',         name: 'Flux' },
+      { id: 'flux-realism', name: 'Flux Realism' },
+      { id: 'flux-anime',   name: 'Flux Anime' },
+      { id: 'flux-3d',      name: 'Flux 3D' },
+      { id: 'turbo',        name: 'Turbo' },
+      { id: 'gptimage',     name: 'GPT Image' },
+    ],
+  },
+  'openai': {
+    label: 'OpenAI DALL·E',
+    defaultModel: 'dall-e-3',
+    models: [
+      { id: 'dall-e-3', name: 'DALL·E 3' },
+      { id: 'dall-e-2', name: 'DALL·E 2' },
+    ],
+  },
+};
 
 export interface ImageResult {
   imageUrl: string;   // always a data: URI so <img> and download both work
-  provider: ImageProvider;
+  provider: string;
   model: string;
   error?: string;
 }
@@ -26,42 +56,31 @@ async function fetchImageViaMain(url: string): Promise<{ base64: string; mime: s
 
 export async function callImageProvider(
   prompt: string,
-  provider: ImageProvider = 'pollinations',
+  provider: ImageProvider,
+  model: string,
   apiKey?: string,
 ): Promise<ImageResult> {
-  try {
-    // ── Pollinations (free, no key) ─────────────────────────────────────────
-    // Fetch via main process so Node.js http (not Chromium) makes the request.
-    if (provider === 'pollinations') {
-      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&nologo=true`;
-      const { base64, mime } = await fetchImageViaMain(url);
-      return { imageUrl: `data:${mime};base64,${base64}`, provider, model: 'Pollinations · Flux' };
-    }
-
-    // ── OpenAI DALL-E 3 ────────────────────────────────────────────────────
-    if (provider === 'openai-dalle') {
-      if (!apiKey) throw new Error('OpenAI API key required for DALL-E');
-
-      const res = await fetch('https://api.openai.com/v1/images/generations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-        body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size: '1024x1024', response_format: 'url' }),
-      });
-      if (!res.ok) {
-        const e = await res.json().catch(() => ({}));
-        throw new Error(e?.error?.message ?? `HTTP ${res.status}`);
-      }
-      const json = await res.json();
-      const imgUrl: string = json?.data?.[0]?.url ?? '';
-      if (!imgUrl) throw new Error('No image URL returned');
-
-      // Fetch via main process as well to get a stable data URI
-      const { base64, mime } = await fetchImageViaMain(imgUrl);
-      return { imageUrl: `data:${mime};base64,${base64}`, provider, model: 'DALL-E 3' };
-    }
-
-    throw new Error(`Unknown image provider: ${provider}`);
-  } catch (err) {
-    return { imageUrl: '', provider, model: '', error: err instanceof Error ? err.message : String(err) };
+  if (provider === 'pollinations') {
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=768&height=768&nologo=true&model=${encodeURIComponent(model)}`;
+    const { base64, mime } = await fetchImageViaMain(url);
+    return { imageUrl: `data:${mime};base64,${base64}`, provider, model };
   }
+  if (provider === 'openai') {
+    if (!apiKey) throw new Error('OpenAI API key required for DALL-E');
+    const res = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify({ model, prompt, n: 1, size: '1024x1024', response_format: 'url' }),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e?.error?.message ?? `HTTP ${res.status}`);
+    }
+    const json = await res.json();
+    const imgUrl: string = json?.data?.[0]?.url ?? '';
+    if (!imgUrl) throw new Error('No image URL returned');
+    const { base64, mime } = await fetchImageViaMain(imgUrl);
+    return { imageUrl: `data:${mime};base64,${base64}`, provider, model };
+  }
+  throw new Error(`Provider "${provider}" does not support image generation`);
 }

@@ -42,19 +42,6 @@ function fetchWithTimeout(url: string, options?: RequestInit): Promise<Response>
     .finally(() => clearTimeout(timer));
 }
 
-export async function testProvider(
-  provider: Provider,
-  apiKey?: string
-): Promise<{ ok: boolean; message: string }> {
-  const result = await callProvider(
-    provider,
-    'What is 2+2? Reply with only the number.',
-    apiKey
-  );
-  if (result.error) return { ok: false, message: result.error };
-  if (!result.content) return { ok: false, message: 'Empty response' };
-  return { ok: true, message: `OK — replied in ${result.latencyMs}ms` };
-}
 
 export async function callProvider(
   provider: Provider,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { loadAllResponses, deleteResponse, SavedResponse, DEFAULT_CATEGORIES } from '../lib/savedResponses'
+import { loadAllResponses, deleteResponse, SavedResponse, DEFAULT_CATEGORIES } from '../../lib/savedResponses'
 
 /** Guess a good default filename from the response content and title. */
 function suggestFilename(item: SavedResponse): string {

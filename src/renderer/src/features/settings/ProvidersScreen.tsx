@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { PROVIDERS, ProviderKey } from '../lib/providers'
+import { getAllProviders } from '../../lib/providers'
 import {
   loadProviderOrder, saveProviderOrder,
   loadEnabledProviders, saveEnabledProviders,
   loadSelectedModels, saveSelectedModels,
-} from '../lib/providerPrefs'
+} from '../../lib/providerPrefs'
 
 export default function ProvidersScreen() {
-  const [order, setOrder] = useState<ProviderKey[]>(() => loadProviderOrder())
-  const [enabled, setEnabled] = useState<Record<ProviderKey, boolean>>(() => loadEnabledProviders())
-  const [models, setModels] = useState<Record<ProviderKey, string>>(() => loadSelectedModels())
+  const allProviders = getAllProviders()
+  const [order, setOrder] = useState<string[]>(() => loadProviderOrder())
+  const [enabled, setEnabled] = useState<Record<string, boolean>>(() => loadEnabledProviders())
+  const [models, setModels] = useState<Record<string, string>>(() => loadSelectedModels())
   const [saved, setSaved] = useState(false)
 
   const move = (idx: number, dir: -1 | 1) => {
@@ -32,13 +33,14 @@ export default function ProvidersScreen() {
     <div className="screen">
       <div className="api-toolbar">
         <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>
-          Drag order = routing priority. Top = tried first.
+          Order = routing priority. Top = tried first.
         </span>
         <button className="btn-primary" onClick={saveAll}>{saved ? '✓ Saved' : 'Save'}</button>
       </div>
       <div className="api-list">
         {order.map((pk, idx) => {
-          const p = PROVIDERS[pk]
+          const p = allProviders[pk]
+          if (!p) return null
           return (
             <div key={pk} className="provider-order-row" style={{ borderLeftColor: p.color }}>
               <div className="order-arrows">
@@ -54,7 +56,7 @@ export default function ProvidersScreen() {
               <div className="order-controls">
                 {p.models.length > 1 && (
                   <select
-                    value={models[pk]}
+                    value={models[pk] ?? p.model}
                     onChange={e => setModels(prev => ({ ...prev, [pk]: e.target.value }))}
                     style={{ fontSize: 12, padding: '4px 8px', width: 180 }}
                   >

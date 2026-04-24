@@ -8,29 +8,9 @@
  * edit stevepleasants.com/manyai/config.json to add/remove models without a build.
  */
 
-export type ProviderKey =
-  | 'cerebras'
-  | 'groq'
-  | 'gemini'
-  | 'mistral'
-  | 'sambanova'
-  | 'fireworks'
-  | 'openai'
-  | 'openrouter'
-  | 'cloudflare'
-  | 'huggingface'
-  | 'anthropic'
-  | 'cohere'
-  | 'pollinations';
+export type ProviderKey = string;
 
-export type TaskType =
-  | 'coding'
-  | 'summarization'
-  | 'creative'
-  | 'reasoning'
-  | 'translation'
-  | 'image'
-  | 'general';
+export type TaskType = string;
 
 export interface ProviderModel {
   id: string;
@@ -320,7 +300,7 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
   },
 };
 
-export const ROUTING_ORDER: ProviderKey[] = [
+export const ROUTING_ORDER: string[] = [
   'cerebras',
   'groq',
   'gemini',
@@ -336,31 +316,68 @@ export const ROUTING_ORDER: ProviderKey[] = [
   'pollinations',
 ];
 
-export function pickProvider(
-  availableKeys: Set<ProviderKey>,
-  taskType: TaskType = 'general',
-  exclude: Set<ProviderKey> = new Set(),
-  order: ProviderKey[] = ROUTING_ORDER,
-  enabled: Partial<Record<ProviderKey, boolean>> = {}
-): ProviderKey | null {
-  const isCandidate = (k: ProviderKey): boolean => {
-    if (exclude.has(k)) return false;
-    if (enabled[k] === false) return false;
-    if (k === 'pollinations') return true;
-    return availableKeys.has(k);
-  };
+// ── Dynamic provider storage ──────────────────────────────────────────────────
 
-  for (const key of order) {
-    if (key === 'pollinations') continue;
-    if (!isCandidate(key)) continue;
-    if (PROVIDERS[key].bestFor.includes(taskType)) return key;
+const CUSTOM_PROVIDERS_KEY  = 'manyai_custom_providers';
+const REMOVED_PROVIDERS_KEY = 'manyai_removed_providers';
+
+export function loadCustomProviders(): Provider[] {
+  try {
+    const raw = localStorage.getItem(CUSTOM_PROVIDERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+export function saveCustomProviders(providers: Provider[]): void {
+  localStorage.setItem(CUSTOM_PROVIDERS_KEY, JSON.stringify(providers));
+}
+
+export function loadRemovedProviders(): string[] {
+  try {
+    const raw = localStorage.getItem(REMOVED_PROVIDERS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+export function saveRemovedProviders(removed: string[]): void {
+  localStorage.setItem(REMOVED_PROVIDERS_KEY, JSON.stringify(removed));
+}
+
+/** Returns all active providers: built-ins (not removed) + custom (overrides by key). */
+export function getAllProviders(): Record<string, Provider> {
+  const removed = new Set(loadRemovedProviders());
+  const custom  = loadCustomProviders();
+  const customMap = Object.fromEntries(custom.map(p => [p.key, p]));
+  const filtered  = Object.fromEntries(
+    Object.entries(PROVIDERS).filter(([k]) => !removed.has(k))
+  );
+  return { ...filtered, ...customMap };
+}
+
+/** Ordered list of active provider keys. */
+export function getAllProviderOrder(): string[] {
+  const removed = new Set(loadRemovedProviders());
+  const custom  = loadCustomProviders();
+  const builtinOrder = ROUTING_ORDER.filter(k => !removed.has(k));
+  const customKeys   = custom.map(p => p.key).filter(k => !(k in PROVIDERS));
+  return [...builtinOrder, ...customKeys];
+}
+
+/** Add or update a provider (used for both new and edited providers). */
+export function upsertProvider(provider: Provider): void {
+  const customs = loadCustomProviders().filter(p => p.key !== provider.key);
+  saveCustomProviders([...customs, provider]);
+  // If this key was previously removed, un-remove it
+  const removed = loadRemovedProviders().filter(k => k !== provider.key);
+  saveRemovedProviders(removed);
+}
+
+/** Remove a provider. Built-ins are hidden; custom ones are deleted. */
+export function removeProvider(key: string): void {
+  if (key in PROVIDERS) {
+    const removed = loadRemovedProviders();
+    if (!removed.includes(key)) saveRemovedProviders([...removed, key]);
   }
-
-  for (const key of order) {
-    if (key === 'pollinations') continue;
-    if (isCandidate(key)) return key;
-  }
-
-  if (isCandidate('pollinations')) return 'pollinations';
-  return null;
+  const customs = loadCustomProviders().filter(p => p.key !== key);
+  saveCustomProviders(customs);
 }

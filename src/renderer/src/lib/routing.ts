@@ -1,11 +1,13 @@
 /**
  * routing.ts — Task type detection and per-task provider routing prefs.
+ * All workflow definitions live in src/workflows/ — do not add types here.
  */
 
-import { ProviderKey, TaskType, PROVIDERS, ROUTING_ORDER } from './providers';
-import type { ImageProvider } from './callImageProvider';
+import { TaskType, getAllProviders } from './providers';
+import { WORKFLOW_REGISTRY } from '../workflows';
+export type { RouteEntry } from '../workflows';
 
-// ── Task type metadata ────────────────────────────────────────────────────────
+// ── Derived from registry ─────────────────────────────────────────────────────
 
 export interface TaskMeta {
   label: string;
@@ -14,122 +16,81 @@ export interface TaskMeta {
   keywords: RegExp;
 }
 
-export const TASK_META: Record<TaskType, TaskMeta> = {
-  image: {
-    label: 'Image',
-    icon: '🎨',
-    description: 'Generate images from text descriptions',
-    keywords: /\b(generate|create|draw|paint|render|image|picture|photo|illustration|artwork|portrait|landscape|design|logo|icon|visualize|imagine)\b.*\b(of|a|an|the|me|showing)\b|\b(image|picture|photo|illustration|artwork|painting|drawing) of\b/i,
-  },
-  coding: {
-    label: 'Code',
-    icon: '💻',
-    description: 'Code generation, debugging, explaining code',
-    keywords: /\b(code|function|bug|debug|error|program|script|class|method|variable|python|javascript|typescript|java|c\+\+|sql|html|css|api|npm|array|loop|syntax|compile|runtime|refactor|algorithm|regex|json|xml)\b/i,
-  },
-  reasoning: {
-    label: 'Reasoning',
-    icon: '🧠',
-    description: 'Math, logic, analysis, step-by-step thinking',
-    keywords: /\b(calculate|solve|math|equation|logic|proof|analyze|analysis|deduce|infer|probability|statistic|step.by.step|reason|explain why|how does|what is the difference)\b/i,
-  },
-  creative: {
-    label: 'Creative',
-    icon: '✍️',
-    description: 'Stories, poems, brainstorming, creative writing',
-    keywords: /\b(write a story|poem|creative|imagine|fiction|novel|narrative|character|plot|lyrics|haiku|essay|brainstorm|invent|fantasy|roleplay)\b/i,
-  },
-  summarization: {
-    label: 'Summarize',
-    icon: '📋',
-    description: 'Summarizing documents, extracting key points',
-    keywords: /\b(summarize|summary|tldr|tl;dr|brief|condense|shorten|overview|key points|main points|digest)\b/i,
-  },
-  translation: {
-    label: 'Translate',
-    icon: '🌐',
-    description: 'Language translation',
-    keywords: /\b(translate|translation|in spanish|in french|in german|in japanese|in chinese|in arabic|in portuguese|in italian|in russian|in korean|en español|en français|auf deutsch)\b/i,
-  },
-  general: {
-    label: 'General',
-    icon: '💬',
-    description: 'Everything else — Q&A, chat, information',
-    keywords: /./,  // fallback — always matches
-  },
-};
+export const TASK_META: Record<string, TaskMeta> = Object.fromEntries(
+  WORKFLOW_REGISTRY.map(w => [w.type, {
+    label: w.label,
+    icon: w.icon,
+    description: w.description,
+    keywords: w.keywords,
+  }])
+);
 
-export const TASK_TYPES: TaskType[] = ['image', 'coding', 'reasoning', 'creative', 'summarization', 'translation', 'general'];
+export const TASK_TYPES: string[] = WORKFLOW_REGISTRY.map(w => w.type);
+
+export const DEFAULT_ROUTES: Record<string, import('../workflows').RouteEntry[]> = Object.fromEntries(
+  WORKFLOW_REGISTRY.map(w => [w.type, w.defaultRoutes])
+);
 
 // ── Auto-detection ────────────────────────────────────────────────────────────
 
 export function detectTaskType(prompt: string): TaskType {
-  // Check image first (before creative, since "draw a story" etc could match both)
-  if (TASK_META['image'].keywords.test(prompt)) return 'image';
-  for (const t of TASK_TYPES) {
-    if (t === 'general' || t === 'image') continue;
-    if (TASK_META[t].keywords.test(prompt)) return t;
+  // isImage plugins first (prevent bleed into creative)
+  for (const w of WORKFLOW_REGISTRY) {
+    if (w.isImage && w.keywords.test(prompt)) return w.type;
+  }
+  for (const w of WORKFLOW_REGISTRY) {
+    if (w.type === 'general' || w.isImage) continue;
+    if (w.keywords.test(prompt)) return w.type;
   }
   return 'general';
 }
 
 // ── Routing preferences ───────────────────────────────────────────────────────
 
-export interface RouteEntry {
-  provider: ProviderKey;
-  model: string;
-}
-
 export interface RoutingPrefs {
   autoDetect: boolean;
-  routes: Partial<Record<TaskType, RouteEntry[]>>;  // ordered fallback chain, tried top-to-bottom
-  imageProvider: ImageProvider;
+  routes: Record<string, import('../workflows').RouteEntry[]>;
 }
 
 const ROUTING_KEY = 'manyai_routing_prefs';
 
-// Sensible defaults — free-tier providers matched to their strengths
-// image is handled separately via imageProvider, but needs a placeholder entry
-// Each entry is now an ordered array — system tries them top-to-bottom, skips unavailable ones
-export const DEFAULT_ROUTES: Record<TaskType, RouteEntry[]> = {
-  image:         [{ provider: 'pollinations', model: 'pollinations-image' }],
-  coding:        [{ provider: 'mistral',   model: 'mistral-large-latest' },
-                  { provider: 'openai',    model: 'gpt-4o' },
-                  { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' }],
-  reasoning:     [{ provider: 'sambanova', model: 'Meta-Llama-3.3-70B-Instruct' },
-                  { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
-                  { provider: 'openai',    model: 'gpt-4o' }],
-  creative:      [{ provider: 'mistral',   model: 'mistral-small-latest' },
-                  { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
-                  { provider: 'openai',    model: 'gpt-4o' }],
-  summarization: [{ provider: 'gemini',    model: 'gemini-2.5-flash' },
-                  { provider: 'cohere',    model: 'command-r-plus-08-2024' },
-                  { provider: 'groq',      model: 'llama-3.3-70b-versatile' }],
-  translation:   [{ provider: 'gemini',    model: 'gemini-2.5-flash' },
-                  { provider: 'mistral',   model: 'mistral-large-latest' }],
-  general:       [{ provider: 'cerebras',  model: 'llama3.1-8b' },
-                  { provider: 'groq',      model: 'llama-3.1-8b-instant' },
-                  { provider: 'pollinations', model: 'openai' }],
-};
-
 export function loadRoutingPrefs(): RoutingPrefs {
   const raw = localStorage.getItem(ROUTING_KEY);
-  if (!raw) return { autoDetect: true, imageProvider: 'pollinations', routes: { ...DEFAULT_ROUTES } };
+  if (!raw) return { autoDetect: true, routes: { ...DEFAULT_ROUTES } };
   try {
-    const stored = JSON.parse(raw) as Partial<RoutingPrefs>;
-    // Migrate old single-entry format to array if needed
-    const routes: Partial<Record<TaskType, RouteEntry[]>> = {};
-    for (const t of Object.keys(stored.routes ?? {}) as TaskType[]) {
+    const stored = JSON.parse(raw) as Partial<RoutingPrefs> & {
+      imageProvider?: string;
+      imageProviders?: unknown[];
+    };
+    const routes: Record<string, import('../workflows').RouteEntry[]> = {};
+    for (const t of Object.keys(stored.routes ?? {})) {
       const v = stored.routes![t];
-      routes[t] = Array.isArray(v) ? v : [v as unknown as RouteEntry];
+      routes[t] = Array.isArray(v) ? v : [v as unknown as import('../workflows').RouteEntry];
+    }
+    // Migrate old imageProviders field → routes['image']
+    if (stored.imageProviders && !routes['image']) {
+      routes['image'] = (stored.imageProviders as unknown[]).map((p: unknown) => {
+        if (typeof p === 'string') {
+          const provider = p === 'openai-dalle' ? 'openai' : p;
+          const model = p === 'openai-dalle' ? 'dall-e-3' : 'flux';
+          return { provider, model, enabled: true };
+        }
+        const entry = p as Record<string, unknown>;
+        const id = String(entry.id ?? entry.provider ?? 'pollinations');
+        const provider = id === 'openai-dalle' ? 'openai' : id;
+        const model = String(entry.model ?? (provider === 'openai' ? 'dall-e-3' : 'flux'));
+        return { provider, model, enabled: entry.enabled !== false };
+      });
+    } else if (stored.imageProvider && !routes['image']) {
+      const id = stored.imageProvider === 'openai-dalle' ? 'openai' : stored.imageProvider;
+      routes['image'] = [{ provider: id, model: id === 'openai' ? 'dall-e-3' : 'flux', enabled: true }];
     }
     return {
       autoDetect: stored.autoDetect ?? true,
-      imageProvider: stored.imageProvider ?? 'pollinations',
       routes: { ...DEFAULT_ROUTES, ...routes },
     };
   } catch {
-    return { autoDetect: true, imageProvider: 'pollinations', routes: { ...DEFAULT_ROUTES } };
+    return { autoDetect: true, routes: { ...DEFAULT_ROUTES } };
   }
 }
 
@@ -137,35 +98,24 @@ export function saveRoutingPrefs(prefs: RoutingPrefs): void {
   localStorage.setItem(ROUTING_KEY, JSON.stringify(prefs));
 }
 
-/**
- * Given a task type and the user's stored prefs + available keys,
- * return the best provider+model to use.
- * Falls back to the first available provider in ROUTING_ORDER.
- */
 export function resolveProvider(
   taskType: TaskType,
   prefs: RoutingPrefs,
-  availableKeys: Set<ProviderKey>,
-  enabledProviders: Partial<Record<ProviderKey, boolean>>,
-): RouteEntry | null {
-  const isUsable = (pk: ProviderKey) =>
+  availableKeys: Set<string>,
+  enabledProviders: Partial<Record<string, boolean>>,
+): import('../workflows').RouteEntry | null {
+  const isUsable = (pk: string) =>
     (pk === 'pollinations' || availableKeys.has(pk)) && enabledProviders[pk] !== false;
 
-  // Walk the user's configured chain first
-  const chain = prefs.routes[taskType] ?? DEFAULT_ROUTES[taskType];
+  const chain = prefs.routes[taskType] ?? DEFAULT_ROUTES[taskType] ?? DEFAULT_ROUTES['general'];
   for (const entry of chain) {
-    if (isUsable(entry.provider)) return entry;
+    if (entry.enabled !== false && isUsable(entry.provider)) return entry;
   }
 
-  // Auto-fallback: providers with bestFor matching task type
-  for (const k of ROUTING_ORDER) {
-    if (!isUsable(k)) continue;
-    if (PROVIDERS[k].bestFor.includes(taskType)) return { provider: k, model: PROVIDERS[k].model };
-  }
-
-  // Last resort: any available provider
-  for (const k of ROUTING_ORDER) {
-    if (isUsable(k)) return { provider: k, model: PROVIDERS[k].model };
+  // No configured route available — check if pollinations is usable as last resort
+  const allProviders = getAllProviders();
+  if (allProviders['pollinations'] && isUsable('pollinations')) {
+    return { provider: 'pollinations', model: allProviders['pollinations'].model };
   }
 
   return null;

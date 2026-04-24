@@ -1,0 +1,479 @@
+import { useState } from 'react'
+import {
+  getAllProviders, getAllProviderOrder,
+  upsertProvider, removeProvider,
+  type Provider, type ProviderModel,
+} from '../../lib/providers'
+import { saveKey, loadKey, deleteKey } from '../../lib/keyStore'
+import { loadEnabledModels, saveEnabledModels } from '../../lib/providerPrefs'
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
+interface ModelState {
+  enabled: boolean
+}
+
+interface ProviderState {
+  apiKey: string
+  collapsed: boolean
+  models: Record<string, ModelState>
+}
+
+// ── Blank provider template for the Add form ──────────────────────────────────
+
+const BLANK_PROVIDER: Provider = {
+  key: '',
+  name: '',
+  model: '',
+  models: [{ id: '', name: '' }],
+  baseUrl: '',
+  needsKey: true,
+  paidOnly: false,
+  color: '#888888',
+  bestFor: ['general'],
+  goodAt: '',
+  notGreatAt: '',
+  supportsVision: false,
+  instructionsUrl: '',
+  keyHint: '',
+}
+
+const PRESET_COLORS = [
+  '#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7',
+  '#DDA0DD','#A29BFE','#FFD93D','#74B9FF','#FD79A8',
+  '#55EFC4','#F0A500','#888888',
+]
+
+// ── Help modal ───────────────────────────────────────────────────────────────
+
+function HelpModal({ onClose }: { onClose: () => void }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+    }} onClick={onClose}>
+      <div style={{
+        background: 'var(--bg)', border: '1px solid var(--border)',
+        borderRadius: 10, padding: 24, maxWidth: 480, width: '90%',
+        maxHeight: '80vh', overflowY: 'auto',
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Adding a New API Provider</div>
+
+        <div style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text)' }}>
+          <p style={{ margin: '0 0 10px' }}>
+            Click <strong>Add New Provider</strong> at the top of the API screen to add any
+            OpenAI-compatible provider — most modern LLM APIs support this format.
+          </p>
+
+          <p style={{ margin: '0 0 6px', fontWeight: 600 }}>Required fields:</p>
+          <ul style={{ margin: '0 0 10px', paddingLeft: 18 }}>
+            <li><strong>Name</strong> — display name (e.g. "My Provider")</li>
+            <li><strong>Provider ID</strong> — unique key, lowercase, no spaces (e.g. "myprovider")</li>
+            <li><strong>Base URL</strong> — the API endpoint, e.g. <code>https://api.example.com/v1</code></li>
+            <li><strong>At least one model</strong> — ID and display name</li>
+          </ul>
+
+          <p style={{ margin: '0 0 6px', fontWeight: 600 }}>API format:</p>
+          <p style={{ margin: '0 0 10px' }}>
+            Custom providers use OpenAI-compatible format (<code>/chat/completions</code>).
+            Built-in providers with special formats (Gemini, Anthropic, Cloudflare) are pre-configured.
+          </p>
+
+          <p style={{ margin: '0 0 6px', fontWeight: 600 }}>API key:</p>
+          <p style={{ margin: '0 0 10px' }}>
+            Enter your key in the provider card and click <strong>Save All</strong>.
+            Keys are stored locally on this device only.
+          </p>
+
+          <p style={{ margin: '0 0 6px', fontWeight: 600 }}>Editing built-in providers:</p>
+          <p style={{ margin: 0 }}>
+            Built-in providers (Groq, Gemini, etc.) can be edited — your changes are
+            saved locally and override the defaults. Deleting a built-in hides it;
+            it can be re-added with the same Provider ID.
+          </p>
+        </div>
+
+        <button
+          className="btn-primary"
+          onClick={onClose}
+          style={{ marginTop: 18, width: '100%' }}
+        >Got it</button>
+      </div>
+    </div>
+  )
+}
+
+// ── Provider edit/add form ────────────────────────────────────────────────────
+
+interface ProviderFormProps {
+  initial: Provider
+  isNew: boolean
+  onSave: (p: Provider) => void
+  onCancel: () => void
+}
+
+function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
+  const [form, setForm] = useState<Provider>({ ...initial })
+  const [error, setError] = useState('')
+
+  const set = (patch: Partial<Provider>) => setForm(f => ({ ...f, ...patch }))
+
+  const addModel = () =>
+    set({ models: [...form.models, { id: '', name: '' }] })
+
+  const updateModel = (idx: number, patch: Partial<ProviderModel>) =>
+    set({ models: form.models.map((m, i) => i === idx ? { ...m, ...patch } : m) })
+
+  const removeModel = (idx: number) =>
+    set({ models: form.models.filter((_, i) => i !== idx) })
+
+  const handleSave = () => {
+    if (!form.name.trim())      return setError('Name is required')
+    if (!form.key.trim())       return setError('Provider ID is required')
+    if (!/^[a-z0-9_-]+$/.test(form.key)) return setError('Provider ID must be lowercase letters, numbers, hyphens, underscores')
+    if (!form.baseUrl.trim())   return setError('Base URL is required')
+    if (form.models.length === 0) return setError('At least one model is required')
+    if (form.models.some(m => !m.id.trim())) return setError('All model IDs are required')
+
+    const defaultModel = form.models.find(m => m.id === form.model) ? form.model : form.models[0].id
+    onSave({ ...form, key: form.key.trim(), model: defaultModel })
+  }
+
+  const label = (text: string) => (
+    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-dim)', marginBottom: 3, marginTop: 10 }}>{text}</div>
+  )
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+    }}>
+      <div style={{
+        background: 'var(--bg)', border: '1px solid var(--border)',
+        borderRadius: 10, padding: 24, maxWidth: 520, width: '95%',
+        maxHeight: '90vh', overflowY: 'auto',
+      }}>
+        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+          {isNew ? 'Add New Provider' : `Edit — ${initial.name}`}
+        </div>
+
+        {label('Name')}
+        <input value={form.name} onChange={e => set({ name: e.target.value })} placeholder="e.g. My Provider" style={{ width: '100%' }} />
+
+        {label('Provider ID')}
+        <input
+          value={form.key}
+          onChange={e => set({ key: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '') })}
+          placeholder="e.g. myprovider"
+          disabled={!isNew}
+          style={{ width: '100%', opacity: isNew ? 1 : 0.6 }}
+        />
+        {!isNew && <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>Provider ID cannot be changed after creation</div>}
+
+        {label('Base URL')}
+        <input value={form.baseUrl} onChange={e => set({ baseUrl: e.target.value })} placeholder="https://api.example.com/v1" style={{ width: '100%' }} />
+
+        {label('Instructions URL (for getting an API key)')}
+        <input value={form.instructionsUrl} onChange={e => set({ instructionsUrl: e.target.value })} placeholder="example.com/api-keys" style={{ width: '100%' }} />
+
+        {label('Good at (short description)')}
+        <input value={form.goodAt} onChange={e => set({ goodAt: e.target.value })} placeholder="e.g. Fast general Q&A" style={{ width: '100%' }} />
+
+        {label('Key hint (placeholder text in key input)')}
+        <input value={form.keyHint ?? ''} onChange={e => set({ keyHint: e.target.value })} placeholder="e.g. sk-..." style={{ width: '100%' }} />
+
+        {label('Color')}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+          {PRESET_COLORS.map(c => (
+            <div
+              key={c}
+              onClick={() => set({ color: c })}
+              style={{
+                width: 22, height: 22, borderRadius: 4, background: c, cursor: 'pointer',
+                border: form.color === c ? '2px solid var(--text)' : '2px solid transparent',
+              }}
+            />
+          ))}
+          <input
+            type="color"
+            value={form.color}
+            onChange={e => set({ color: e.target.value })}
+            style={{ width: 22, height: 22, padding: 0, border: 'none', cursor: 'pointer', borderRadius: 4 }}
+            title="Custom color"
+          />
+        </div>
+
+        <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+            <input type="checkbox" checked={form.needsKey} onChange={e => set({ needsKey: e.target.checked })} />
+            Requires API key
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+            <input type="checkbox" checked={form.paidOnly} onChange={e => set({ paidOnly: e.target.checked })} />
+            Paid only
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+            <input type="checkbox" checked={form.supportsVision} onChange={e => set({ supportsVision: e.target.checked })} />
+            Vision support
+          </label>
+        </div>
+
+        {label('Models')}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {form.models.map((m, idx) => (
+            <div key={idx} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input
+                value={m.id}
+                onChange={e => updateModel(idx, { id: e.target.value })}
+                placeholder="model-id"
+                style={{ flex: 1, fontSize: 12 }}
+              />
+              <input
+                value={m.name}
+                onChange={e => updateModel(idx, { name: e.target.value })}
+                placeholder="Display name"
+                style={{ flex: 1, fontSize: 12 }}
+              />
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="defaultModel"
+                  checked={form.model === m.id || (form.model === '' && idx === 0)}
+                  onChange={() => set({ model: m.id })}
+                />
+                Default
+              </label>
+              {form.models.length > 1 && (
+                <button
+                  onClick={() => removeModel(idx)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 14, padding: '0 4px' }}
+                >✕</button>
+              )}
+            </div>
+          ))}
+          <button className="btn-ghost" onClick={addModel} style={{ fontSize: 11, alignSelf: 'flex-start', padding: '3px 10px' }}>
+            + Add model
+          </button>
+        </div>
+
+        {error && <div style={{ color: '#e55', fontSize: 12, marginTop: 10 }}>{error}</div>}
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <button className="btn-primary" onClick={handleSave} style={{ flex: 1 }}>
+            {isNew ? 'Add Provider' : 'Save Changes'}
+          </button>
+          <button className="btn-ghost" onClick={onCancel} style={{ flex: 1 }}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main screen ───────────────────────────────────────────────────────────────
+
+function buildState(providers: Record<string, Provider>, order: string[]): Record<string, ProviderState> {
+  const enabledModels = loadEnabledModels()
+  return Object.fromEntries(
+    order.map(pk => {
+      const p = providers[pk]
+      return [pk, {
+        apiKey: loadKey(pk) ?? '',
+        collapsed: true,
+        models: Object.fromEntries(
+          p.models.map(m => [`${pk}:${m.id}`, {
+            enabled: enabledModels[`${pk}:${m.id}`] !== false,
+          }])
+        ),
+      }]
+    })
+  )
+}
+
+export default function ApiScreen() {
+  const [revision, setRevision] = useState(0)
+  const allProviders = getAllProviders()
+  const order = getAllProviderOrder()
+
+  const [state, setState] = useState<Record<string, ProviderState>>(() => buildState(allProviders, order))
+  const [saved, setSaved] = useState(false)
+  const [showHelp, setShowHelp] = useState(false)
+  const [editTarget, setEditTarget] = useState<Provider | null>(null)
+  const [isAdding, setIsAdding] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+
+  const refresh = () => {
+    const providers = getAllProviders()
+    const ord = getAllProviderOrder()
+    setState(buildState(providers, ord))
+    setRevision(r => r + 1)
+  }
+
+  const updateProvider = (pk: string, patch: Partial<ProviderState>) =>
+    setState(prev => ({ ...prev, [pk]: { ...prev[pk], ...patch } }))
+
+  const updateModel = (pk: string, mk: string, patch: Partial<ModelState>) =>
+    setState(prev => ({
+      ...prev,
+      [pk]: {
+        ...prev[pk],
+        models: { ...prev[pk].models, [mk]: { ...prev[pk].models[mk], ...patch } }
+      }
+    }))
+
+  const saveAll = () => {
+    const modelEnabled: Record<string, boolean> = {}
+    const currentOrder = getAllProviderOrder()
+    currentOrder.forEach(pk => {
+      const v = state[pk]?.apiKey?.trim()
+      if (v) saveKey(pk, v)
+      else deleteKey(pk)
+      Object.entries(state[pk]?.models ?? {}).forEach(([mk, ms]) => {
+        modelEnabled[mk] = ms.enabled
+      })
+    })
+    saveEnabledModels(modelEnabled)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  const handleEdit = (provider: Provider) => {
+    setEditTarget(provider)
+    setIsAdding(false)
+  }
+
+  const handleAdd = () => {
+    setEditTarget(null)
+    setIsAdding(true)
+  }
+
+  const handleSaveProvider = (p: Provider) => {
+    upsertProvider(p)
+    setEditTarget(null)
+    setIsAdding(false)
+    refresh()
+  }
+
+  const handleDelete = (key: string) => {
+    if (deleteConfirm !== key) {
+      setDeleteConfirm(key)
+      return
+    }
+    deleteKey(key)
+    removeProvider(key)
+    setDeleteConfirm(null)
+    refresh()
+  }
+
+  const currentProviders = getAllProviders()
+  const currentOrder = getAllProviderOrder()
+
+  return (
+    <div className="screen">
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
+      {(editTarget || isAdding) && (
+        <ProviderForm
+          initial={editTarget ?? BLANK_PROVIDER}
+          isNew={isAdding}
+          onSave={handleSaveProvider}
+          onCancel={() => { setEditTarget(null); setIsAdding(false) }}
+        />
+      )}
+
+      <div className="api-toolbar">
+        <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>API keys stored locally on this device.</span>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn-ghost" onClick={() => setShowHelp(true)} title="How to add a provider" style={{ fontSize: 12 }}>
+            ? Help
+          </button>
+          <button className="btn-ghost" onClick={handleAdd} style={{ fontSize: 12 }}>
+            + Add Provider
+          </button>
+          <button className="btn-primary" onClick={saveAll}>{saved ? '✓ Saved' : 'Save All'}</button>
+        </div>
+      </div>
+
+      <div className="api-list">
+        {currentOrder.map(pk => {
+          const p = currentProviders[pk]
+          if (!p) return null
+          const s = state[pk] ?? { apiKey: '', collapsed: true, models: {} }
+          const isOpen = !s.collapsed
+          const isConfirming = deleteConfirm === pk
+
+          return (
+            <div key={`${pk}-${revision}`} className="api-card" style={{ borderLeftColor: p.color }}>
+              <div className="api-card-header" onClick={() => updateProvider(pk, { collapsed: !s.collapsed })}>
+                <div className="provider-dot" style={{ background: p.color }} />
+                <span className="provider-name">{p.name}</span>
+                <span className={`provider-badge ${p.paidOnly ? '' : 'free'}`}>{p.paidOnly ? 'Paid' : 'Free'}</span>
+                {!p.needsKey && <span className="provider-badge free">No key</span>}
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                  <button
+                    className="btn-ghost"
+                    style={{ fontSize: 11, padding: '2px 8px' }}
+                    onClick={() => handleEdit(p)}
+                  >Edit</button>
+                  <button
+                    className="btn-ghost"
+                    style={{ fontSize: 11, padding: '2px 8px', color: isConfirming ? '#e55' : undefined, borderColor: isConfirming ? '#e55' : undefined }}
+                    onClick={() => isConfirming ? handleDelete(pk) : handleDelete(pk)}
+                  >{isConfirming ? 'Confirm Delete' : 'Delete'}</button>
+                  {isConfirming && (
+                    <button
+                      className="btn-ghost"
+                      style={{ fontSize: 11, padding: '2px 8px' }}
+                      onClick={() => setDeleteConfirm(null)}
+                    >Cancel</button>
+                  )}
+                  <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>{isOpen ? '▲' : '▼'}</span>
+                </div>
+              </div>
+
+              {isOpen && (
+                <div className="api-card-body">
+                  {p.needsKey && (
+                    <div className="key-row" style={{ marginBottom: 10 }}>
+                      <input
+                        type="password"
+                        placeholder={p.keyHint ?? `${p.name} API key`}
+                        value={s.apiKey}
+                        onChange={e => updateProvider(pk, { apiKey: e.target.value })}
+                        onClick={e => e.stopPropagation()}
+                      />
+                    </div>
+                  )}
+                  <div className="model-list">
+                    {p.models.map(m => {
+                      const mk = `${pk}:${m.id}`
+                      const ms = s.models[mk] ?? { enabled: true }
+                      return (
+                        <div key={mk} className="model-row">
+                          <label className="toggle" title="Enable/disable this model">
+                            <input
+                              type="checkbox"
+                              checked={ms.enabled}
+                              onChange={e => updateModel(pk, mk, { enabled: e.target.checked })}
+                            />
+                            <span className="toggle-slider" />
+                          </label>
+                          <span className="model-name">{m.name}</span>
+                          <span className="model-id">{m.id}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  {p.instructionsUrl && (
+                    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>
+                      <a href={`https://${p.instructionsUrl}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>{p.instructionsUrl}</a>
+                      {p.goodAt && <>{' · '}{p.goodAt}</>}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
