@@ -3,7 +3,7 @@ import ApiScreen from './ApiScreen'
 import WorkflowsScreen from './WorkflowsScreen'
 import RoutingScreen from './RoutingScreen'
 
-type SettingsTab = 'general' | 'api' | 'workflows' | 'routing' | 'save'
+type SettingsTab = 'general' | 'api' | 'workflows' | 'routing' | 'backup'
 
 export default function SettingsScreen() {
   const [tab, setTab] = useState<SettingsTab>('general')
@@ -28,7 +28,7 @@ export default function SettingsScreen() {
         {tabBtn('api',       'API')}
         {tabBtn('workflows', 'Workflows')}
         {tabBtn('routing',   'Workflow Models')}
-        {tabBtn('save',      'Save Config')}
+        {tabBtn('backup',    'Backup Config')}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -36,7 +36,7 @@ export default function SettingsScreen() {
         {tab === 'api'       && <ApiScreen />}
         {tab === 'workflows' && <WorkflowsScreen />}
         {tab === 'routing'   && <RoutingScreen />}
-        {tab === 'save'      && <SaveConfig />}
+        {tab === 'backup'    && <BackupConfig />}
       </div>
     </div>
   )
@@ -92,79 +92,74 @@ function GeneralSettings() {
   )
 }
 
-function SaveConfig() {
-  const [encrypt, setEncrypt]   = useState(false)
-  const [password, setPassword] = useState('')
-  const [status, setStatus]     = useState('')
+function BackupConfig() {
+  const [status, setStatus] = useState('')
 
-  const handleSave = () => {
-    if (encrypt && !password.trim()) {
-      setStatus('Enter a password to encrypt the config.')
-      return
-    }
-    // Placeholder: collect exportable config from localStorage
-    const config: Record<string, unknown> = {}
-    for (let i = 0; i < localStorage.length; i++) {
-      const k = localStorage.key(i)
-      if (k?.startsWith('manyai_')) {
-        try { config[k] = JSON.parse(localStorage.getItem(k)!) }
-        catch { config[k] = localStorage.getItem(k) }
+  const collectBackup = () => {
+    const ls = localStorage
+
+    // API keys — one entry per provider key
+    const apiKeys: Record<string, string> = {}
+    for (let i = 0; i < ls.length; i++) {
+      const k = ls.key(i)!
+      if (k.startsWith('manyai_key_')) {
+        apiKeys[k.replace('manyai_key_', '')] = ls.getItem(k) ?? ''
       }
     }
-    const json = JSON.stringify(config, null, 2)
-    // Download as file
+
+    const parse = (key: string) => {
+      const raw = ls.getItem(key)
+      if (!raw) return undefined
+      try { return JSON.parse(raw) } catch { return raw }
+    }
+
+    return {
+      exportedAt: new Date().toISOString(),
+      apiKeys,
+      providers: {
+        custom:   parse('manyai_custom_providers'),
+        removed:  parse('manyai_removed_providers'),
+        order:    parse('manyai_provider_order'),
+        enabled:  parse('manyai_provider_enabled'),
+        modelsEnabled: parse('manyai_model_enabled'),
+      },
+      workflows: {
+        custom:         parse('manyai_workflows'),
+        removedBuiltins: parse('manyai_removed_builtins'),
+      },
+      routing: parse('manyai_routing_prefs'),
+    }
+  }
+
+  const handleBackup = () => {
+    const backup = collectBackup()
+    const json = JSON.stringify(backup, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const url  = URL.createObjectURL(blob)
     const a    = document.createElement('a')
     a.href     = url
-    a.download = 'manyai-config.json'
+    const date = new Date().toISOString().slice(0, 10)
+    a.download = `manyai-backup-${date}.json`
     a.click()
     URL.revokeObjectURL(url)
-    setStatus('Config saved.')
+    setStatus('Backup downloaded.')
     setTimeout(() => setStatus(''), 3000)
   }
 
   return (
     <div style={{ padding: '0 0 16px' }}>
       <div className="api-list">
-        <div style={{ color: 'var(--text-dim)', fontSize: 13, padding: '24px 0 8px' }}>Save Configuration</div>
-        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 16 }}>
-          Export all ManyAI settings (API keys, routing prefs, workflows) to a local file.
+        <div style={{ color: 'var(--text-dim)', fontSize: 13, padding: '24px 0 8px' }}>Backup Configuration</div>
+        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 16, lineHeight: 1.6 }}>
+          Downloads a JSON file containing all API keys, custom providers (with full model details and capabilities), custom workflows, routing preferences, and provider enable/order state.
+          Keep this file private — it contains your API keys in plain text.
         </div>
 
-        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13 }}>
-            <input
-              type="checkbox"
-              checked={encrypt}
-              onChange={e => { setEncrypt(e.target.checked); if (!e.target.checked) setPassword('') }}
-            />
-            Encrypt API keys with a password
-          </label>
-
-          {encrypt && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-              <input
-                type="password"
-                placeholder="Encryption password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                style={{ flex: 1 }}
-              />
-            </div>
-          )}
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button className="btn-primary" onClick={handleSave}>
-              Save to File
-            </button>
-            {status && <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{status}</span>}
-          </div>
-        </div>
-
-        <div style={{ color: 'var(--text-dim)', fontSize: 13, padding: '24px 0 8px' }}>Note</div>
-        <div style={{ fontSize: 12, color: 'var(--text-dim)', lineHeight: 1.5 }}>
-          Encryption support is coming soon. For now the file is saved as plain JSON — keep it private.
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '4px 0' }}>
+          <button className="btn-primary" onClick={handleBackup}>
+            Download Backup
+          </button>
+          {status && <span style={{ fontSize: 12, color: 'var(--text-dim)' }}>{status}</span>}
         </div>
       </div>
     </div>
