@@ -176,3 +176,6 @@ $ npm run build:linux
 **Providers**
 - Add/Edit Provider form now supports per-model "Image gen" checkbox
 - Custom providers added via the UI can now include image-generation models that automatically appear in the image workflow's routing options
+
+**GitHub Pages**
+- Verified and launched: [soylentaquamarine.github.io/ManyAI-Desktop](https://soylentaquamarine.github.io/ManyAI-Desktop/)
