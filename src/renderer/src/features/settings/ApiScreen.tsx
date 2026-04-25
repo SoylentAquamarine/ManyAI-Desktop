@@ -6,6 +6,7 @@ import {
 } from '../../lib/providers'
 import { saveKey, loadKey, deleteKey } from '../../lib/keyStore'
 import { loadEnabledModels, saveEnabledModels } from '../../lib/providerPrefs'
+import { callProvider } from '../../lib/callProvider'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -243,6 +244,14 @@ function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
                 />
                 Default
               </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, whiteSpace: 'nowrap', cursor: 'pointer' }} title="Mark this model as an image generation model">
+                <input
+                  type="checkbox"
+                  checked={!!m.supportsImageGen}
+                  onChange={e => updateModel(idx, { supportsImageGen: e.target.checked })}
+                />
+                Image gen
+              </label>
               {form.models.length > 1 && (
                 <button
                   onClick={() => removeModel(idx)}
@@ -300,6 +309,7 @@ export default function ApiScreen() {
   const [editTarget, setEditTarget] = useState<Provider | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [testResults, setTestResults] = useState<Record<string, 'idle' | 'testing' | 'ok' | string>>({})
 
   const refresh = () => {
     const providers = getAllProviders()
@@ -364,6 +374,15 @@ export default function ApiScreen() {
     refresh()
   }
 
+  const handleTest = async (pk: string, modelId: string) => {
+    const mk = `${pk}:${modelId}`
+    setTestResults(prev => ({ ...prev, [mk]: 'testing' }))
+    const p = getAllProviders()[pk]
+    const apiKey = state[pk]?.apiKey || loadKey(pk) || undefined
+    const result = await callProvider({ ...p, model: modelId }, 'Hi', apiKey)
+    setTestResults(prev => ({ ...prev, [mk]: result.error ? result.error : 'ok' }))
+  }
+
   const currentProviders = getAllProviders()
   const currentOrder = getAllProviderOrder()
 
@@ -425,8 +444,8 @@ export default function ApiScreen() {
                       onClick={() => setDeleteConfirm(null)}
                     >Cancel</button>
                   )}
-                  <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>{isOpen ? '▲' : '▼'}</span>
                 </div>
+                <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>{isOpen ? '▲' : '▼'}</span>
               </div>
 
               {isOpen && (
@@ -458,6 +477,39 @@ export default function ApiScreen() {
                           </label>
                           <span className="model-name">{m.name}</span>
                           <span className="model-id">{m.id}</span>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: 'var(--text-dim)', cursor: 'pointer', whiteSpace: 'nowrap' }} title="Mark as image generation model — excludes from text workflows">
+                            <input
+                              type="checkbox"
+                              checked={!!m.supportsImageGen}
+                              onChange={e => {
+                                const updated = { ...p, models: p.models.map(x => x.id === m.id ? { ...x, supportsImageGen: e.target.checked } : x) }
+                                upsertProvider(updated)
+                                refresh()
+                              }}
+                            />
+                            🖼
+                          </label>
+                          <button
+                            className="btn-ghost"
+                            style={{ fontSize: 10, padding: '1px 7px', marginLeft: 'auto' }}
+                            disabled={testResults[mk] === 'testing'}
+                            onClick={() => handleTest(pk, m.id)}
+                            title="Send a test message to verify this model works"
+                          >
+                            {testResults[mk] === 'testing' ? '...' : 'Test'}
+                          </button>
+                          {testResults[mk] && testResults[mk] !== 'testing' && (
+                            <span style={{
+                              fontSize: 10,
+                              color: testResults[mk] === 'ok' ? '#4caf50' : '#e55',
+                              whiteSpace: 'nowrap',
+                              maxWidth: 120,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }} title={testResults[mk] === 'ok' ? 'OK' : testResults[mk]}>
+                              {testResults[mk] === 'ok' ? '✓ OK' : '✗ ' + testResults[mk]}
+                            </span>
+                          )}
                         </div>
                       )
                     })}

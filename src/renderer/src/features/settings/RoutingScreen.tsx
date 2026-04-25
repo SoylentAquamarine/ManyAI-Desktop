@@ -4,7 +4,6 @@ import {
   TASK_META, DEFAULT_ROUTES,
   loadRoutingPrefs, saveRoutingPrefs, RouteEntry, RoutingPrefs,
 } from '../../lib/routing'
-import { IMAGE_PROVIDER_CONFIGS } from '../../lib/callImageProvider'
 import { loadAllKeys } from '../../lib/keyStore'
 import { loadEnabledProviders } from '../../lib/providerPrefs'
 import { loadWorkflows } from '../../lib/workflows'
@@ -26,6 +25,14 @@ export default function RoutingScreen() {
 
   const allWorkflows = loadWorkflows()
 
+  // Providers that have at least one image-gen model
+  const imageProviderKeys = allProviderOrder.filter(pk =>
+    allProviders[pk]?.models.some(m => m.supportsImageGen)
+  )
+
+  const getImageModels = (pk: string) =>
+    allProviders[pk]?.models.filter(m => m.supportsImageGen) ?? []
+
   const getChain = (task: string): RouteEntry[] =>
     prefs.routes[task] ?? DEFAULT_ROUTES[task] ?? DEFAULT_ROUTES['general']
 
@@ -38,9 +45,12 @@ export default function RoutingScreen() {
     setChain(task, chain)
   }
 
+  const isImageWorkflow = (task: string) =>
+    !!(allWorkflows.find(w => w.type === task)?.isImage)
+
   const onProviderChange = (task: string, idx: number, pk: string) => {
-    const imgCfg = task === 'image' ? IMAGE_PROVIDER_CONFIGS[pk as keyof typeof IMAGE_PROVIDER_CONFIGS] : null
-    const model = imgCfg ? imgCfg.defaultModel : (allProviders[pk]?.model ?? '')
+    const models = isImageWorkflow(task) ? getImageModels(pk) : (allProviders[pk]?.models ?? [])
+    const model = models[0]?.id ?? allProviders[pk]?.model ?? ''
     updateEntry(task, idx, { provider: pk, model })
   }
 
@@ -48,9 +58,10 @@ export default function RoutingScreen() {
     const chain = getChain(task)
     if (chain.length >= MAX_CHAIN) return
     const used = new Set(chain.map(e => e.provider))
-    const next = allProviderOrder.find(k => !used.has(k)) ?? 'pollinations'
-    const imgCfg = task === 'image' ? IMAGE_PROVIDER_CONFIGS[next as keyof typeof IMAGE_PROVIDER_CONFIGS] : null
-    const model = imgCfg ? imgCfg.defaultModel : (allProviders[next]?.model ?? '')
+    const candidates = isImageWorkflow(task) ? imageProviderKeys : allProviderOrder
+    const next = candidates.find(k => !used.has(k)) ?? candidates[0] ?? 'pollinations'
+    const models = isImageWorkflow(task) ? getImageModels(next) : (allProviders[next]?.models ?? [])
+    const model = models[0]?.id ?? allProviders[next]?.model ?? ''
     setChain(task, [...chain, { provider: next, model }])
   }
 
@@ -109,7 +120,8 @@ export default function RoutingScreen() {
           const task = w.type
           const meta = TASK_META[task] ?? w
           const chain = getChain(task)
-          const isImage = !!(w as { isImage?: boolean }).isImage
+          const imgWorkflow = !!w.isImage
+          const providerList = imgWorkflow ? imageProviderKeys : allProviderOrder
 
           return (
             <div key={task} className="route-card">
@@ -124,14 +136,15 @@ export default function RoutingScreen() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {chain.map((entry, idx) => {
                   const avail = availableProviders.includes(entry.provider)
-                  const imgCfg = isImage ? IMAGE_PROVIDER_CONFIGS[entry.provider as keyof typeof IMAGE_PROVIDER_CONFIGS] : null
-                  const modelList = imgCfg ? imgCfg.models : (allProviders[entry.provider]?.models ?? [])
+                  const modelList = imgWorkflow
+                    ? getImageModels(entry.provider)
+                    : (allProviders[entry.provider]?.models.filter(m => !m.supportsImageGen) ?? [])
                   return (
                     <div key={idx} className="chain-row">
                       <span className="chain-num">{idx === 0 ? '1st' : idx === 1 ? '2nd' : idx === 2 ? '3rd' : `${idx+1}th`}</span>
                       <select value={entry.provider} style={{ flex: 1 }}
                         onChange={e => onProviderChange(task, idx, e.target.value)}>
-                        {allProviderOrder.map(pk => (
+                        {providerList.map(pk => (
                           <option key={pk} value={pk}>
                             {allProviders[pk]?.name ?? pk}{availableProviders.includes(pk) ? '' : ' (no key)'}
                           </option>

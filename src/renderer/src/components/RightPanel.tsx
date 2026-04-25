@@ -13,7 +13,6 @@ import { loadAllKeys } from '../lib/keyStore'
 import { loadEnabledProviders } from '../lib/providerPrefs'
 import type { PanelType } from '../App'
 import type { TaskType } from '../lib/providers'
-import { IMAGE_PROVIDER_CONFIGS } from '../lib/callImageProvider'
 
 const NAV: { key: PanelType; icon: string; label: string }[] = [
   { key: 'saved',     icon: '📂', label: 'Saved' },
@@ -43,6 +42,7 @@ export default function RightPanel({
   onWorkflowSaved,
 }: Props) {
   const workflows = enabledWorkflows()
+  const allWorkflows = loadWorkflows()
   const [prefs, setPrefs] = useState<RoutingPrefs>(() => loadRoutingPrefs())
 
   const allProviders = getAllProviders()
@@ -67,8 +67,11 @@ export default function RightPanel({
 
   const onProviderChange = (task: string, idx: number, pk: string) => {
     const chain = [...getChain(task)]
-    const imgCfg = task === 'image' ? IMAGE_PROVIDER_CONFIGS[pk as keyof typeof IMAGE_PROVIDER_CONFIGS] : null
-    const model = imgCfg ? imgCfg.defaultModel : (allProviders[pk]?.model ?? '')
+    const isImgTask = !!(allWorkflows.find(w => w.type === task)?.isImage)
+    const models = isImgTask
+      ? (allProviders[pk]?.models.filter(m => m.supportsImageGen) ?? [])
+      : (allProviders[pk]?.models ?? [])
+    const model = models[0]?.id ?? allProviders[pk]?.model ?? ''
     chain[idx] = { provider: pk, model }
     setChain(task, chain)
   }
@@ -197,7 +200,7 @@ function WorkflowDetail({
   onWorkflowSaved,
 }: DetailProps) {
   const task = workflow.type
-  const isImage = task === 'image'
+  const isImage = !!workflow.isImage
   const canEdit = task !== 'general'
   const chain = getChain(task)
 
@@ -414,9 +417,10 @@ function WorkflowDetail({
             const avail = availableProviders.includes(entry.provider)
             const entryEnabled = entry.enabled !== false
             // For image workflows, show image-gen models when provider supports them
-            const imgCfg = isImage ? IMAGE_PROVIDER_CONFIGS[entry.provider as keyof typeof IMAGE_PROVIDER_CONFIGS] : null
             const allProvidersNow = getAllProviders()
-            const modelList = imgCfg ? imgCfg.models : (allProvidersNow[entry.provider]?.models ?? [])
+            const modelList = isImage
+              ? (allProvidersNow[entry.provider]?.models.filter(m => m.supportsImageGen) ?? [])
+              : (allProvidersNow[entry.provider]?.models.filter(m => !m.supportsImageGen) ?? [])
             return (
               <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 3, background: 'var(--bg2)', borderRadius: 6, padding: '6px 8px', opacity: entryEnabled ? 1 : 0.5 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>

@@ -199,7 +199,7 @@ export default function WorkflowsScreen({ onOpenRouting }: Props) {
         >
           <div
             style={{
-              background: 'var(--bg1)',
+              background: 'var(--surface)',
               border: '1px solid var(--border)',
               borderRadius: 12,
               padding: 24,

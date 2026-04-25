@@ -20,7 +20,7 @@ export default function WorkflowPickerModal({ onSelect, onCancel }: Props) {
     >
       <div
         style={{
-          background: 'var(--bg1)',
+          background: 'var(--surface)',
           border: '1px solid var(--border)',
           borderRadius: 12,
           padding: '24px 20px',

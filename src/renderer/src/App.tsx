@@ -199,7 +199,7 @@ export default function App() {
                 workflowType={t.workflowType}
                 continuousState={continuousMap[t.workflowType] ?? true}
                 onInjectReady={(fn) => { injectFns.current[t.id] = fn }}
-                onFirstMessage={(text) => updateTabLabel(t.id, text.slice(0, 24) || t.label)}
+                onFirstMessage={() => {}}
               />
             </div>
           ))}

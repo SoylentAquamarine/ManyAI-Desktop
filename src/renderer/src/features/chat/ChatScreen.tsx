@@ -6,7 +6,7 @@ import { loadEnabledProviders } from '../../lib/providerPrefs'
 import { saveResponse } from '../../lib/savedResponses'
 import { resolveProvider, loadRoutingPrefs, TASK_META } from '../../lib/routing'
 import { getWorkflow } from '../../lib/workflows'
-import { callImageProvider, IMAGE_PROVIDER_CONFIGS, type ImageProvider } from '../../lib/callImageProvider'
+import { callImageProvider, isImageGenModel } from '../../lib/callImageProvider'
 import type { TaskType } from '../../lib/providers'
 import {
   type AttachedFile,
@@ -223,11 +223,9 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
           setMessages(prev => [...prev, { role: 'assistant', content: 'No providers available. Add an API key in the API tab.', error: true }])
           return
         }
-        const imgCfg = IMAGE_PROVIDER_CONFIGS[route.provider as ImageProvider]
-        if (imgCfg) {
-          // Provider supports image generation — call image API
-          const apiKey = route.provider === 'openai' ? keys['openai'] : undefined
-          const result = await callImageProvider(text, route.provider as ImageProvider, route.model, apiKey)
+        if (isImageGenModel(route.provider, route.model)) {
+          const apiKey = keys[route.provider]
+          const result = await callImageProvider(text, route.provider, route.model, apiKey)
           setMessages(prev => [...prev, {
             role: 'assistant',
             content: result.error ? `Image error: ${result.error}` : '',

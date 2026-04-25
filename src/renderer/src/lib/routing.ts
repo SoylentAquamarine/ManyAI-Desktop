@@ -107,9 +107,16 @@ export function resolveProvider(
   const isUsable = (pk: string) =>
     (pk === 'pollinations' || availableKeys.has(pk)) && enabledProviders[pk] !== false;
 
+  const isImageTask = WORKFLOW_REGISTRY.find(w => w.type === taskType)?.isImage ?? false;
+  const allProviders = getAllProviders();
+
   const chain = prefs.routes[taskType] ?? DEFAULT_ROUTES[taskType] ?? DEFAULT_ROUTES['general'];
   for (const entry of chain) {
-    if (entry.enabled !== false && isUsable(entry.provider)) return entry;
+    if (entry.enabled !== false && isUsable(entry.provider)) {
+      const model = allProviders[entry.provider]?.models.find(m => m.id === entry.model);
+      if (model?.supportsImageGen && !isImageTask) continue;
+      return entry;
+    }
   }
 
   // No configured route available — check if pollinations is usable as last resort

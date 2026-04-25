@@ -175,7 +175,12 @@ $ npm run build:linux
 
 **Providers**
 - Add/Edit Provider form now supports per-model "Image gen" checkbox
+- Existing built-in model rows in the API screen card view have an inline 🖼 checkbox — flag any model for image gen without opening the edit form
 - Custom providers added via the UI can now include image-generation models that automatically appear in the image workflow's routing options
+
+**Routing enforcement — either-or**
+- Image-gen models are excluded from text/chat workflow routing chains — `resolveProvider()` skips any chain entry whose model has `supportsImageGen: true` when the task is not an image task
+- Text/chat models are excluded from image workflow provider and model dropdowns in both RoutingScreen and RightPanel
 
 **GitHub Pages**
 - Verified and launched: [soylentaquamarine.github.io/ManyAI-Desktop](https://soylentaquamarine.github.io/ManyAI-Desktop/)

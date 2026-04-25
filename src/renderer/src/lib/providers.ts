@@ -15,6 +15,7 @@ export type TaskType = string;
 export interface ProviderModel {
   id: string;
   name: string;
+  supportsImageGen?: boolean;
 }
 
 export interface Provider {
@@ -245,6 +246,8 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     models: [
       { id: 'gpt-4o-mini', name: 'GPT-4o Mini (fast)' },
       { id: 'gpt-4o',      name: 'GPT-4o (best quality)' },
+      { id: 'dall-e-3',    name: 'DALL·E 3', supportsImageGen: true },
+      { id: 'dall-e-2',    name: 'DALL·E 2', supportsImageGen: true },
     ],
     baseUrl: 'https://api.openai.com/v1',
     needsKey: true,
@@ -284,9 +287,15 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'Pollinations',
     model: 'openai',
     models: [
-      { id: 'openai',  name: 'OpenAI (via Pollinations)' },
-      { id: 'mistral', name: 'Mistral (via Pollinations)' },
-      { id: 'llama',   name: 'Llama (via Pollinations)' },
+      { id: 'openai',       name: 'OpenAI (via Pollinations)' },
+      { id: 'mistral',      name: 'Mistral (via Pollinations)' },
+      { id: 'llama',        name: 'Llama (via Pollinations)' },
+      { id: 'flux',         name: 'Flux', supportsImageGen: true },
+      { id: 'flux-realism', name: 'Flux Realism', supportsImageGen: true },
+      { id: 'flux-anime',   name: 'Flux Anime', supportsImageGen: true },
+      { id: 'flux-3d',      name: 'Flux 3D', supportsImageGen: true },
+      { id: 'turbo',        name: 'Turbo', supportsImageGen: true },
+      { id: 'gptimage',     name: 'GPT Image', supportsImageGen: true },
     ],
     baseUrl: 'https://text.pollinations.ai',
     needsKey: false,
