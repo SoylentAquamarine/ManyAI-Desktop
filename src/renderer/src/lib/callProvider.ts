@@ -129,7 +129,7 @@ export async function callProvider(
         },
         body: JSON.stringify({
           model: provider.model,
-          max_tokens: 1024,
+          max_tokens: provider.models.find(m => m.id === provider.model)?.maxTokens ?? 1024,
           messages,
         }),
       });
@@ -199,7 +199,7 @@ export async function callProvider(
       },
       body: JSON.stringify({
         model: provider.model,
-        max_tokens: 1024,
+        max_tokens: provider.models.find(m => m.id === provider.model)?.maxTokens ?? 1024,
         messages,
       }),
     });

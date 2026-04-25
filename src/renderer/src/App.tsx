@@ -2,15 +2,12 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import ChatScreen from './features/chat/ChatScreen'
 import SettingsScreen from './features/settings/SettingsScreen'
 import SavedScreen from './features/editor/SavedScreen'
-import ApiScreen from './features/settings/ApiScreen'
-import RoutingScreen from './features/settings/RoutingScreen'
-import WorkflowsScreen from './features/settings/WorkflowsScreen'
 import RightPanel from './components/RightPanel'
 import { TASK_META } from './lib/routing'
 import { loadWorkflows, getWorkflow } from './lib/workflows'
 import type { TaskType } from './lib/providers'
 
-export type PanelType = 'saved' | 'workflows' | 'routing' | 'api' | 'settings'
+export type PanelType = 'saved' | 'settings'
 
 interface ChatTab {
   id: string
@@ -38,13 +35,13 @@ function loadPersistedTabs(): { tabs: ChatTab[]; activeTabId: string } {
     if (tabs) {
       if (tabs.length === 0) return { tabs: [], activeTabId: '' }
       // Migrate old tabs that have no workflowType
-      const migrated = tabs.map(t => ({ ...t, workflowType: (t.workflowType ?? 'general') as TaskType }))
+      const migrated = tabs.map(t => ({ ...t, workflowType: (t.workflowType ?? 'coding') as TaskType }))
       const activeTabId = localStorage.getItem(ACTIVE_KEY) ?? migrated[0].id
       return { tabs: migrated, activeTabId }
     }
   } catch {}
   // Default first tab: General
-  const t: ChatTab = { id: `tab-${Date.now()}`, label: 'General', workflowType: 'general' }
+  const t: ChatTab = { id: `tab-${Date.now()}`, label: 'Code', workflowType: 'coding' }
   return { tabs: [t], activeTabId: t.id }
 }
 
@@ -147,14 +144,6 @@ export default function App() {
     })
   }
 
-  const updateTabLabel = (id: string, label: string) => {
-    setTabs(prev => {
-      const next = prev.map(t => t.id === id ? { ...t, label } : t)
-      persistTabs(next, activeTabId)
-      return next
-    })
-  }
-
   return (
     <div className="app-shell">
       <div className="app-main">
@@ -204,11 +193,8 @@ export default function App() {
             </div>
           ))}
 
-          {panel === 'saved'     && <SavedScreen />}
-          {panel === 'workflows' && <WorkflowsScreen onOpenRouting={() => setPanel('routing')} />}
-          {panel === 'routing'   && <RoutingScreen />}
-          {panel === 'api'       && <ApiScreen />}
-{panel === 'settings'  && <SettingsScreen />}
+          {panel === 'saved'    && <SavedScreen />}
+          {panel === 'settings' && <SettingsScreen />}
         </div>
       </div>
 

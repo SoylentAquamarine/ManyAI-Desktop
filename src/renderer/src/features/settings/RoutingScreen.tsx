@@ -4,11 +4,12 @@ import {
   TASK_META, DEFAULT_ROUTES,
   loadRoutingPrefs, saveRoutingPrefs, RouteEntry, RoutingPrefs,
 } from '../../lib/routing'
+import { WORKFLOW_REGISTRY } from '../../workflows'
 import { loadAllKeys } from '../../lib/keyStore'
 import { loadEnabledProviders } from '../../lib/providerPrefs'
 import { loadWorkflows } from '../../lib/workflows'
 
-const MAX_CHAIN = 4
+const MAX_CHAIN = 255
 
 export default function RoutingScreen() {
   const [prefs, setPrefs] = useState<RoutingPrefs>(() => loadRoutingPrefs())
@@ -25,16 +26,28 @@ export default function RoutingScreen() {
 
   const allWorkflows = loadWorkflows()
 
-  // Providers that have at least one image-gen model
-  const imageProviderKeys = allProviderOrder.filter(pk =>
-    allProviders[pk]?.models.some(m => m.supportsImageGen)
-  )
+  const getWorkflowTypes = (task: string) =>
+    WORKFLOW_REGISTRY.find(w => w.type === task)?.workflowType
+    ?? allWorkflows.find(w => w.type === task)?.workflowType
+    ?? ['chat']
 
-  const getImageModels = (pk: string) =>
-    allProviders[pk]?.models.filter(m => m.supportsImageGen) ?? []
+  const modelCapable = (caps: string[] | undefined, wts: string[]) =>
+    wts.every(wt => (caps ?? ['chat']).includes(wt))
+
+  const getCapableProviders = (task: string) => {
+    const wts = getWorkflowTypes(task)
+    return allProviderOrder.filter(pk =>
+      allProviders[pk]?.models.some(m => modelCapable(m.capabilities, wts))
+    )
+  }
+
+  const getCapableModels = (task: string, pk: string) => {
+    const wts = getWorkflowTypes(task)
+    return (allProviders[pk]?.models ?? []).filter(m => modelCapable(m.capabilities, wts))
+  }
 
   const getChain = (task: string): RouteEntry[] =>
-    prefs.routes[task] ?? DEFAULT_ROUTES[task] ?? DEFAULT_ROUTES['general']
+    prefs.routes[task] ?? DEFAULT_ROUTES[task] ?? DEFAULT_ROUTES['coding']
 
   const setChain = (task: string, chain: RouteEntry[]) =>
     setPrefs(prev => ({ ...prev, routes: { ...prev.routes, [task]: chain } }))
@@ -45,11 +58,8 @@ export default function RoutingScreen() {
     setChain(task, chain)
   }
 
-  const isImageWorkflow = (task: string) =>
-    !!(allWorkflows.find(w => w.type === task)?.isImage)
-
   const onProviderChange = (task: string, idx: number, pk: string) => {
-    const models = isImageWorkflow(task) ? getImageModels(pk) : (allProviders[pk]?.models ?? [])
+    const models = getCapableModels(task, pk)
     const model = models[0]?.id ?? allProviders[pk]?.model ?? ''
     updateEntry(task, idx, { provider: pk, model })
   }
@@ -58,16 +68,16 @@ export default function RoutingScreen() {
     const chain = getChain(task)
     if (chain.length >= MAX_CHAIN) return
     const used = new Set(chain.map(e => e.provider))
-    const candidates = isImageWorkflow(task) ? imageProviderKeys : allProviderOrder
+    const candidates = getCapableProviders(task)
     const next = candidates.find(k => !used.has(k)) ?? candidates[0] ?? 'pollinations'
-    const models = isImageWorkflow(task) ? getImageModels(next) : (allProviders[next]?.models ?? [])
+    const models = getCapableModels(task, next)
     const model = models[0]?.id ?? allProviders[next]?.model ?? ''
     setChain(task, [...chain, { provider: next, model }])
   }
 
   const removeEntry = (task: string, idx: number) => {
     const chain = getChain(task).filter((_, i) => i !== idx)
-    const fallback = DEFAULT_ROUTES[task] ?? DEFAULT_ROUTES['general']
+    const fallback = DEFAULT_ROUTES[task] ?? DEFAULT_ROUTES['coding']
     setChain(task, chain.length ? chain : [fallback[0]])
   }
 
@@ -78,7 +88,7 @@ export default function RoutingScreen() {
   }
 
   const resetDefaults = () => {
-    const reset: RoutingPrefs = { autoDetect: true, routes: { ...DEFAULT_ROUTES } }
+    const reset: RoutingPrefs = { routes: { ...DEFAULT_ROUTES } }
     setPrefs(reset)
     saveRoutingPrefs(reset)
     setSaved(true)
@@ -89,9 +99,9 @@ export default function RoutingScreen() {
     <div className="screen">
       <div className="api-toolbar">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>Task Routing</span>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>Workflow Models</span>
           <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>
-            Each task type tries providers top-to-bottom — first available wins.
+            Controls which models are available to each workflow, ordered by priority. Only models satisfying ALL of the workflow's required types are shown. First available wins.
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -101,27 +111,12 @@ export default function RoutingScreen() {
       </div>
 
       <div className="api-list">
-        {/* Auto-detect toggle */}
-        <div className="route-card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 18 }}>🔍</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontWeight: 600 }}>Auto-detect task type</div>
-            <div style={{ fontSize: 11, color: 'var(--text-dim)' }}>Reads your prompt and picks the route. You can still override per message.</div>
-          </div>
-          <label className="toggle">
-            <input type="checkbox" checked={prefs.autoDetect}
-              onChange={e => setPrefs(p => ({ ...p, autoDetect: e.target.checked }))} />
-            <span className="toggle-slider" />
-          </label>
-        </div>
-
-        {/* Per-task chains — all workflows including image */}
+        {/* Per-task chains — all workflows */}
         {allWorkflows.map(w => {
           const task = w.type
           const meta = TASK_META[task] ?? w
           const chain = getChain(task)
-          const imgWorkflow = !!w.isImage
-          const providerList = imgWorkflow ? imageProviderKeys : allProviderOrder
+          const providerList = getCapableProviders(task)
 
           return (
             <div key={task} className="route-card">
@@ -136,9 +131,7 @@ export default function RoutingScreen() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {chain.map((entry, idx) => {
                   const avail = availableProviders.includes(entry.provider)
-                  const modelList = imgWorkflow
-                    ? getImageModels(entry.provider)
-                    : (allProviders[entry.provider]?.models.filter(m => !m.supportsImageGen) ?? [])
+                  const modelList = getCapableModels(task, entry.provider)
                   return (
                     <div key={idx} className="chain-row">
                       <span className="chain-num">{idx === 0 ? '1st' : idx === 1 ? '2nd' : idx === 2 ? '3rd' : `${idx+1}th`}</span>
@@ -188,7 +181,6 @@ function getKeywordExamples(task: string): string {
     creative: 'write a story, poem, creative, brainstorm, fiction…',
     summarization: 'summarize, summary, tldr, key points, overview…',
     translation: 'translate, in Spanish, in French, en español…',
-    general: '(everything else — the final fallback)',
   }
   return ex[task] ?? ''
 }

@@ -11,4 +11,5 @@ export const codingWorkflow: WorkflowPlugin = {
     { provider: 'openai',    model: 'gpt-4o' },
     { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
   ],
+  workflowType: ['chat'],
 }

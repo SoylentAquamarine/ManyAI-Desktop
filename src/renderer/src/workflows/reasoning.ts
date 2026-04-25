@@ -11,4 +11,5 @@ export const reasoningWorkflow: WorkflowPlugin = {
     { provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' },
     { provider: 'openai',    model: 'gpt-4o' },
   ],
+  workflowType: ['chat'],
 }

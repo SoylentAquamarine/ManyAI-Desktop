@@ -8,6 +8,8 @@
  * edit stevepleasants.com/manyai/config.json to add/remove models without a build.
  */
 
+import type { WorkflowType } from './workflowTypes'
+
 export type ProviderKey = string;
 
 export type TaskType = string;
@@ -15,7 +17,12 @@ export type TaskType = string;
 export interface ProviderModel {
   id: string;
   name: string;
-  supportsImageGen?: boolean;
+  /** Workflow types this model can handle. Omit to inherit nothing (shown in all chat routes). */
+  capabilities?: WorkflowType[];
+  /** Max tokens to request. Defaults to 1024 if omitted. */
+  maxTokens?: number;
+  /** Image generation size, e.g. "1024x1024". Defaults to "1024x1024". */
+  imageSize?: string;
 }
 
 export interface Provider {
@@ -45,8 +52,8 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'Cerebras',
     model: 'llama3.1-8b',
     models: [
-      { id: 'llama3.1-8b',  name: 'Llama 3.1 8B (fastest)' },
-      { id: 'gpt-oss-120b', name: 'GPT-OSS 120B (smarter)' },
+      { id: 'llama3.1-8b',  name: 'Llama 3.1 8B (fastest)',  capabilities: ['chat'] },
+      { id: 'gpt-oss-120b', name: 'GPT-OSS 120B (smarter)',  capabilities: ['chat'] },
     ],
     baseUrl: 'https://api.cerebras.ai/v1',
     needsKey: true,
@@ -64,8 +71,8 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'Groq',
     model: 'llama-3.1-8b-instant',
     models: [
-      { id: 'llama-3.1-8b-instant',   name: 'Llama 3.1 8B (fast)' },
-      { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B' },
+      { id: 'llama-3.1-8b-instant',   name: 'Llama 3.1 8B (fast)',  capabilities: ['chat'] },
+      { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B',       capabilities: ['chat'] },
     ],
     baseUrl: 'https://api.groq.com/openai/v1',
     needsKey: true,
@@ -83,8 +90,8 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'Gemini',
     model: 'gemini-2.5-flash-lite',
     models: [
-      { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite (fast)' },
-      { id: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash (best quality)' },
+      { id: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash Lite (fast)',   capabilities: ['chat', 'vision'] },
+      { id: 'gemini-2.5-flash',      name: 'Gemini 2.5 Flash (best quality)', capabilities: ['chat', 'vision'] },
     ],
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     needsKey: true,
@@ -102,8 +109,8 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'Mistral',
     model: 'mistral-small-latest',
     models: [
-      { id: 'mistral-small-latest', name: 'Mistral Small' },
-      { id: 'mistral-large-latest', name: 'Mistral Large (best quality)' },
+      { id: 'mistral-small-latest', name: 'Mistral Small',           capabilities: ['chat'] },
+      { id: 'mistral-large-latest', name: 'Mistral Large (best quality)', capabilities: ['chat'] },
     ],
     baseUrl: 'https://api.mistral.ai/v1',
     needsKey: true,
@@ -121,7 +128,7 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'SambaNova',
     model: 'Meta-Llama-3.3-70B-Instruct',
     models: [
-      { id: 'Meta-Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B' },
+      { id: 'Meta-Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B', capabilities: ['chat'] },
     ],
     baseUrl: 'https://api.sambanova.ai/v1',
     needsKey: true,
@@ -139,9 +146,9 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'OpenRouter',
     model: 'openrouter/free',
     models: [
-      { id: 'openrouter/free',                    name: 'Auto (best free model)' },
-      { id: 'meta-llama/llama-3.3-70b-instruct',  name: 'Llama 3.3 70B (paid)' },
-      { id: 'anthropic/claude-3.5-sonnet',        name: 'Claude 3.5 Sonnet (paid)' },
+      { id: 'openrouter/free',                   name: 'Auto (best free model)',    capabilities: ['chat'] },
+      { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 70B (paid)',     capabilities: ['chat'] },
+      { id: 'anthropic/claude-3.5-sonnet',       name: 'Claude 3.5 Sonnet (paid)', capabilities: ['chat', 'vision'] },
     ],
     baseUrl: 'https://openrouter.ai/api/v1',
     needsKey: true,
@@ -163,8 +170,8 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'Cloudflare AI',
     model: '@cf/meta/llama-3.1-8b-instruct',
     models: [
-      { id: '@cf/meta/llama-3.1-8b-instruct',           name: 'Llama 3.1 8B' },
-      { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', name: 'Llama 3.3 70B (fast)' },
+      { id: '@cf/meta/llama-3.1-8b-instruct',           name: 'Llama 3.1 8B',        capabilities: ['chat'] },
+      { id: '@cf/meta/llama-3.3-70b-instruct-fp8-fast', name: 'Llama 3.3 70B (fast)', capabilities: ['chat'] },
     ],
     baseUrl: 'https://api.cloudflare.com/client/v4/accounts',
     needsKey: true,
@@ -183,9 +190,9 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'Hugging Face',
     model: 'Qwen/Qwen2.5-72B-Instruct',
     models: [
-      { id: 'Qwen/Qwen2.5-72B-Instruct',          name: 'Qwen 2.5 72B' },
-      { id: 'meta-llama/Llama-3.1-8B-Instruct',   name: 'Llama 3.1 8B' },
-      { id: 'HuggingFaceH4/zephyr-7b-beta',        name: 'Zephyr 7B' },
+      { id: 'Qwen/Qwen2.5-72B-Instruct',        name: 'Qwen 2.5 72B',  capabilities: ['chat'] },
+      { id: 'meta-llama/Llama-3.1-8B-Instruct', name: 'Llama 3.1 8B',  capabilities: ['chat'] },
+      { id: 'HuggingFaceH4/zephyr-7b-beta',     name: 'Zephyr 7B',     capabilities: ['chat'] },
     ],
     baseUrl: 'https://router.huggingface.co/v1',
     needsKey: true,
@@ -203,9 +210,9 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'Cohere',
     model: 'command-r-08-2024',
     models: [
-      { id: 'command-r-08-2024',      name: 'Command R (2024)' },
-      { id: 'command-r-plus-08-2024', name: 'Command R+ (2024)' },
-      { id: 'command-a-03-2025',      name: 'Command A (newest)' },
+      { id: 'command-r-08-2024',      name: 'Command R (2024)',   capabilities: ['chat'] },
+      { id: 'command-r-plus-08-2024', name: 'Command R+ (2024)',  capabilities: ['chat'] },
+      { id: 'command-a-03-2025',      name: 'Command A (newest)', capabilities: ['chat'] },
     ],
     baseUrl: 'https://api.cohere.com/compatibility/v1',
     needsKey: true,
@@ -225,8 +232,8 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'Fireworks',
     model: 'accounts/fireworks/models/deepseek-v3p1',
     models: [
-      { id: 'accounts/fireworks/models/deepseek-v3p1',           name: 'DeepSeek V3' },
-      { id: 'accounts/fireworks/models/llama-v3p3-70b-instruct', name: 'Llama 3.3 70B' },
+      { id: 'accounts/fireworks/models/deepseek-v3p1',           name: 'DeepSeek V3',  capabilities: ['chat'] },
+      { id: 'accounts/fireworks/models/llama-v3p3-70b-instruct', name: 'Llama 3.3 70B', capabilities: ['chat'] },
     ],
     baseUrl: 'https://api.fireworks.ai/inference/v1',
     needsKey: true,
@@ -244,10 +251,10 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'OpenAI',
     model: 'gpt-4o-mini',
     models: [
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini (fast)' },
-      { id: 'gpt-4o',      name: 'GPT-4o (best quality)' },
-      { id: 'dall-e-3',    name: 'DALL·E 3', supportsImageGen: true },
-      { id: 'dall-e-2',    name: 'DALL·E 2', supportsImageGen: true },
+      { id: 'gpt-4o-mini', name: 'GPT-4o Mini (fast)',    capabilities: ['chat'] },
+      { id: 'gpt-4o',      name: 'GPT-4o (best quality)', capabilities: ['chat', 'vision'] },
+      { id: 'dall-e-3',    name: 'DALL·E 3',              capabilities: ['image'] },
+      { id: 'dall-e-2',    name: 'DALL·E 2',              capabilities: ['image'] },
     ],
     baseUrl: 'https://api.openai.com/v1',
     needsKey: true,
@@ -265,9 +272,9 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'Claude (Anthropic)',
     model: 'claude-3-5-haiku-20241022',
     models: [
-      { id: 'claude-3-5-haiku-20241022',  name: 'Claude 3.5 Haiku (fast)' },
-      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (best)' },
-      { id: 'claude-3-opus-20240229',     name: 'Claude 3 Opus (most capable)' },
+      { id: 'claude-3-5-haiku-20241022',  name: 'Claude 3.5 Haiku (fast)',       capabilities: ['chat', 'vision'] },
+      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet (best)',       capabilities: ['chat', 'vision'] },
+      { id: 'claude-3-opus-20240229',     name: 'Claude 3 Opus (most capable)',   capabilities: ['chat', 'vision'] },
     ],
     baseUrl: 'https://api.anthropic.com/v1',
     needsKey: true,
@@ -287,15 +294,15 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
     name: 'Pollinations',
     model: 'openai',
     models: [
-      { id: 'openai',       name: 'OpenAI (via Pollinations)' },
-      { id: 'mistral',      name: 'Mistral (via Pollinations)' },
-      { id: 'llama',        name: 'Llama (via Pollinations)' },
-      { id: 'flux',         name: 'Flux', supportsImageGen: true },
-      { id: 'flux-realism', name: 'Flux Realism', supportsImageGen: true },
-      { id: 'flux-anime',   name: 'Flux Anime', supportsImageGen: true },
-      { id: 'flux-3d',      name: 'Flux 3D', supportsImageGen: true },
-      { id: 'turbo',        name: 'Turbo', supportsImageGen: true },
-      { id: 'gptimage',     name: 'GPT Image', supportsImageGen: true },
+      { id: 'openai',       name: 'OpenAI (via Pollinations)',  capabilities: ['chat'] },
+      { id: 'mistral',      name: 'Mistral (via Pollinations)', capabilities: ['chat'] },
+      { id: 'llama',        name: 'Llama (via Pollinations)',   capabilities: ['chat'] },
+      { id: 'flux',         name: 'Flux',                       capabilities: ['image'] },
+      { id: 'flux-realism', name: 'Flux Realism',               capabilities: ['image'] },
+      { id: 'flux-anime',   name: 'Flux Anime',                 capabilities: ['image'] },
+      { id: 'flux-3d',      name: 'Flux 3D',                    capabilities: ['image'] },
+      { id: 'turbo',        name: 'Turbo',                      capabilities: ['image'] },
+      { id: 'gptimage',     name: 'GPT Image',                  capabilities: ['image'] },
     ],
     baseUrl: 'https://text.pollinations.ai',
     needsKey: false,

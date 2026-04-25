@@ -153,34 +153,38 @@ $ npm run build:linux
 
 ---
 
-### 2026-04-25
+### 2026-04-25 — Capability system, workflow overhaul, configurable model params
 
-**Image Generation — fully dynamic provider support**
-- DALL·E 3 and DALL·E 2 are now visible and manageable in the API screen under the OpenAI provider
-- Pollinations image models (Flux, Flux Realism, Flux Anime, Flux 3D, Turbo, GPT Image) are now visible in the API screen under the Pollinations provider
-- Added `supportsImageGen` flag to the `ProviderModel` interface — any model can be marked as an image generation model
-- Added "Image gen" checkbox per model row in the Add/Edit Provider form — mark any model on any provider as image-capable without code changes
-- The Image workflow routing screen now dynamically shows only providers and models flagged for image generation, instead of a hardcoded list
-- Generic OpenAI-compatible `/images/generations` handler added — new providers that support image gen via standard API will work automatically
-- Removed all hardcoded `IMAGE_PROVIDER_CONFIGS` references from `ChatScreen`, `RoutingScreen`, and `RightPanel`
-- `isImage` flag now propagates from workflow plugin registry through `WorkflowDef`, so image workflow detection is no longer hardcoded on the string `'image'`
+**Capability-based model filtering**
+- Replaced `supportsImageGen` boolean with `capabilities?: WorkflowType[]` array on `ProviderModel`
+- `WorkflowType` = `'chat' | 'image' | 'vision' | 'audio' | 'video' | 'agent'` defined in `workflowTypes.ts`
+- Workflow routing now filters models using `every()` — a model must support ALL types a workflow requires
+- Fixed bug where providers with no capabilities (e.g. Cohere, HuggingFace) appeared in the Image workflow — missing capabilities now default to `['chat']` instead of passing all filters
+- All built-in provider models pre-filled with correct capabilities (chat, vision, image as appropriate)
+- Capabilities can be set per-model directly from the API screen (Capabilities expand panel) without editing code
 
-**Workflow system**
-- Fixed transparent background on the Add/Edit Workflow modal (CSS variable `--bg1` was undefined; corrected to `--surface`)
-- Fixed same transparent background bug in the New Tab workflow picker modal
-- `isImage` flag now included in built-in workflow definitions so the routing UI correctly identifies image workflows without string matching
+**Workflow system overhaul**
+- Removed General workflow entirely — routing fallback changed to 'coding'
+- Removed automatic task-type detection (`detectTaskType`, `autoDetect`) — workflow is fixed per tab
+- Workflow type is now multi-select (`WorkflowType[]`); a workflow can require multiple capability types simultaneously
+- Workflows screen: checkbox grid for workflow type selection (replaces single dropdown)
+- All workflows (including formerly locked ones) support Edit and Delete
+- Tab labels stay as the workflow name; no longer overwritten by first message
 
-**Tab titles**
-- Tab labels now stay as the workflow name (e.g., "General", "Coding") and no longer get overwritten with the first message text
+**Settings restructure**
+- Settings screen gains sub-navigation: General | API | Workflows | Workflow Models | Save Config
+- "Workflow Models" tab (formerly a separate Routing button) shows per-workflow provider/model priority chains
+- Save Config tab: export all settings as encrypted or plain JSON download
+- Routing button removed from right panel and App-level nav
 
-**Providers**
-- Add/Edit Provider form now supports per-model "Image gen" checkbox
-- Existing built-in model rows in the API screen card view have an inline 🖼 checkbox — flag any model for image gen without opening the edit form
-- Custom providers added via the UI can now include image-generation models that automatically appear in the image workflow's routing options
+**Provider / model config**
+- `maxTokens` per model — replaces hardcoded `1024` in both Anthropic and OpenAI-compatible call paths
+- `imageSize` per model — replaces hardcoded `1024x1024` (and `768x768` for Pollinations) in image generation calls
+- Both fields editable in the Capabilities panel per model row and in the Add/Edit Provider form
+- Delete button added next to Test button on each model row (requires confirm click; disabled if only one model)
 
-**Routing enforcement — either-or**
-- Image-gen models are excluded from text/chat workflow routing chains — `resolveProvider()` skips any chain entry whose model has `supportsImageGen: true` when the task is not an image task
-- Text/chat models are excluded from image workflow provider and model dropdowns in both RoutingScreen and RightPanel
+**Routing chains**
+- MAX_CHAIN increased from 4 to 255 — effectively unlimited fallback providers per workflow
 
 **GitHub Pages**
 - Verified and launched: [soylentaquamarine.github.io/ManyAI-Desktop](https://soylentaquamarine.github.io/ManyAI-Desktop/)

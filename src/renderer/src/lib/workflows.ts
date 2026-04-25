@@ -17,7 +17,7 @@ export interface WorkflowDef {
   description: string
   enabled: boolean
   builtIn: boolean
-  isImage?: boolean
+  workflowType?: import('./workflowTypes').WorkflowType[]
   /** Silently prepended before every user message */
   systemPrompt?: string
   /** Files read from disk and silently injected into every message */
@@ -37,7 +37,7 @@ export const BUILTIN_WORKFLOWS: WorkflowDef[] = WORKFLOW_REGISTRY.map(w => ({
   description: w.description,
   enabled: true,
   builtIn: true,
-  isImage: w.isImage,
+  workflowType: w.workflowType,
 }))
 
 function loadEnabledMap(): Record<string, boolean> {
@@ -83,7 +83,7 @@ export function loadWorkflows(): WorkflowDef[] {
     .filter(w => !removed.has(w.type))
     .map(w => ({
       ...w,
-      enabled: w.type === 'general' ? true : (enabledMap[w.type] ?? true),
+      enabled: enabledMap[w.type] ?? true,
     }))
   const customs = loadCustomWorkflows().map(w => ({
     ...w,

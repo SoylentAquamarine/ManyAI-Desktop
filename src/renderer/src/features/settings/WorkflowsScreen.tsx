@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import { loadWorkflows, saveWorkflows, saveRemovedBuiltins, loadRemovedBuiltins, WorkflowDef } from '../../lib/workflows'
-
-interface Props {
-  onOpenRouting: () => void
-}
+import { WORKFLOW_TYPES, WORKFLOW_TYPE_LABELS, type WorkflowType } from '../../lib/workflowTypes'
 
 const BLANK: Omit<WorkflowDef, 'builtIn'> = {
   type: '',
@@ -11,12 +8,13 @@ const BLANK: Omit<WorkflowDef, 'builtIn'> = {
   icon: '🔧',
   description: '',
   enabled: true,
+  workflowType: ['chat'],
   systemPrompt: '',
   contextFiles: [],
   keywords: '',
 }
 
-export default function WorkflowsScreen({ onOpenRouting }: Props) {
+export default function WorkflowsScreen() {
   const [workflows, setWorkflows]   = useState<WorkflowDef[]>(() => loadWorkflows())
   const [removedBuiltins, setRemovedBuiltins] = useState<string[]>(() => loadRemovedBuiltins())
   const [saved, setSaved]           = useState(false)
@@ -26,9 +24,7 @@ export default function WorkflowsScreen({ onOpenRouting }: Props) {
   const [addingFile, setAddingFile] = useState(false)
 
   const toggle = (type: string) => {
-    setWorkflows(prev =>
-      prev.map(w => w.type === type && w.type !== 'general' ? { ...w, enabled: !w.enabled } : w)
-    )
+    setWorkflows(prev => prev.map(w => w.type === type ? { ...w, enabled: !w.enabled } : w))
   }
 
   const handleSave = () => {
@@ -51,6 +47,7 @@ export default function WorkflowsScreen({ onOpenRouting }: Props) {
       icon: w.icon,
       description: w.description,
       enabled: w.enabled,
+      workflowType: w.workflowType ?? ['chat'],
       systemPrompt: w.systemPrompt ?? '',
       contextFiles: w.contextFiles ?? [],
       keywords: w.keywords ?? '',
@@ -74,6 +71,7 @@ export default function WorkflowsScreen({ onOpenRouting }: Props) {
       description: form.description.trim(),
       enabled: form.enabled,
       builtIn: false,
+      workflowType: (form.workflowType as WorkflowType[] | undefined)?.length ? form.workflowType as WorkflowType[] : ['chat'],
       systemPrompt: form.systemPrompt?.trim() || undefined,
       contextFiles: form.contextFiles?.length ? form.contextFiles : undefined,
       keywords: form.keywords?.trim() || undefined,
@@ -129,9 +127,6 @@ export default function WorkflowsScreen({ onOpenRouting }: Props) {
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button className="btn-ghost" onClick={onOpenRouting} style={{ fontSize: 11 }}>
-            🔀 Routing →
-          </button>
           <button className="btn-ghost" onClick={openAdd} style={{ fontSize: 11 }}>
             + Add
           </button>
@@ -146,7 +141,14 @@ export default function WorkflowsScreen({ onOpenRouting }: Props) {
           <div key={w.type} className="route-card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 22, flexShrink: 0 }}>{w.icon}</span>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: 13 }}>{w.label}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontWeight: 600, fontSize: 13 }}>{w.label}</span>
+                {w.workflowType?.map(wt => (
+                  <span key={wt} style={{ fontSize: 10, padding: '1px 6px', borderRadius: 4, background: 'var(--bg2)', color: 'var(--text-dim)', border: '1px solid var(--border)' }}>
+                    {WORKFLOW_TYPE_LABELS[wt] ?? wt}
+                  </span>
+                ))}
+              </div>
               <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 2 }}>{w.description}</div>
               {(w.contextFiles?.length || w.systemPrompt) && (
                 <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 3, opacity: 0.7 }}>
@@ -156,28 +158,22 @@ export default function WorkflowsScreen({ onOpenRouting }: Props) {
               )}
             </div>
             <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              {w.type !== 'general' && w.type !== 'image' && (
-                <>
-                  <button
-                    className="btn-ghost"
-                    style={{ fontSize: 11, padding: '2px 8px' }}
-                    onClick={() => openEdit(w)}
-                  >Edit</button>
-                  <button
-                    className="btn-ghost"
-                    style={{ fontSize: 11, padding: '2px 8px', color: 'var(--danger, #e55)' }}
-                    onClick={() => deleteWorkflow(w.type, w.builtIn)}
-                  >Delete</button>
-                </>
-              )}
-              {w.type === 'general' ? (
-                <span style={{ fontSize: 11, color: 'var(--text-dim)', opacity: 0.6 }}>always on</span>
-              ) : (
+              <button
+                className="btn-ghost"
+                style={{ fontSize: 11, padding: '2px 8px' }}
+                onClick={() => openEdit(w)}
+              >Edit</button>
+              <>
+                <button
+                  className="btn-ghost"
+                  style={{ fontSize: 11, padding: '2px 8px', color: 'var(--danger, #e55)' }}
+                  onClick={() => deleteWorkflow(w.type, w.builtIn)}
+                >Delete</button>
                 <label className="toggle" title={w.enabled ? 'Disable' : 'Enable'}>
                   <input type="checkbox" checked={w.enabled} onChange={() => toggle(w.type)} />
                   <span className="toggle-slider" />
                 </label>
-              )}
+              </>
             </div>
           </div>
         ))}
@@ -236,9 +232,33 @@ export default function WorkflowsScreen({ onOpenRouting }: Props) {
               />
             </Field>
 
+            <Field label="Workflow Type" hint="Select all types this workflow requires. Only models supporting ALL selected types will be available.">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', padding: '6px 0' }}>
+                {WORKFLOW_TYPES.map(wt => {
+                  const current = (form.workflowType as WorkflowType[] | undefined) ?? []
+                  const checked = current.includes(wt)
+                  return (
+                    <label key={wt} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer', minWidth: 200 }}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={e => {
+                          const next: WorkflowType[] = e.target.checked
+                            ? [...current.filter(c => c !== wt), wt]
+                            : current.filter(c => c !== wt)
+                          setForm(f => ({ ...f, workflowType: next }))
+                        }}
+                      />
+                      {WORKFLOW_TYPE_LABELS[wt]}
+                    </label>
+                  )
+                })}
+              </div>
+            </Field>
+
             <Field label="Description">
               <input
-               
+
                 value={form.description}
                 onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                 placeholder="Short description shown in the tab picker"

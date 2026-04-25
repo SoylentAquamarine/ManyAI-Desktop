@@ -1,3 +1,5 @@
+import type { WorkflowType } from '../lib/workflowTypes'
+
 export interface RouteEntry {
   provider: string
   model: string
@@ -11,6 +13,5 @@ export interface WorkflowPlugin {
   description: string
   keywords: RegExp
   defaultRoutes: RouteEntry[]
-  /** Signals that this workflow produces images, not text */
-  isImage?: boolean
+  workflowType: WorkflowType[]
 }

@@ -4,6 +4,7 @@ import {
   upsertProvider, removeProvider,
   type Provider, type ProviderModel,
 } from '../../lib/providers'
+import { WORKFLOW_TYPES, WORKFLOW_TYPE_LABELS, type WorkflowType } from '../../lib/workflowTypes'
 import { saveKey, loadKey, deleteKey } from '../../lib/keyStore'
 import { loadEnabledModels, saveEnabledModels } from '../../lib/providerPrefs'
 import { callProvider } from '../../lib/callProvider'
@@ -220,44 +221,81 @@ function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
         </div>
 
         {label('Models')}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {form.models.map((m, idx) => (
-            <div key={idx} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              <input
-                value={m.id}
-                onChange={e => updateModel(idx, { id: e.target.value })}
-                placeholder="model-id"
-                style={{ flex: 1, fontSize: 12 }}
-              />
-              <input
-                value={m.name}
-                onChange={e => updateModel(idx, { name: e.target.value })}
-                placeholder="Display name"
-                style={{ flex: 1, fontSize: 12 }}
-              />
-              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+            <div key={idx} style={{ border: '1px solid var(--border)', borderRadius: 6, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <input
-                  type="radio"
-                  name="defaultModel"
-                  checked={form.model === m.id || (form.model === '' && idx === 0)}
-                  onChange={() => set({ model: m.id })}
+                  value={m.id}
+                  onChange={e => updateModel(idx, { id: e.target.value })}
+                  placeholder="model-id"
+                  style={{ flex: 1, fontSize: 12 }}
                 />
-                Default
-              </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, whiteSpace: 'nowrap', cursor: 'pointer' }} title="Mark this model as an image generation model">
                 <input
-                  type="checkbox"
-                  checked={!!m.supportsImageGen}
-                  onChange={e => updateModel(idx, { supportsImageGen: e.target.checked })}
+                  value={m.name}
+                  onChange={e => updateModel(idx, { name: e.target.value })}
+                  placeholder="Display name"
+                  style={{ flex: 1, fontSize: 12 }}
                 />
-                Image gen
-              </label>
-              {form.models.length > 1 && (
-                <button
-                  onClick={() => removeModel(idx)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 14, padding: '0 4px' }}
-                >✕</button>
-              )}
+                <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, whiteSpace: 'nowrap', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="defaultModel"
+                    checked={form.model === m.id || (form.model === '' && idx === 0)}
+                    onChange={() => set({ model: m.id })}
+                  />
+                  Default
+                </label>
+                {form.models.length > 1 && (
+                  <button
+                    onClick={() => removeModel(idx)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 14, padding: '0 4px' }}
+                  >✕</button>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px' }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', width: '100%' }}>Capabilities</span>
+                {WORKFLOW_TYPES.map(wt => (
+                  <label key={wt} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, cursor: 'pointer', minWidth: 160 }}>
+                    <input
+                      type="checkbox"
+                      checked={m.capabilities?.includes(wt) ?? false}
+                      onChange={e => {
+                        const current: WorkflowType[] = m.capabilities ?? []
+                        updateModel(idx, {
+                          capabilities: e.target.checked
+                            ? [...current.filter(c => c !== wt), wt]
+                            : current.filter(c => c !== wt)
+                        })
+                      }}
+                    />
+                    {WORKFLOW_TYPE_LABELS[wt]}
+                  </label>
+                ))}
+                <div style={{ width: '100%', display: 'flex', gap: 16, marginTop: 4, alignItems: 'center' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, whiteSpace: 'nowrap' }}>
+                    Max tokens
+                    <input
+                      type="number"
+                      min={1}
+                      step={256}
+                      placeholder="1024"
+                      value={m.maxTokens ?? ''}
+                      onChange={e => updateModel(idx, { maxTokens: e.target.value === '' ? undefined : parseInt(e.target.value, 10) })}
+                      style={{ width: 80, fontSize: 11 }}
+                    />
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, whiteSpace: 'nowrap' }}>
+                    Image size
+                    <input
+                      placeholder="1024x1024"
+                      value={m.imageSize ?? ''}
+                      onChange={e => updateModel(idx, { imageSize: e.target.value.trim() || undefined })}
+                      style={{ width: 100, fontSize: 11 }}
+                    />
+                  </label>
+                </div>
+              </div>
             </div>
           ))}
           <button className="btn-ghost" onClick={addModel} style={{ fontSize: 11, alignSelf: 'flex-start', padding: '3px 10px' }}>
@@ -287,7 +325,7 @@ function buildState(providers: Record<string, Provider>, order: string[]): Recor
       const p = providers[pk]
       return [pk, {
         apiKey: loadKey(pk) ?? '',
-        collapsed: true,
+        collapsed: false,
         models: Object.fromEntries(
           p.models.map(m => [`${pk}:${m.id}`, {
             enabled: enabledModels[`${pk}:${m.id}`] !== false,
@@ -310,6 +348,8 @@ export default function ApiScreen() {
   const [isAdding, setIsAdding] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [testResults, setTestResults] = useState<Record<string, 'idle' | 'testing' | 'ok' | string>>({})
+  const [capOpen, setCapOpen] = useState<Record<string, boolean>>({})
+  const [modelDeleteConfirm, setModelDeleteConfirm] = useState<string | null>(null)
 
   const refresh = () => {
     const providers = getAllProviders()
@@ -374,6 +414,18 @@ export default function ApiScreen() {
     refresh()
   }
 
+  const handleModelDelete = (pk: string, modelId: string) => {
+    const mk = `${pk}:${modelId}`
+    if (modelDeleteConfirm !== mk) { setModelDeleteConfirm(mk); return }
+    const provider = getAllProviders()[pk]
+    if (!provider || provider.models.length <= 1) return
+    const updated = { ...provider, models: provider.models.filter(m => m.id !== modelId) }
+    if (updated.model === modelId) updated.model = updated.models[0].id
+    upsertProvider(updated)
+    setModelDeleteConfirm(null)
+    refresh()
+  }
+
   const handleTest = async (pk: string, modelId: string) => {
     const mk = `${pk}:${modelId}`
     setTestResults(prev => ({ ...prev, [mk]: 'testing' }))
@@ -415,18 +467,17 @@ export default function ApiScreen() {
         {currentOrder.map(pk => {
           const p = currentProviders[pk]
           if (!p) return null
-          const s = state[pk] ?? { apiKey: '', collapsed: true, models: {} }
-          const isOpen = !s.collapsed
+          const s = state[pk] ?? { apiKey: '', collapsed: false, models: {} }
           const isConfirming = deleteConfirm === pk
 
           return (
             <div key={`${pk}-${revision}`} className="api-card" style={{ borderLeftColor: p.color }}>
-              <div className="api-card-header" onClick={() => updateProvider(pk, { collapsed: !s.collapsed })}>
+              <div className="api-card-header">
                 <div className="provider-dot" style={{ background: p.color }} />
                 <span className="provider-name">{p.name}</span>
                 <span className={`provider-badge ${p.paidOnly ? '' : 'free'}`}>{p.paidOnly ? 'Paid' : 'Free'}</span>
                 {!p.needsKey && <span className="provider-badge free">No key</span>}
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
                   <button
                     className="btn-ghost"
                     style={{ fontSize: 11, padding: '2px 8px' }}
@@ -435,7 +486,7 @@ export default function ApiScreen() {
                   <button
                     className="btn-ghost"
                     style={{ fontSize: 11, padding: '2px 8px', color: isConfirming ? '#e55' : undefined, borderColor: isConfirming ? '#e55' : undefined }}
-                    onClick={() => isConfirming ? handleDelete(pk) : handleDelete(pk)}
+                    onClick={() => handleDelete(pk)}
                   >{isConfirming ? 'Confirm Delete' : 'Delete'}</button>
                   {isConfirming && (
                     <button
@@ -445,28 +496,36 @@ export default function ApiScreen() {
                     >Cancel</button>
                   )}
                 </div>
-                <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>{isOpen ? '▲' : '▼'}</span>
               </div>
 
-              {isOpen && (
-                <div className="api-card-body">
-                  {p.needsKey && (
-                    <div className="key-row" style={{ marginBottom: 10 }}>
-                      <input
-                        type="password"
-                        placeholder={p.keyHint ?? `${p.name} API key`}
-                        value={s.apiKey}
-                        onChange={e => updateProvider(pk, { apiKey: e.target.value })}
-                        onClick={e => e.stopPropagation()}
-                      />
-                    </div>
-                  )}
-                  <div className="model-list">
-                    {p.models.map(m => {
-                      const mk = `${pk}:${m.id}`
-                      const ms = s.models[mk] ?? { enabled: true }
-                      return (
-                        <div key={mk} className="model-row">
+              <div className="api-card-body">
+                {p.needsKey && (
+                  <div className="key-row" style={{ marginBottom: 10 }}>
+                    <input
+                      type="password"
+                      placeholder={p.keyHint ?? `${p.name} API key`}
+                      value={s.apiKey}
+                      onChange={e => updateProvider(pk, { apiKey: e.target.value })}
+                    />
+                  </div>
+                )}
+                <div className="model-list">
+                  {p.models.map(m => {
+                    const mk = `${pk}:${m.id}`
+                    const ms = s.models[mk] ?? { enabled: true }
+                    const isCapOpen = !!capOpen[mk]
+                    const updateCapabilities = (cap: WorkflowType, checked: boolean) => {
+                      const current: WorkflowType[] = m.capabilities ?? []
+                      const next = checked
+                        ? [...current.filter(c => c !== cap), cap]
+                        : current.filter(c => c !== cap)
+                      const updated = { ...p, models: p.models.map(x => x.id === m.id ? { ...x, capabilities: next } : x) }
+                      upsertProvider(updated)
+                      refresh()
+                    }
+                    return (
+                      <div key={mk}>
+                        <div className="model-row">
                           <label className="toggle" title="Enable/disable this model">
                             <input
                               type="checkbox"
@@ -477,18 +536,13 @@ export default function ApiScreen() {
                           </label>
                           <span className="model-name">{m.name}</span>
                           <span className="model-id">{m.id}</span>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: 'var(--text-dim)', cursor: 'pointer', whiteSpace: 'nowrap' }} title="Mark as image generation model — excludes from text workflows">
-                            <input
-                              type="checkbox"
-                              checked={!!m.supportsImageGen}
-                              onChange={e => {
-                                const updated = { ...p, models: p.models.map(x => x.id === m.id ? { ...x, supportsImageGen: e.target.checked } : x) }
-                                upsertProvider(updated)
-                                refresh()
-                              }}
-                            />
-                            🖼
-                          </label>
+                          <button
+                            onClick={() => setCapOpen(prev => ({ ...prev, [mk]: !prev[mk] }))}
+                            style={{ fontSize: 10, background: 'none', border: '1px solid var(--border)', borderRadius: 4, cursor: 'pointer', color: 'var(--text-dim)', padding: '1px 6px', whiteSpace: 'nowrap' }}
+                            title="Edit capabilities for this model"
+                          >
+                            {isCapOpen ? 'Capabilities ▲' : 'Capabilities ▼'}
+                          </button>
                           <button
                             className="btn-ghost"
                             style={{ fontSize: 10, padding: '1px 7px', marginLeft: 'auto' }}
@@ -498,6 +552,16 @@ export default function ApiScreen() {
                           >
                             {testResults[mk] === 'testing' ? '...' : 'Test'}
                           </button>
+                          <button
+                            className="btn-ghost"
+                            style={{ fontSize: 10, padding: '1px 7px', color: modelDeleteConfirm === mk ? '#e55' : undefined, borderColor: modelDeleteConfirm === mk ? '#e55' : undefined }}
+                            onClick={() => handleModelDelete(pk, m.id)}
+                            title={p.models.length <= 1 ? 'Cannot delete the only model' : 'Delete this model'}
+                            disabled={p.models.length <= 1}
+                          >{modelDeleteConfirm === mk ? 'Confirm' : 'Delete'}</button>
+                          {modelDeleteConfirm === mk && (
+                            <button className="btn-ghost" style={{ fontSize: 10, padding: '1px 7px' }} onClick={() => setModelDeleteConfirm(null)}>Cancel</button>
+                          )}
                           {testResults[mk] && testResults[mk] !== 'testing' && (
                             <span style={{
                               fontSize: 10,
@@ -511,17 +575,65 @@ export default function ApiScreen() {
                             </span>
                           )}
                         </div>
-                      )
-                    })}
-                  </div>
-                  {p.instructionsUrl && (
-                    <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>
-                      <a href={`https://${p.instructionsUrl}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>{p.instructionsUrl}</a>
-                      {p.goodAt && <>{' · '}{p.goodAt}</>}
-                    </div>
-                  )}
+                        {isCapOpen && (
+                          <div style={{ padding: '8px 12px 8px 36px', background: 'var(--bg2)', borderRadius: 6, margin: '4px 0', display: 'flex', flexWrap: 'wrap', gap: '6px 16px' }}>
+                            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', width: '100%', marginBottom: 2 }}>Capabilities</div>
+                            {WORKFLOW_TYPES.map(wt => (
+                              <label key={wt} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, cursor: 'pointer', minWidth: 180 }}>
+                                <input
+                                  type="checkbox"
+                                  checked={m.capabilities?.includes(wt) ?? false}
+                                  onChange={e => updateCapabilities(wt, e.target.checked)}
+                                />
+                                {WORKFLOW_TYPE_LABELS[wt]}
+                              </label>
+                            ))}
+                            <div style={{ width: '100%', display: 'flex', gap: 16, marginTop: 6, alignItems: 'center' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, whiteSpace: 'nowrap' }}>
+                                Max tokens
+                                <input
+                                  type="number"
+                                  min={1}
+                                  step={256}
+                                  placeholder="1024"
+                                  value={m.maxTokens ?? ''}
+                                  onChange={e => {
+                                    const v = e.target.value === '' ? undefined : parseInt(e.target.value, 10)
+                                    const updated = { ...p, models: p.models.map(x => x.id === m.id ? { ...x, maxTokens: v } : x) }
+                                    upsertProvider(updated)
+                                    refresh()
+                                  }}
+                                  style={{ width: 80, fontSize: 11 }}
+                                />
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, whiteSpace: 'nowrap' }}>
+                                Image size
+                                <input
+                                  placeholder="1024x1024"
+                                  value={m.imageSize ?? ''}
+                                  onChange={e => {
+                                    const v = e.target.value.trim() || undefined
+                                    const updated = { ...p, models: p.models.map(x => x.id === m.id ? { ...x, imageSize: v } : x) }
+                                    upsertProvider(updated)
+                                    refresh()
+                                  }}
+                                  style={{ width: 100, fontSize: 11 }}
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
-              )}
+                {p.instructionsUrl && (
+                  <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 8 }}>
+                    <a href={`https://${p.instructionsUrl}`} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>{p.instructionsUrl}</a>
+                    {p.goodAt && <>{' · '}{p.goodAt}</>}
+                  </div>
+                )}
+              </div>
             </div>
           )
         })}

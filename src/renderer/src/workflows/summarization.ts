@@ -11,4 +11,5 @@ export const summarizationWorkflow: WorkflowPlugin = {
     { provider: 'cohere', model: 'command-r-plus-08-2024' },
     { provider: 'groq',   model: 'llama-3.3-70b-versatile' },
   ],
+  workflowType: ['chat'],
 }

@@ -13,7 +13,6 @@ import { reasoningWorkflow }     from './reasoning'
 import { creativeWorkflow }      from './creative'
 import { summarizationWorkflow } from './summarization'
 import { translationWorkflow }   from './translation'
-import { generalWorkflow }       from './general'
 
 export type { WorkflowPlugin, RouteEntry } from './types'
 
@@ -24,5 +23,4 @@ export const WORKFLOW_REGISTRY = [
   creativeWorkflow,
   summarizationWorkflow,
   translationWorkflow,
-  generalWorkflow,
 ]

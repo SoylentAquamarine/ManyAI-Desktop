@@ -1,6 +1,7 @@
 /**
  * routing.ts — Task type detection and per-task provider routing prefs.
  * All workflow definitions live in src/workflows/ — do not add types here.
+ * Provider selection is capability-based: model.capabilities must include the workflow's workflowType.
  */
 
 import { TaskType, getAllProviders } from './providers';
@@ -33,22 +34,11 @@ export const DEFAULT_ROUTES: Record<string, import('../workflows').RouteEntry[]>
 
 // ── Auto-detection ────────────────────────────────────────────────────────────
 
-export function detectTaskType(prompt: string): TaskType {
-  // isImage plugins first (prevent bleed into creative)
-  for (const w of WORKFLOW_REGISTRY) {
-    if (w.isImage && w.keywords.test(prompt)) return w.type;
-  }
-  for (const w of WORKFLOW_REGISTRY) {
-    if (w.type === 'general' || w.isImage) continue;
-    if (w.keywords.test(prompt)) return w.type;
-  }
-  return 'general';
-}
+const FIRST_CHAT_TYPE = WORKFLOW_REGISTRY.find(w => w.workflowType.includes('chat'))?.type ?? 'coding';
 
 // ── Routing preferences ───────────────────────────────────────────────────────
 
 export interface RoutingPrefs {
-  autoDetect: boolean;
   routes: Record<string, import('../workflows').RouteEntry[]>;
 }
 
@@ -56,7 +46,7 @@ const ROUTING_KEY = 'manyai_routing_prefs';
 
 export function loadRoutingPrefs(): RoutingPrefs {
   const raw = localStorage.getItem(ROUTING_KEY);
-  if (!raw) return { autoDetect: true, routes: { ...DEFAULT_ROUTES } };
+  if (!raw) return { routes: { ...DEFAULT_ROUTES } };
   try {
     const stored = JSON.parse(raw) as Partial<RoutingPrefs> & {
       imageProvider?: string;
@@ -85,12 +75,9 @@ export function loadRoutingPrefs(): RoutingPrefs {
       const id = stored.imageProvider === 'openai-dalle' ? 'openai' : stored.imageProvider;
       routes['image'] = [{ provider: id, model: id === 'openai' ? 'dall-e-3' : 'flux', enabled: true }];
     }
-    return {
-      autoDetect: stored.autoDetect ?? true,
-      routes: { ...DEFAULT_ROUTES, ...routes },
-    };
+    return { routes: { ...DEFAULT_ROUTES, ...routes } };
   } catch {
-    return { autoDetect: true, routes: { ...DEFAULT_ROUTES } };
+    return { routes: { ...DEFAULT_ROUTES } };
   }
 }
 
@@ -107,22 +94,27 @@ export function resolveProvider(
   const isUsable = (pk: string) =>
     (pk === 'pollinations' || availableKeys.has(pk)) && enabledProviders[pk] !== false;
 
-  const isImageTask = WORKFLOW_REGISTRY.find(w => w.type === taskType)?.isImage ?? false;
+  const workflowTypes = WORKFLOW_REGISTRY.find(w => w.type === taskType)?.workflowType ?? ['chat'];
   const allProviders = getAllProviders();
 
-  const chain = prefs.routes[taskType] ?? DEFAULT_ROUTES[taskType] ?? DEFAULT_ROUTES['general'];
+  // A model satisfies a workflow if its capabilities include ALL of the workflow's types
+  const modelCapable = (caps: string[] | undefined) =>
+    workflowTypes.every(wt => (caps ?? ['chat']).includes(wt));
+
+  const chain = prefs.routes[taskType] ?? DEFAULT_ROUTES[taskType] ?? DEFAULT_ROUTES[FIRST_CHAT_TYPE] ?? [];
   for (const entry of chain) {
     if (entry.enabled !== false && isUsable(entry.provider)) {
       const model = allProviders[entry.provider]?.models.find(m => m.id === entry.model);
-      if (model?.supportsImageGen && !isImageTask) continue;
+      if (!modelCapable(model?.capabilities)) continue;
       return entry;
     }
   }
 
-  // No configured route available — check if pollinations is usable as last resort
-  const allProviders = getAllProviders();
-  if (allProviders['pollinations'] && isUsable('pollinations')) {
-    return { provider: 'pollinations', model: allProviders['pollinations'].model };
+  // No configured route — fall back to a capable pollinations model
+  const pollinations = allProviders['pollinations'];
+  if (pollinations && isUsable('pollinations')) {
+    const fallbackModel = pollinations.models.find(m => modelCapable(m.capabilities));
+    if (fallbackModel) return { provider: 'pollinations', model: fallbackModel.id };
   }
 
   return null;

@@ -9,16 +9,15 @@ import {
   loadRoutingPrefs, saveRoutingPrefs, DEFAULT_ROUTES,
   type RoutingPrefs, type RouteEntry,
 } from '../lib/routing'
+import { WORKFLOW_REGISTRY } from '../workflows'
 import { loadAllKeys } from '../lib/keyStore'
 import { loadEnabledProviders } from '../lib/providerPrefs'
 import type { PanelType } from '../App'
 import type { TaskType } from '../lib/providers'
 
 const NAV: { key: PanelType; icon: string; label: string }[] = [
-  { key: 'saved',     icon: '📂', label: 'Saved' },
-  { key: 'workflows', icon: '🧩', label: 'Workflows' },
-  { key: 'api',       icon: '🔑', label: 'API' },
-  { key: 'settings',  icon: '⚙',  label: 'Settings' },
+  { key: 'saved',    icon: '📂', label: 'Saved' },
+  { key: 'settings', icon: '⚙',  label: 'Settings' },
 ]
 
 interface Props {
@@ -33,7 +32,7 @@ interface Props {
   onWorkflowSaved: () => void
 }
 
-const MAX_CHAIN = 4
+const MAX_CHAIN = 255
 
 export default function RightPanel({
   activePanel, onTogglePanel,
@@ -42,7 +41,6 @@ export default function RightPanel({
   onWorkflowSaved,
 }: Props) {
   const workflows = enabledWorkflows()
-  const allWorkflows = loadWorkflows()
   const [prefs, setPrefs] = useState<RoutingPrefs>(() => loadRoutingPrefs())
 
   const allProviders = getAllProviders()
@@ -60,17 +58,15 @@ export default function RightPanel({
   }
 
   const getChain = (task: string): RouteEntry[] =>
-    prefs.routes[task] ?? DEFAULT_ROUTES[task] ?? DEFAULT_ROUTES['general']
+    prefs.routes[task] ?? DEFAULT_ROUTES[task] ?? DEFAULT_ROUTES['coding']
 
   const setChain = (task: string, chain: RouteEntry[]) =>
     updatePrefs({ ...prefs, routes: { ...prefs.routes, [task]: chain } })
 
   const onProviderChange = (task: string, idx: number, pk: string) => {
     const chain = [...getChain(task)]
-    const isImgTask = !!(allWorkflows.find(w => w.type === task)?.isImage)
-    const models = isImgTask
-      ? (allProviders[pk]?.models.filter(m => m.supportsImageGen) ?? [])
-      : (allProviders[pk]?.models ?? [])
+    const wts = WORKFLOW_REGISTRY.find(w => w.type === task)?.workflowType ?? ['chat']
+    const models = (allProviders[pk]?.models ?? []).filter(m => wts.every(wt => (m.capabilities ?? ['chat']).includes(wt)))
     const model = models[0]?.id ?? allProviders[pk]?.model ?? ''
     chain[idx] = { provider: pk, model }
     setChain(task, chain)
@@ -98,7 +94,7 @@ export default function RightPanel({
 
   const removeEntry = (task: string, idx: number) => {
     const chain = getChain(task).filter((_, i) => i !== idx)
-    const fallback = DEFAULT_ROUTES[task] ?? DEFAULT_ROUTES['general']
+    const fallback = DEFAULT_ROUTES[task] ?? DEFAULT_ROUTES['coding']
     setChain(task, chain.length ? chain : [fallback[0]])
   }
 
@@ -200,8 +196,8 @@ function WorkflowDetail({
   onWorkflowSaved,
 }: DetailProps) {
   const task = workflow.type
-  const isImage = !!workflow.isImage
-  const canEdit = task !== 'general'
+  const workflowTypes = WORKFLOW_REGISTRY.find(w => w.type === task)?.workflowType ?? workflow.workflowType ?? ['chat']
+  const canEdit = true
   const chain = getChain(task)
 
   const [editing, setEditing] = useState(false)
@@ -344,7 +340,7 @@ function WorkflowDetail({
       )}
 
       {/* Instructions */}
-      {(editing || workflow.systemPrompt) && !isImage && (
+      {(editing || workflow.systemPrompt) && (
         <div>
           {sectionLabel('Instructions')}
           {editing ? (
@@ -368,7 +364,7 @@ function WorkflowDetail({
       )}
 
       {/* Attached files */}
-      {(editing || !!workflow.contextFiles?.length) && !isImage && (
+      {(editing || !!workflow.contextFiles?.length) && (
         <div>
           {sectionLabel('Attached Files')}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -416,11 +412,11 @@ function WorkflowDetail({
           {chain.map((entry, idx) => {
             const avail = availableProviders.includes(entry.provider)
             const entryEnabled = entry.enabled !== false
-            // For image workflows, show image-gen models when provider supports them
+            // Only show models whose capabilities include ALL of this workflow's types
             const allProvidersNow = getAllProviders()
-            const modelList = isImage
-              ? (allProvidersNow[entry.provider]?.models.filter(m => m.supportsImageGen) ?? [])
-              : (allProvidersNow[entry.provider]?.models.filter(m => !m.supportsImageGen) ?? [])
+            const modelList = (allProvidersNow[entry.provider]?.models ?? []).filter(m =>
+              workflowTypes.every(wt => (m.capabilities ?? ['chat']).includes(wt))
+            )
             return (
               <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: 3, background: 'var(--bg2)', borderRadius: 6, padding: '6px 8px', opacity: entryEnabled ? 1 : 0.5 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -449,11 +445,16 @@ function WorkflowDetail({
                   style={{ width: '100%', fontSize: 11 }}
                   onChange={e => onProviderChange(task, idx, e.target.value)}
                 >
-                  {getAllProviderOrder().map(pk => (
-                    <option key={pk} value={pk}>
-                      {getAllProviders()[pk]?.name ?? pk}{availableProviders.includes(pk) ? '' : ' (no key)'}
-                    </option>
-                  ))}
+                  {getAllProviderOrder()
+                    .filter(pk => {
+                      const p = getAllProviders()[pk]
+                      return p?.models.some(m => workflowTypes.every(wt => (m.capabilities ?? ['chat']).includes(wt)))
+                    })
+                    .map(pk => (
+                      <option key={pk} value={pk}>
+                        {getAllProviders()[pk]?.name ?? pk}{availableProviders.includes(pk) ? '' : ' (no key)'}
+                      </option>
+                    ))}
                 </select>
                 <select
                   value={entry.model}

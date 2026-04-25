@@ -10,4 +10,5 @@ export const translationWorkflow: WorkflowPlugin = {
     { provider: 'gemini',  model: 'gemini-2.5-flash' },
     { provider: 'mistral', model: 'mistral-large-latest' },
   ],
+  workflowType: ['chat'],
 }

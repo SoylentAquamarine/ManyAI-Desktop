@@ -11,4 +11,5 @@ export const generalWorkflow: WorkflowPlugin = {
     { provider: 'groq',        model: 'llama-3.1-8b-instant' },
     { provider: 'pollinations', model: 'openai' },
   ],
+  workflowType: ['chat'],
 }
