@@ -35,6 +35,83 @@ $ npm run build:linux
 
 ## Changelog
 
+### 2026-04-25 — Capability system, workflow overhaul, configurable model params
+
+**Capability-based model filtering**
+- Replaced `supportsImageGen` boolean with `capabilities?: WorkflowType[]` array on `ProviderModel`
+- `WorkflowType` = `'chat' | 'image' | 'vision' | 'audio' | 'video' | 'agent'` defined in `workflowTypes.ts`
+- Workflow routing now filters models using `every()` — a model must support ALL types a workflow requires
+- Fixed bug where providers with no capabilities (e.g. Cohere, HuggingFace) appeared in the Image workflow — missing capabilities now default to `['chat']` instead of passing all filters
+- All built-in provider models pre-filled with correct capabilities (chat, vision, image as appropriate)
+- Capabilities can be set per-model directly from the API screen (Capabilities expand panel) without editing code
+
+**Workflow system overhaul**
+- Removed General workflow entirely — routing fallback changed to 'coding'
+- Removed automatic task-type detection (`detectTaskType`, `autoDetect`) — workflow is fixed per tab
+- Workflow type is now multi-select (`WorkflowType[]`); a workflow can require multiple capability types simultaneously
+- Workflows screen: checkbox grid for workflow type selection (replaces single dropdown)
+- All workflows (including formerly locked ones) support Edit and Delete
+- Tab labels stay as the workflow name; no longer overwritten by first message
+
+**Settings restructure**
+- Settings screen gains sub-navigation: General | API | Workflows | Workflow Models | Backup Config
+- "Workflow Models" tab (formerly a separate Routing button) shows per-workflow provider/model priority chains
+- Backup Config tab: downloads text-only JSON of all settings; saved images download separately as individual files named after the chat title
+- Routing button removed from right panel and App-level nav
+
+**Provider / model config**
+- `maxTokens` per model — replaces hardcoded `1024` in both Anthropic and OpenAI-compatible call paths
+- `imageSize` per model — replaces hardcoded `1024x1024` (and `768x768` for Pollinations) in image generation calls
+- Both fields editable in the Capabilities panel per model row and in the Add/Edit Provider form
+- Delete button added next to Test button on each model row (requires confirm click; disabled if only one model)
+
+**Routing chains**
+- MAX_CHAIN increased from 4 to 255 — effectively unlimited fallback providers per workflow
+
+**GitHub Pages**
+- Verified and launched: [soylentaquamarine.github.io/ManyAI-Desktop](https://soylentaquamarine.github.io/ManyAI-Desktop/)
+
+---
+
+### 2026-04-24 — Architecture refactor + custom providers + full workflow editor
+
+**Main process modularization**
+- IPC handlers extracted from `main/index.ts` into separate modules: `fileIpc.ts`, `imageIpc.ts`, `ipc/index.ts`
+- `main/index.ts` now only handles window creation, IPC registration, and app lifecycle
+- Preload API split into `preload/api/files.ts` and `preload/api/images.ts`
+
+**Feature-based directory structure**
+- Renderer screens reorganized into `features/chat/`, `features/editor/`, `features/settings/`
+- Shared utilities remain in `lib/`, `components/`
+- `fileHandler.ts` extracted from ChatScreen
+
+**Custom provider management**
+- Add any OpenAI-compatible API provider from the UI — no code changes required
+- Edit built-in providers (changes saved locally, override defaults)
+- Delete providers (built-ins are hidden; can be re-added with same Provider ID)
+- Provider form: name, ID, base URL, color picker, model list with default selector, API key hint, instructions URL, vision support flag, paid/free flag
+- Help modal explaining how to add OpenAI-compatible providers
+
+**Full workflow editor**
+- Add custom workflows with: label, icon, description, system prompt (silently prepended to every message), attached context files, auto-detect keyword regex
+- Edit built-in workflows (overrides stored locally)
+- Delete workflows (built-ins hidden; removable from registry)
+- Context file attachment: pick one or more files; content injected silently into every message in that workflow
+- Workflow enable/disable toggles; "General" workflow always on as final fallback
+
+**Right panel routing controls**
+- Per-workflow provider chain visible and editable directly in the right panel
+- Provider enable/disable checkboxes per chain entry
+- Inline model selector per chain entry
+
+**Other improvements**
+- `providerPrefs.ts`: per-model enable/disable stored separately from routing prefs
+- `keyStore.ts`: API keys stored and retrieved per provider key
+- `workflows.ts`: custom workflows and removed built-ins persisted to localStorage; `loadWorkflows()`, `saveWorkflows()`, `enabledWorkflows()`, `getWorkflow()` helpers
+- Workflow plugin registry (`src/workflows/`) as the single source of truth — adding a workflow file + registry entry is all that's required
+
+---
+
 ### 2026-04-22 — Initial build (19 commits)
 
 **Initial MVP**
@@ -111,80 +188,3 @@ $ npm run build:linux
 - Cerebras: updated retired `llama-3.3-70b` → `gpt-oss-120b`
 - HuggingFace: replaced `Mistral-7B-Instruct-v0.3` (not a chat model) with `HuggingFaceH4/zephyr-7b-beta`
 - API cards: removed `overflow:hidden` so expanded model list no longer clips
-
----
-
-### 2026-04-24 — Architecture refactor + custom providers + full workflow editor
-
-**Main process modularization**
-- IPC handlers extracted from `main/index.ts` into separate modules: `fileIpc.ts`, `imageIpc.ts`, `ipc/index.ts`
-- `main/index.ts` now only handles window creation, IPC registration, and app lifecycle
-- Preload API split into `preload/api/files.ts` and `preload/api/images.ts`
-
-**Feature-based directory structure**
-- Renderer screens reorganized into `features/chat/`, `features/editor/`, `features/settings/`
-- Shared utilities remain in `lib/`, `components/`
-- `fileHandler.ts` extracted from ChatScreen
-
-**Custom provider management**
-- Add any OpenAI-compatible API provider from the UI — no code changes required
-- Edit built-in providers (changes saved locally, override defaults)
-- Delete providers (built-ins are hidden; can be re-added with same Provider ID)
-- Provider form: name, ID, base URL, color picker, model list with default selector, API key hint, instructions URL, vision support flag, paid/free flag
-- Help modal explaining how to add OpenAI-compatible providers
-
-**Full workflow editor**
-- Add custom workflows with: label, icon, description, system prompt (silently prepended to every message), attached context files, auto-detect keyword regex
-- Edit built-in workflows (overrides stored locally)
-- Delete workflows (built-ins hidden; removable from registry)
-- Context file attachment: pick one or more files; content injected silently into every message in that workflow
-- Workflow enable/disable toggles; "General" workflow always on as final fallback
-
-**Right panel routing controls**
-- Per-workflow provider chain visible and editable directly in the right panel
-- Provider enable/disable checkboxes per chain entry
-- Inline model selector per chain entry
-
-**Other improvements**
-- `providerPrefs.ts`: per-model enable/disable stored separately from routing prefs
-- `keyStore.ts`: API keys stored and retrieved per provider key
-- `workflows.ts`: custom workflows and removed built-ins persisted to localStorage; `loadWorkflows()`, `saveWorkflows()`, `enabledWorkflows()`, `getWorkflow()` helpers
-- Workflow plugin registry (`src/workflows/`) as the single source of truth — adding a workflow file + registry entry is all that's required
-
----
-
-### 2026-04-25 — Capability system, workflow overhaul, configurable model params
-
-**Capability-based model filtering**
-- Replaced `supportsImageGen` boolean with `capabilities?: WorkflowType[]` array on `ProviderModel`
-- `WorkflowType` = `'chat' | 'image' | 'vision' | 'audio' | 'video' | 'agent'` defined in `workflowTypes.ts`
-- Workflow routing now filters models using `every()` — a model must support ALL types a workflow requires
-- Fixed bug where providers with no capabilities (e.g. Cohere, HuggingFace) appeared in the Image workflow — missing capabilities now default to `['chat']` instead of passing all filters
-- All built-in provider models pre-filled with correct capabilities (chat, vision, image as appropriate)
-- Capabilities can be set per-model directly from the API screen (Capabilities expand panel) without editing code
-
-**Workflow system overhaul**
-- Removed General workflow entirely — routing fallback changed to 'coding'
-- Removed automatic task-type detection (`detectTaskType`, `autoDetect`) — workflow is fixed per tab
-- Workflow type is now multi-select (`WorkflowType[]`); a workflow can require multiple capability types simultaneously
-- Workflows screen: checkbox grid for workflow type selection (replaces single dropdown)
-- All workflows (including formerly locked ones) support Edit and Delete
-- Tab labels stay as the workflow name; no longer overwritten by first message
-
-**Settings restructure**
-- Settings screen gains sub-navigation: General | API | Workflows | Workflow Models | Save Config
-- "Workflow Models" tab (formerly a separate Routing button) shows per-workflow provider/model priority chains
-- Save Config tab: export all settings as encrypted or plain JSON download
-- Routing button removed from right panel and App-level nav
-
-**Provider / model config**
-- `maxTokens` per model — replaces hardcoded `1024` in both Anthropic and OpenAI-compatible call paths
-- `imageSize` per model — replaces hardcoded `1024x1024` (and `768x768` for Pollinations) in image generation calls
-- Both fields editable in the Capabilities panel per model row and in the Add/Edit Provider form
-- Delete button added next to Test button on each model row (requires confirm click; disabled if only one model)
-
-**Routing chains**
-- MAX_CHAIN increased from 4 to 255 — effectively unlimited fallback providers per workflow
-
-**GitHub Pages**
-- Verified and launched: [soylentaquamarine.github.io/ManyAI-Desktop](https://soylentaquamarine.github.io/ManyAI-Desktop/)
