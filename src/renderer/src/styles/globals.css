@@ -244,9 +244,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   background: var(--surface);
   display: flex;
   flex-direction: column;
-  padding: 10px 8px;
-  overflow-y: auto;
-  gap: 4px;
+  /* No overflow-y here — the inner scrollable div handles scroll so the
+     nav stays pinned to the bottom regardless of content height or zoom. */
+  overflow: hidden;
 }
 .right-panel-wrapper {
   flex-shrink: 0;
@@ -280,10 +280,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 .right-panel-nav {
   border-top: 1px solid var(--border);
-  padding-top: 6px;
+  padding: 6px 8px 8px;
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* Never shrink — stays pinned to the bottom of the panel at all zoom levels */
   flex-shrink: 0;
 }
 .nav-btn {
