@@ -444,7 +444,9 @@ export default function ApiScreen() {
   }
 
   const currentProviders = getAllProviders()
-  const currentOrder = getAllProviderOrder()
+  const currentOrder = [...getAllProviderOrder()].sort((a, b) =>
+    (currentProviders[a]?.name ?? a).localeCompare(currentProviders[b]?.name ?? b)
+  )
 
   return (
     <div className="screen">
