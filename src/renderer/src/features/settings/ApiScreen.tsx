@@ -152,8 +152,8 @@ function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
     }}>
       <div style={{
         background: 'var(--bg)', border: '1px solid var(--border)',
-        borderRadius: 10, padding: 24, maxWidth: 520, width: '95%',
-        maxHeight: '90vh', overflowY: 'auto',
+        borderRadius: 10, padding: 24, maxWidth: 740, width: '98%',
+        maxHeight: '92vh', overflowY: 'auto',
       }}>
         <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
           {isNew ? 'Add New Provider' : `Edit — ${initial.name}`}
@@ -293,6 +293,14 @@ function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
                       onChange={e => updateModel(idx, { imageSize: e.target.value.trim() || undefined })}
                       style={{ width: 100, fontSize: 11 }}
                     />
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                    <input
+                      type="checkbox"
+                      checked={m.randomSeed ?? false}
+                      onChange={e => updateModel(idx, { randomSeed: e.target.checked || undefined })}
+                    />
+                    Random seed (bypass cache)
                   </label>
                 </div>
               </div>
@@ -619,6 +627,19 @@ export default function ApiScreen() {
                                   }}
                                   style={{ width: 100, fontSize: 11 }}
                                 />
+                              </label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={m.randomSeed ?? false}
+                                  onChange={e => {
+                                    const v = e.target.checked || undefined
+                                    const updated = { ...p, models: p.models.map(x => x.id === m.id ? { ...x, randomSeed: v } : x) }
+                                    upsertProvider(updated)
+                                    refresh()
+                                  }}
+                                />
+                                Random seed (bypass cache)
                               </label>
                             </div>
                           </div>

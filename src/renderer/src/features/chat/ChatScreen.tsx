@@ -4,9 +4,11 @@ import { callProvider, HistoryMessage } from '../../lib/callProvider'
 import { loadAllKeys } from '../../lib/keyStore'
 import { loadEnabledProviders } from '../../lib/providerPrefs'
 import { saveResponse } from '../../lib/savedResponses'
-import { resolveProvider, loadRoutingPrefs, TASK_META } from '../../lib/routing'
+import { resolveAllProviders, loadRoutingPrefs, TASK_META } from '../../lib/routing'
 import { getWorkflow } from '../../lib/workflows'
 import { callImageProvider, isImageGenModel } from '../../lib/callImageProvider'
+import { logger } from '../../lib/logger'
+import { getImagesDir } from '../../lib/workingDir'
 import type { TaskType } from '../../lib/providers'
 import {
   type AttachedFile,
@@ -26,6 +28,7 @@ interface Message {
   error?: boolean
   imageUrl?: string
   fileRef?: string
+  parallelId?: string
 }
 
 interface Props {
@@ -50,6 +53,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
     return localStorage.getItem(inputKey) ?? ''
   })
   const [loading, setLoading] = useState(false)
+  const [activeParallelProvider, setActiveParallelProvider] = useState<string | null>(null)
   const [savedMsg, setSavedMsg] = useState<string | null>(null)
   const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null)
   const [tmpStatus, setTmpStatus] = useState<string | null>(null)
@@ -118,7 +122,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  }, [messages, activeParallelProvider])
 
   useEffect(() => {
     onInjectReady?.((p: string) => {
@@ -216,43 +220,71 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
 
       const taskType = workflowType
 
-      // ── Image generation ──────────────────────────────────────────────────
+      // ── Image generation (parallel) ───────────────────────────────────────
       if (taskType === 'image') {
-        const route = resolveProvider(taskType, prefs, availableKeys, enabled)
-        if (!route) {
+        const imageRoutes = resolveAllProviders(taskType, prefs, availableKeys, enabled)
+        if (imageRoutes.length === 0) {
           setMessages(prev => [...prev, { role: 'assistant', content: 'No providers available. Add an API key in the API tab.', error: true }])
           return
         }
-        if (isImageGenModel(route.provider, route.model)) {
-          const apiKey = keys[route.provider]
-          const result = await callImageProvider(text, route.provider, route.model, apiKey)
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: result.error ? `Image error: ${result.error}` : '',
-            imageUrl: result.error ? undefined : result.imageUrl,
-            provider: result.provider,
-            model: result.model,
-            error: !!result.error,
-          }])
-        } else {
-          // Text provider selected for image workflow — respond with text
-          const provider = { ...allProviders[route.provider], model: route.model }
-          const result = await callProvider(provider, aiPrompt, keys[route.provider])
-          setMessages(prev => [...prev, {
-            role: 'assistant',
-            content: result.error ? `Error: ${result.error}` : result.content,
-            provider: result.provider,
-            model: result.model,
-            latencyMs: result.latencyMs,
-            error: !!result.error,
-          }])
-        }
+        const imageParallelId = `p_${Date.now()}`
+        const imageResults = await Promise.all(imageRoutes.map(async route => {
+          try {
+            if (isImageGenModel(route.provider, route.model)) {
+              const result = await callImageProvider(text, route.provider, route.model, keys[route.provider])
+              // Auto-save image to working directory if configured
+              const imagesDir = getImagesDir()
+              if (imagesDir) {
+                const slug = text.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40) || 'image'
+                const ext  = result.imageUrl.match(/^data:image\/(\w+)/)?.[1] ?? 'png'
+                const filename = `${slug}_${route.provider}_${Date.now()}.${ext}`
+                await window.api.ensureDir(imagesDir)
+                await window.api.writeFileDirect(`${imagesDir}/${filename}`, result.imageUrl)
+              }
+              logger.providerCall(route.provider, route.model, text, { latencyMs: 0 })
+              return {
+                role: 'assistant' as const,
+                content: '',
+                imageUrl: result.imageUrl,
+                provider: route.provider,
+                model: route.model,
+                error: false,
+                parallelId: imageParallelId,
+              }
+            } else {
+              const p = { ...allProviders[route.provider], model: route.model }
+              const result = await callProvider(p, aiPrompt, keys[route.provider])
+              logger.providerCall(route.provider, route.model, text, result)
+              return {
+                role: 'assistant' as const,
+                content: result.error ? `Error: ${result.error}` : result.content,
+                provider: route.provider,
+                model: route.model,
+                latencyMs: result.latencyMs,
+                error: !!result.error,
+                parallelId: imageParallelId,
+              }
+            }
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e)
+            logger.error(`Image generation failed: ${route.provider}/${route.model}`, { error: msg })
+            return {
+              role: 'assistant' as const,
+              content: `Error: ${msg}`,
+              provider: route.provider,
+              model: route.model,
+              error: true,
+              parallelId: imageParallelId,
+            }
+          }
+        }))
+        setMessages(prev => [...prev, ...imageResults])
         return
       }
 
-      // ── Text generation ───────────────────────────────────────────────────
-      const route = resolveProvider(taskType, prefs, availableKeys, enabled)
-      if (!route) {
+      // ── Text generation (parallel) ────────────────────────────────────────
+      const routes = resolveAllProviders(taskType, prefs, availableKeys, enabled)
+      if (routes.length === 0) {
         setMessages(prev => [...prev, {
           role: 'assistant',
           content: 'No providers available. Add an API key in the API tab.',
@@ -261,17 +293,35 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
         return
       }
 
-      const provider = { ...allProviders[route.provider], model: route.model }
-      // History for context — callProvider appends aiPrompt as the new user turn
-      const history: HistoryMessage[] = continuousState
-        ? messages.slice(-10).filter(m => !m.imageUrl).map(m => ({ role: m.role, content: m.content }))
-        : []
+      const parallelId = `p_${Date.now()}`
 
-      const result = await callProvider(provider, aiPrompt, keys[route.provider], undefined, undefined, history)
+      const buildHistory = (providerKey: string, modelKey: string): HistoryMessage[] => {
+        if (!continuousState) return []
+        return messages
+          .filter(m => {
+            if (m.imageUrl) return false
+            if (m.role === 'user') return true
+            // For parallel messages, each slot sees only its own prior responses
+            if (m.parallelId) return m.provider === providerKey && m.model === modelKey
+            return true
+          })
+          .slice(-10)
+          .map(m => ({ role: m.role, content: m.content }))
+      }
 
-      const responseContent = result.error ? `Error: ${result.error}` : result.content
-      if (attachedFile && !result.error && hasCodeBlock(responseContent)) {
-        const code = extractCode(responseContent)
+      const results = await Promise.all(routes.map(async route => {
+        const p = { ...allProviders[route.provider], model: route.model }
+        const result = await callProvider(p, aiPrompt, keys[route.provider], undefined, undefined, buildHistory(route.provider, route.model))
+        // Pin provider/model to route values — APIs may echo back a different string
+        // (e.g. OpenAI returns "gpt-4o-2024-11-20", OpenRouter returns "openai/gpt-4o")
+        // which would break the tab key match in visibleMessages.
+        logger.providerCall(route.provider, route.model, aiPrompt, result)
+        return { ...result, provider: route.provider, model: route.model, parallelId }
+      }))
+
+      // Auto-save code when there's a single provider and a code block
+      if (results.length === 1 && attachedFile && !results[0].error && hasCodeBlock(results[0].content)) {
+        const code = extractCode(results[0].content)
         updateTmpFile(attachedFile, code).then(r => {
           if ('ok' in r) {
             setAttachedFile(r.updatedFile)
@@ -281,14 +331,15 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
         })
       }
 
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: responseContent,
+      setMessages(prev => [...prev, ...results.map(result => ({
+        role: 'assistant' as const,
+        content: result.error ? `Error: ${result.error}` : result.content,
         provider: result.provider,
         model: result.model,
         latencyMs: result.latencyMs,
         error: !!result.error,
-      }])
+        parallelId: result.parallelId,
+      }))])
     } finally {
       setLoading(false)
       textareaRef.current?.focus()
@@ -321,8 +372,9 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
     }
   }
 
-  const handleSave = (msg: Message, idx: number) => {
-    const userMsg = messages.slice(0, idx).reverse().find(m => m.role === 'user')
+  const handleSave = (msg: Message) => {
+    const pos = messages.indexOf(msg)
+    const userMsg = messages.slice(0, pos >= 0 ? pos : messages.length).reverse().find(m => m.role === 'user')
     saveResponse(
       userMsg?.content ?? '',
       msg.imageUrl ? '' : msg.content,
@@ -336,6 +388,49 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
   }
 
   const meta = TASK_META[activeType] ?? getWorkflow(activeType) ?? { label: activeType, icon: '🔧', description: '' }
+
+  /** Convert raw error strings into readable messages shown in error bubbles. */
+  const friendlyError = (raw: string): string => {
+    if (/aborted|abort/i.test(raw))           return '⏱ Request timed out. The provider took too long to respond.'
+    if (/401|unauthorized|api key/i.test(raw)) return '🔑 Authentication failed. Check your API key for this provider.'
+    if (/403|forbidden/i.test(raw))           return '🚫 Access denied. Your API key may not have permission for this model.'
+    if (/429|rate limit/i.test(raw))          return '🐢 Rate limit reached. Wait a moment and try again.'
+    if (/5[0-9]{2}/i.test(raw))               return `🔧 Server error from the AI provider. (${raw})`
+    if (/no providers/i.test(raw))            return '⚙️ No providers configured. Add an API key in the API tab.'
+    return raw
+  }
+
+  // Compute enabled parallel providers fresh from prefs on every render
+  const parallelProviders = (() => {
+    const prefs = loadRoutingPrefs()
+    const keys = loadAllKeys()
+    const enabled = loadEnabledProviders()
+    const availableKeys = new Set(Object.keys(keys))
+    availableKeys.add('pollinations')
+    return resolveAllProviders(workflowType, prefs, availableKeys, enabled)
+  })()
+
+  const tabKey = (provider: string, model: string) => `${provider}::${model}`
+
+  const activeTab = (() => {
+    if (parallelProviders.length <= 1) return null
+    const key = activeParallelProvider
+    if (key && parallelProviders.some(p => tabKey(p.provider, p.model) === key)) return key
+    return tabKey(parallelProviders[0].provider, parallelProviders[0].model)
+  })()
+
+  // When same provider appears multiple times (different models), show the model name in the tab
+  const providerCount = parallelProviders.reduce<Record<string, number>>((acc, e) => {
+    acc[e.provider] = (acc[e.provider] ?? 0) + 1
+    return acc
+  }, {})
+
+  const visibleMessages = messages.filter(msg => {
+    if (msg.role === 'user') return true
+    if (!msg.parallelId) return true
+    if (parallelProviders.length <= 1) return true
+    return tabKey(msg.provider ?? '', msg.model ?? '') === activeTab
+  })
 
   return (
     <div className="screen">
@@ -356,32 +451,58 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
         )}
       </div>
 
+      {parallelProviders.length > 1 && (
+        <div className="parallel-tab-bar">
+          {parallelProviders.map(entry => {
+            const name = getAllProviders()[entry.provider]?.name ?? entry.provider
+            const key = tabKey(entry.provider, entry.model)
+            const isActive = key === activeTab
+            const label = providerCount[entry.provider] > 1 ? `${name} · ${entry.model}` : name
+            return (
+              <button
+                key={key}
+                className={`parallel-tab${isActive ? ' active' : ''}`}
+                onClick={() => setActiveParallelProvider(key)}
+              >
+                {label}
+                {loading && isActive && <span style={{ marginLeft: 4, opacity: 0.6 }}>…</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
       <div className="chat-messages">
         {messages.length === 0 && (
           <div className="empty-state">
             <div style={{ fontSize: 32, marginBottom: 12 }}>{meta.icon}</div>
-            <div style={{ fontWeight: 600, marginBottom: 4 }}>ManyAI Desktop</div>
-            <div style={{ fontSize: 12, color: 'var(--text-dim)' }}>
+            <div style={{ fontWeight: 600, marginBottom: 4, fontSize: 16 }}>ManyAI Desktop</div>
+            <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>
               {attachedFile
                 ? `📎 ${attachedFile.name} attached — describe what you want to do with it.`
-                : `Routing to the best available ${meta.label.toLowerCase()} provider.`}
+                : parallelProviders.length > 1
+                  ? `Sending to ${parallelProviders.length} providers in parallel.`
+                  : `Sending to the best available ${meta.label.toLowerCase()} provider.`}
             </div>
           </div>
         )}
-        {messages.map((msg, idx) => (
-          <div key={idx} className={`message ${msg.role}`}>
+        {visibleMessages.map((msg, idx) => (
+          <div key={idx} className={`message ${msg.role}${msg.error ? ' message-error' : ''}`}>
             {msg.imageUrl ? (
               <div className="image-bubble">
                 <img src={msg.imageUrl} alt="Generated image" className="generated-image" />
               </div>
             ) : (
-              <div className="message-bubble" style={msg.error ? { borderColor: 'var(--accent2)', color: 'var(--accent2)' } : {}}>
+              <div className="message-bubble">
                 {msg.fileRef && (
-                  <div style={{ fontSize: 11, color: 'var(--accent)', marginBottom: 6, opacity: 0.8 }}>
+                  <div style={{ fontSize: 12, color: 'var(--accent)', marginBottom: 6, opacity: 0.8 }}>
                     📎 {msg.fileRef} injected
                   </div>
                 )}
-                {msg.content}
+                {/* Translate opaque error names into user-friendly messages */}
+                {msg.error
+                  ? friendlyError(msg.content)
+                  : msg.content}
               </div>
             )}
             {msg.role === 'assistant' && (msg.provider || msg.latencyMs) && (
@@ -392,7 +513,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
             )}
             {msg.role === 'assistant' && !msg.error && (
               <div className="message-actions">
-                <button className="btn-ghost" onClick={() => handleSave(msg, idx)}>Save</button>
+                <button className="btn-ghost" onClick={() => handleSave(msg)}>Save</button>
                 {!msg.imageUrl && (
                   <button className="btn-ghost" onClick={() => navigator.clipboard.writeText(msg.content)}>Copy</button>
                 )}

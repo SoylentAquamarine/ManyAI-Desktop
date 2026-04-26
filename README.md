@@ -35,6 +35,53 @@ $ npm run build:linux
 
 ## Changelog
 
+### 2026-04-26 — Pre-publish hardening: themes, logging, working dir, encrypted backup, import
+
+**Theme system — fully token-based, no hardcoded colours**
+- Added `--accent-text` and `--hover-bg` CSS custom properties to every theme block
+- `--accent-text` ensures readable contrast on accent-coloured backgrounds for all 4 themes (Midnight/Dark use `#000` on teal; Light uses `#fff` on blue; Hotdog uses `#000` on yellow)
+- `--hover-bg` replaces `rgba(255,255,255,0.03)` hardcodes that were invisible on Light theme
+- `.btn-primary`, `.message.user .message-bubble`, `.parallel-tab.active`, `.type-pill.active` all now use `var(--accent-text)`
+- Toggle slider knob changed from `background: white` to `var(--text)` — visible on all themes
+- All font sizes bumped +1px throughout `globals.css` (body 14→15px, buttons 13→14px, labels 11→12px, etc.)
+
+**Working directory**
+- New `lib/workingDir.ts` — configurable root folder for all file output
+- Set from Settings → General → Browse…; creates `images/` and `backups/` sub-dirs automatically
+- All dialogs (save backup, open file) default to working dir when set
+
+**Application log**
+- New `lib/logger.ts` — writes timestamped entries to `{workingDir}/manyai.log`
+- Every provider call (text + image) is logged with provider, model, prompt length, latency, and error
+- Image generation failures are logged at ERROR level
+- Logger is always silent if no working dir is configured — never crashes the app
+
+**Encrypted backup**
+- New `lib/crypto.ts` — AES-256-GCM via Web Crypto API, keys derived with PBKDF2 (200k iterations)
+- Backup export: checkbox to encrypt API keys; requires password + confirm
+- Non-key sections always exported as plain JSON
+- Encrypted format: `{ apiKeys: { encrypted: "<base64 blob>" }, ... }`
+
+**Selective import**
+- New `ImportModal` in `BackupConfig` — pick which sections to restore (API keys, providers, workflows, routing, saved responses)
+- Saved responses import is off by default to prevent accidental overwrites
+- Encrypted API keys prompt for password inline before applying
+
+**Edit-provider modal**
+- Increased `maxWidth` from 520px → 740px and `width` from 95% → 98% so capability checkboxes no longer wrap badly
+
+**Friendly error messages in parallel tabs**
+- Error bubbles now use `.message-error` CSS class (red-tinted background + border)
+- `friendlyError()` function translates raw strings: AbortError → timeout message, 401 → key hint, 429 → rate limit, 5xx → server error
+
+**IPC / preload hardening**
+- `append-file` IPC handler (creates file + parent dirs if missing) — used by logger
+- `ensure-dir` IPC handler (mkdir -p)
+- `select-directory` IPC handler — OS directory picker
+- `open-file` and `save-file` both accept optional `defaultDir` param
+- `write-file-direct` now creates parent directories automatically
+- All new channels exposed via preload + typed in `index.d.ts`
+
 ### 2026-04-25 — Capability system, workflow overhaul, configurable model params
 
 **Capability-based model filtering**
