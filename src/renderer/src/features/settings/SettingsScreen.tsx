@@ -15,6 +15,7 @@ import { loadAllResponses } from '../../lib/savedResponses'
 import { THEMES, loadTheme, saveTheme, type ThemeId } from '../../lib/theme'
 import { getWorkingDir, setWorkingDir, getBackupsDir } from '../../lib/workingDir'
 import { encryptText, decryptText } from '../../lib/crypto'
+import { loadZoom, increaseZoom, decreaseZoom, ZOOM_MIN, ZOOM_MAX } from '../../lib/zoom'
 
 type SettingsTab = 'general' | 'api' | 'workflows' | 'backup'
 
@@ -82,7 +83,8 @@ export default function SettingsScreen({
 // ── GeneralSettings ───────────────────────────────────────────────────────────
 
 function GeneralSettings() {
-  const [theme, setTheme]   = useState<ThemeId>(() => loadTheme())
+  const [theme,   setTheme]   = useState<ThemeId>(() => loadTheme())
+  const [zoom,    setZoom]    = useState(() => loadZoom())
   const [workDir, setWorkDir] = useState(() => getWorkingDir())
   const [dirStatus, setDirStatus] = useState('')
 
@@ -138,6 +140,27 @@ function GeneralSettings() {
               {t.label}
             </button>
           ))}
+        </div>
+
+        {/* ── Font size ──────────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0 4px' }}>
+          <button
+            className="btn-ghost"
+            disabled={zoom <= ZOOM_MIN}
+            onClick={() => setZoom(decreaseZoom())}
+            style={{ fontSize: 18, padding: '2px 12px', lineHeight: 1 }}
+            title="Decrease font size"
+          >A−</button>
+          <span style={{ fontSize: 13, color: 'var(--text-dim)', minWidth: 44, textAlign: 'center' }}>
+            {zoom}%
+          </span>
+          <button
+            className="btn-ghost"
+            disabled={zoom >= ZOOM_MAX}
+            onClick={() => setZoom(increaseZoom())}
+            style={{ fontSize: 18, padding: '2px 12px', lineHeight: 1 }}
+            title="Increase font size"
+          >A+</button>
         </div>
 
         {/* ── Working directory ───────────────────────────────── */}

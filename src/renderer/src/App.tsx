@@ -6,6 +6,7 @@ import RightPanel from './components/RightPanel'
 import { TASK_META } from './lib/routing'
 import { loadWorkflows, getWorkflow } from './lib/workflows'
 import { loadTheme, applyTheme } from './lib/theme'
+import { loadZoom, applyZoom } from './lib/zoom'
 import type { TaskType } from './lib/providers'
 
 export type PanelType = 'saved' | 'settings'
@@ -59,7 +60,7 @@ export default function App() {
   const [settingsTriggerAdd, setSettingsTriggerAdd] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'api' | 'workflows' | 'backup'>('general')
 
-  useEffect(() => { applyTheme(loadTheme()) }, [])
+  useEffect(() => { applyTheme(loadTheme()); applyZoom(loadZoom()) }, [])
 
   const injectFns = useRef<Record<string, (p: string) => void>>({})
   const [rightWidth, setRightWidth] = useState(() => {
