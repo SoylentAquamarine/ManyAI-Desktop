@@ -68,6 +68,363 @@
   --hover-bg: rgba(0,0,0,0.12);
 }
 
+/* ════════════════════════════════════════════════════════════
+   Windows 3.1 / Windows for Workgroups 3.11 colour schemes
+   Names match the Control Panel → Color Schemes dropdown.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Windows Default ──────────────────────────────────────── */
+[data-theme="win-default"] {
+  --bg: #1c2040;
+  --bg2: #161830;
+  --surface: #252858;
+  --surface2: #303470;
+  --accent: #4060c0;
+  --accent2: #c04040;
+  --accent-text: #fff;
+  --text: #d0d4e0;
+  --text-dim: #8090a8;
+  --border: #384070;
+  --input-bg: #141628;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Arizona ──────────────────────────────────────────────── */
+[data-theme="arizona"] {
+  --bg: #2c1a00;
+  --bg2: #1e1000;
+  --surface: #3e2608;
+  --surface2: #523210;
+  --accent: #c86030;
+  --accent2: #e09040;
+  --accent-text: #fff;
+  --text: #e8d0b0;
+  --text-dim: #a08060;
+  --border: #6a3a18;
+  --input-bg: #180e00;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Black Leather Jacket ─────────────────────────────────── */
+[data-theme="black-leather-jacket"] {
+  --bg: #0c0c0c;
+  --bg2: #050505;
+  --surface: #181818;
+  --surface2: #242424;
+  --accent: #909090;
+  --accent2: #c04040;
+  --accent-text: #000;
+  --text: #c8c8c8;
+  --text-dim: #666666;
+  --border: #383838;
+  --input-bg: #060606;
+  --hover-bg: rgba(255,255,255,0.06);
+}
+
+/* ── Bordeaux ─────────────────────────────────────────────── */
+[data-theme="bordeaux"] {
+  --bg: #1e0008;
+  --bg2: #140004;
+  --surface: #2c0010;
+  --surface2: #3c0018;
+  --accent: #900020;
+  --accent2: #d04060;
+  --accent-text: #fff;
+  --text: #e0c0c8;
+  --text-dim: #906070;
+  --border: #560020;
+  --input-bg: #0e0006;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Cinnamon ─────────────────────────────────────────────── */
+[data-theme="cinnamon"] {
+  --bg: #200c00;
+  --bg2: #160800;
+  --surface: #301400;
+  --surface2: #421c00;
+  --accent: #b04010;
+  --accent2: #e07030;
+  --accent-text: #fff;
+  --text: #e8c8a8;
+  --text-dim: #987858;
+  --border: #5e2800;
+  --input-bg: #100600;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Designer ─────────────────────────────────────────────── */
+[data-theme="designer"] {
+  --bg: #101020;
+  --bg2: #0a0a18;
+  --surface: #181828;
+  --surface2: #222238;
+  --accent: #8060a0;
+  --accent2: #e06080;
+  --accent-text: #fff;
+  --text: #d0d0e0;
+  --text-dim: #8080a0;
+  --border: #303050;
+  --input-bg: #080810;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Emerald City ─────────────────────────────────────────── */
+[data-theme="emerald-city"] {
+  --bg: #001400;
+  --bg2: #000e00;
+  --surface: #002000;
+  --surface2: #003000;
+  --accent: #00b040;
+  --accent2: #80e060;
+  --accent-text: #000;
+  --text: #b0e0b8;
+  --text-dim: #507858;
+  --border: #005020;
+  --input-bg: #000a00;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Fluorescent ──────────────────────────────────────────── */
+[data-theme="fluorescent"] {
+  --bg: #080810;
+  --bg2: #040408;
+  --surface: #101020;
+  --surface2: #181830;
+  --accent: #00ff80;
+  --accent2: #ff00ff;
+  --accent-text: #000;
+  --text: #d0ffd8;
+  --text-dim: #60a870;
+  --border: #003820;
+  --input-bg: #020208;
+  --hover-bg: rgba(0,255,128,0.06);
+}
+
+/* ── LCD Default Screen Settings ──────────────────────────── */
+[data-theme="lcd-default"] {
+  --bg: #0a1a0a;
+  --bg2: #061006;
+  --surface: #102010;
+  --surface2: #182818;
+  --accent: #70b040;
+  --accent2: #a0d060;
+  --accent-text: #000;
+  --text: #90c070;
+  --text-dim: #486030;
+  --border: #204010;
+  --input-bg: #040c04;
+  --hover-bg: rgba(112,176,64,0.08);
+}
+
+/* ── LCD Reversed - Dark ──────────────────────────────────── */
+[data-theme="lcd-reversed-dark"] {
+  --bg: #001800;
+  --bg2: #001000;
+  --surface: #002800;
+  --surface2: #003800;
+  --accent: #00ff00;
+  --accent2: #80ff40;
+  --accent-text: #000;
+  --text: #00cc00;
+  --text-dim: #006000;
+  --border: #005000;
+  --input-bg: #000c00;
+  --hover-bg: rgba(0,255,0,0.06);
+}
+
+/* ── LCD Reversed - Light ─────────────────────────────────── */
+[data-theme="lcd-reversed-light"] {
+  --bg: #1c2c1c;
+  --bg2: #141e14;
+  --surface: #283828;
+  --surface2: #344434;
+  --accent: #60a040;
+  --accent2: #a0d060;
+  --accent-text: #000;
+  --text: #c0d8a0;
+  --text-dim: #708858;
+  --border: #3a5428;
+  --input-bg: #101810;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Mahogany ─────────────────────────────────────────────── */
+[data-theme="mahogany"] {
+  --bg: #1a0800;
+  --bg2: #100400;
+  --surface: #281200;
+  --surface2: #381a00;
+  --accent: #8c3000;
+  --accent2: #d06020;
+  --accent-text: #fff;
+  --text: #d8a880;
+  --text-dim: #886040;
+  --border: #4a1800;
+  --input-bg: #0c0400;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Monochrome ───────────────────────────────────────────── */
+[data-theme="monochrome"] {
+  --bg: #000000;
+  --bg2: #080808;
+  --surface: #1a1a1a;
+  --surface2: #262626;
+  --accent: #aaaaaa;
+  --accent2: #888888;
+  --accent-text: #000;
+  --text: #cccccc;
+  --text-dim: #666666;
+  --border: #333333;
+  --input-bg: #040404;
+  --hover-bg: rgba(255,255,255,0.06);
+}
+
+/* ── Ocean ────────────────────────────────────────────────── */
+[data-theme="ocean"] {
+  --bg: #000820;
+  --bg2: #000414;
+  --surface: #001030;
+  --surface2: #001c48;
+  --accent: #0050c0;
+  --accent2: #4090e0;
+  --accent-text: #fff;
+  --text: #c0d8f0;
+  --text-dim: #5080a8;
+  --border: #003060;
+  --input-bg: #000410;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Pastel ───────────────────────────────────────────────── */
+[data-theme="pastel"] {
+  --bg: #1c1c28;
+  --bg2: #141420;
+  --surface: #282838;
+  --surface2: #343448;
+  --accent: #b090e0;
+  --accent2: #e090b0;
+  --accent-text: #000;
+  --text: #d8d0f0;
+  --text-dim: #9090b8;
+  --border: #404060;
+  --input-bg: #101018;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Patchwork ────────────────────────────────────────────── */
+[data-theme="patchwork"] {
+  --bg: #1c0c10;
+  --bg2: #140808;
+  --surface: #2a1420;
+  --surface2: #381c2c;
+  --accent: #e05080;
+  --accent2: #40c080;
+  --accent-text: #fff;
+  --text: #f0d8e0;
+  --text-dim: #906070;
+  --border: #502038;
+  --input-bg: #0e0608;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Plasma Power Saver ───────────────────────────────────── */
+[data-theme="plasma-power-saver"] {
+  --bg: #060010;
+  --bg2: #040008;
+  --surface: #0c0018;
+  --surface2: #140028;
+  --accent: #9900ff;
+  --accent2: #ff40ff;
+  --accent-text: #fff;
+  --text: #d080ff;
+  --text-dim: #604080;
+  --border: #280050;
+  --input-bg: #020008;
+  --hover-bg: rgba(153,0,255,0.08);
+}
+
+/* ── Rugby ────────────────────────────────────────────────── */
+[data-theme="rugby"] {
+  --bg: #0c1400;
+  --bg2: #080e00;
+  --surface: #182000;
+  --surface2: #242e00;
+  --accent: #4a8800;
+  --accent2: #c09030;
+  --accent-text: #fff;
+  --text: #c8e0a0;
+  --text-dim: #607840;
+  --border: #2a4800;
+  --input-bg: #060a00;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── The Blues ────────────────────────────────────────────── */
+[data-theme="the-blues"] {
+  --bg: #000818;
+  --bg2: #000410;
+  --surface: #000c28;
+  --surface2: #001440;
+  --accent: #2060d0;
+  --accent2: #6090e0;
+  --accent-text: #fff;
+  --text: #b0c8f0;
+  --text-dim: #406090;
+  --border: #002050;
+  --input-bg: #00040c;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Tweed ────────────────────────────────────────────────── */
+[data-theme="tweed"] {
+  --bg: #181410;
+  --bg2: #100e0a;
+  --surface: #241e18;
+  --surface2: #302820;
+  --accent: #706040;
+  --accent2: #a09060;
+  --accent-text: #fff;
+  --text: #d0c8b0;
+  --text-dim: #807060;
+  --border: #403828;
+  --input-bg: #0c0a08;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Valentine ────────────────────────────────────────────── */
+[data-theme="valentine"] {
+  --bg: #200010;
+  --bg2: #160008;
+  --surface: #300018;
+  --surface2: #420024;
+  --accent: #e01060;
+  --accent2: #ff80b0;
+  --accent-text: #fff;
+  --text: #f0c0d8;
+  --text-dim: #905070;
+  --border: #500030;
+  --input-bg: #100008;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
+/* ── Wingtip ──────────────────────────────────────────────── */
+[data-theme="wingtip"] {
+  --bg: #141010;
+  --bg2: #0e0c0c;
+  --surface: #1e1818;
+  --surface2: #2a2020;
+  --accent: #805040;
+  --accent2: #c08060;
+  --accent-text: #fff;
+  --text: #d0c0b8;
+  --text-dim: #806858;
+  --border: #382820;
+  --input-bg: #080606;
+  --hover-bg: rgba(255,255,255,0.05);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
