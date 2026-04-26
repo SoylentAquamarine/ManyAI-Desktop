@@ -35,6 +35,40 @@ $ npm run build:linux
 
 ## Changelog
 
+### 2026-04-26 — UI polish: font selector, new themes, About tab, provider rename, workflow cleanup
+
+**Font face selector**
+- New `lib/font.ts` — 13 system fonts (Arial, Calibri, Comic Sans, Consolas, Courier New, Georgia, Impact, Segoe UI, System Default, Tahoma, Times New Roman, Trebuchet MS, Verdana)
+- Font picker added to Settings → General; each button renders in its own font for instant preview
+- Selection persists in localStorage; applied on startup via `--font` CSS custom property override on `:root`
+- Covers all text, inputs, buttons, and textareas without any per-element changes
+
+**New color themes**
+- Added Black and White (white bg, black text/borders) and White and Black (black bg, white text) — flat high-contrast pair
+- Added non-reversed counterparts for all three LCD schemes: LCD Default (Non-Reversed), LCD Dark (Non-Reversed), LCD Light (Non-Reversed) — light greenish backgrounds with dark text, matching original passive-matrix LCD appearance
+- Fixed Black and White theme: `--text-dim` set to `#000000` so all secondary labels render black not grey
+
+**About tab**
+- New `AboutScreen.tsx` added as a tab in Settings
+- Shows Steve's photo, desktop-specific description text, three donate buttons (PayPal, Cash App, Venmo), GitHub link, and copyright
+- Photo sourced from the ManyAI Android project assets
+
+**Providers tab rename**
+- Settings tab renamed from "API" to "Providers"
+- Internal help text updated to match
+
+**API / Providers screen — auto-save + Test All**
+- Removed "Save All" button; replaced with "Test All" (runs every enabled model sequentially with live progress)
+- API key inputs auto-save on blur (`onBlur`) with a 2-second "✓ Saved" flash
+- Model enable/disable toggles now persist immediately on change
+- Edit-provider form save also flushes the current API key from state to storage
+- Provider list sorted alphabetically
+
+**Workflow cleanup**
+- Removed auto-detect keywords field from the add/edit workflow form
+- Removed `keywords` from `WorkflowDef`, `WorkflowPlugin`, `TaskMeta`, `TASK_META`, and all 7 built-in workflow files — no auto-routing logic remained to use them
+- Workflow list in the Workflows tab is now sorted alphabetically by label
+
 ### 2026-04-26 — Pre-publish hardening: themes, logging, working dir, encrypted backup, import
 
 **Theme system — fully token-based, no hardcoded colours**
@@ -235,3 +269,22 @@ $ npm run build:linux
 - Cerebras: updated retired `llama-3.3-70b` → `gpt-oss-120b`
 - HuggingFace: replaced `Mistral-7B-Instruct-v0.3` (not a chat model) with `HuggingFaceH4/zephyr-7b-beta`
 - API cards: removed `overflow:hidden` so expanded model list no longer clips
+
+## License
+
+This project is licensed under the **GNU General Public License v3 (GPLv3)**.
+You are free to use, modify, and distribute this software under the terms of the GPLv3.
+You can find the full license text by looking at the `LICENSE` file in this repository, or at the official source: [Link to your LICENSE file or https://www.gnu.org/licenses/gpl-3.0.en.html]
+
+**Key points of the GPLv3:**
+*   You can use this software for any purpose, including commercial use.
+*   You can modify the source code.
+*   If you distribute modified versions of this software, or software that incorporates this code, you must also make your source code available under the GPLv3. This ensures that the software remains free and open for everyone.
+
+## Support & Donations
+
+Developing and maintaining this software requires time and resources. If you find this program useful, especially for your business or commercial projects, please consider supporting its continued development with a voluntary donation.
+
+A small contribution of **$5** is greatly appreciated and helps us keep improving this project for everyone. You can donate via: [Link to your donation page/PayPal/etc. - e.g., https://www.paypal.me/yourname]
+
+**Donations are entirely voluntary and are not required to use or distribute this software under the terms of the GPLv3.** Your generosity is highly valued and helps us dedicate more time to making this project even better!

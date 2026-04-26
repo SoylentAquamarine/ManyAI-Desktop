@@ -11,7 +11,6 @@ export interface WorkflowPlugin {
   label: string
   icon: string
   description: string
-  keywords: RegExp
   defaultRoutes: RouteEntry[]
   workflowType: WorkflowType[]
 }

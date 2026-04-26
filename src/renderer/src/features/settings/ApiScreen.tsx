@@ -63,7 +63,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
 
         <div style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text)' }}>
           <p style={{ margin: '0 0 10px' }}>
-            Click <strong>Add New Provider</strong> at the top of the API screen to add any
+            Click <strong>Add New Provider</strong> at the top of the Providers screen to add any
             OpenAI-compatible provider — most modern LLM APIs support this format.
           </p>
 
@@ -83,7 +83,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
 
           <p style={{ margin: '0 0 6px', fontWeight: 600 }}>API key:</p>
           <p style={{ margin: '0 0 10px' }}>
-            Enter your key in the provider card and click <strong>Save All</strong>.
+            Enter your key in the provider card — it saves automatically when you click away.
             Keys are stored locally on this device only.
           </p>
 
@@ -350,7 +350,6 @@ export default function ApiScreen() {
   const order = getAllProviderOrder()
 
   const [state, setState] = useState<Record<string, ProviderState>>(() => buildState(allProviders, order))
-  const [saved, setSaved] = useState(false)
   const [showHelp, setShowHelp] = useState(false)
   const [editTarget, setEditTarget] = useState<Provider | null>(null)
   const [isAdding, setIsAdding] = useState(false)
@@ -358,6 +357,10 @@ export default function ApiScreen() {
   const [testResults, setTestResults] = useState<Record<string, 'idle' | 'testing' | 'ok' | string>>({})
   const [capOpen, setCapOpen] = useState<Record<string, boolean>>({})
   const [modelDeleteConfirm, setModelDeleteConfirm] = useState<string | null>(null)
+  /** Per-provider key: brief "✓ Saved" flash after blur-save */
+  const [keySaved, setKeySaved] = useState<Record<string, boolean>>({})
+  const [testingAll, setTestingAll] = useState(false)
+  const [testAllProgress, setTestAllProgress] = useState('')
 
   const refresh = () => {
     const providers = getAllProviders()
@@ -369,29 +372,64 @@ export default function ApiScreen() {
   const updateProvider = (pk: string, patch: Partial<ProviderState>) =>
     setState(prev => ({ ...prev, [pk]: { ...prev[pk], ...patch } }))
 
-  const updateModel = (pk: string, mk: string, patch: Partial<ModelState>) =>
-    setState(prev => ({
-      ...prev,
-      [pk]: {
-        ...prev[pk],
-        models: { ...prev[pk].models, [mk]: { ...prev[pk].models[mk], ...patch } }
-      }
-    }))
+  /** Save the API key for one provider, called on blur of the key input. */
+  const saveKeyForProvider = (pk: string) => {
+    const v = state[pk]?.apiKey?.trim()
+    if (v) saveKey(pk, v)
+    else deleteKey(pk)
+    setKeySaved(prev => ({ ...prev, [pk]: true }))
+    setTimeout(() => setKeySaved(prev => ({ ...prev, [pk]: false })), 2000)
+  }
 
-  const saveAll = () => {
-    const modelEnabled: Record<string, boolean> = {}
-    const currentOrder = getAllProviderOrder()
-    currentOrder.forEach(pk => {
-      const v = state[pk]?.apiKey?.trim()
-      if (v) saveKey(pk, v)
-      else deleteKey(pk)
-      Object.entries(state[pk]?.models ?? {}).forEach(([mk, ms]) => {
-        modelEnabled[mk] = ms.enabled
-      })
+  /** Toggle a model on/off and immediately persist the enabled map. */
+  const toggleModel = (pk: string, mk: string, enabled: boolean) => {
+    setState(prev => {
+      const next = {
+        ...prev,
+        [pk]: {
+          ...prev[pk],
+          models: { ...prev[pk].models, [mk]: { ...prev[pk].models[mk], enabled } }
+        }
+      }
+      // Persist the full enabled map from the new state synchronously
+      const modelEnabled: Record<string, boolean> = {}
+      Object.entries(next).forEach(([p, ps]) =>
+        Object.entries(ps.models).forEach(([m, ms]) => { modelEnabled[m] = ms.enabled })
+      )
+      saveEnabledModels(modelEnabled)
+      return next
     })
-    saveEnabledModels(modelEnabled)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  }
+
+  /** Run Test on every enabled model across all providers, one after another. */
+  const handleTestAll = async () => {
+    setTestingAll(true)
+    setTestResults({})
+    const providers = getAllProviders()
+    const orderedKeys = [...getAllProviderOrder()].sort((a, b) =>
+      (providers[a]?.name ?? a).localeCompare(providers[b]?.name ?? b)
+    )
+    let done = 0
+    const jobs: { pk: string; modelId: string }[] = []
+    for (const pk of orderedKeys) {
+      const p = providers[pk]
+      if (!p) continue
+      for (const m of p.models) {
+        const mk = `${pk}:${m.id}`
+        if (state[pk]?.models[mk]?.enabled !== false) jobs.push({ pk, modelId: m.id })
+      }
+    }
+    for (const { pk, modelId } of jobs) {
+      const mk = `${pk}:${modelId}`
+      setTestAllProgress(`Testing ${providers[pk]?.name ?? pk} / ${modelId} (${++done}/${jobs.length})`)
+      setTestResults(prev => ({ ...prev, [mk]: 'testing' }))
+      const p = providers[pk]
+      const apiKey = state[pk]?.apiKey || loadKey(pk) || undefined
+      const result = await callProvider({ ...p, model: modelId }, 'Hi', apiKey)
+      setTestResults(prev => ({ ...prev, [mk]: result.error ? result.error : 'ok' }))
+    }
+    setTestingAll(false)
+    setTestAllProgress('')
   }
 
   const handleEdit = (provider: Provider) => {
@@ -406,6 +444,10 @@ export default function ApiScreen() {
 
   const handleSaveProvider = (p: Provider) => {
     upsertProvider(p)
+    // Persist any API key that's currently in state for this provider
+    const v = state[p.key]?.apiKey?.trim()
+    if (v) saveKey(p.key, v)
+    else if (state[p.key]?.apiKey === '') deleteKey(p.key)
     setEditTarget(null)
     setIsAdding(false)
     refresh()
@@ -469,7 +511,15 @@ export default function ApiScreen() {
           <button className="btn-ghost" onClick={handleAdd} style={{ fontSize: 12 }}>
             + Add Provider
           </button>
-          <button className="btn-primary" onClick={saveAll}>{saved ? '✓ Saved' : 'Save All'}</button>
+          <button
+            className="btn-primary"
+            onClick={handleTestAll}
+            disabled={testingAll}
+            title="Test every enabled model sequentially"
+            style={{ minWidth: 100 }}
+          >
+            {testingAll ? (testAllProgress || 'Testing…') : 'Test All'}
+          </button>
         </div>
       </div>
 
@@ -510,13 +560,18 @@ export default function ApiScreen() {
 
               <div className="api-card-body">
                 {p.needsKey && (
-                  <div className="key-row" style={{ marginBottom: 10 }}>
+                  <div className="key-row" style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input
                       type="password"
                       placeholder={p.keyHint ?? `${p.name} API key`}
                       value={s.apiKey}
                       onChange={e => updateProvider(pk, { apiKey: e.target.value })}
+                      onBlur={() => saveKeyForProvider(pk)}
+                      style={{ flex: 1 }}
                     />
+                    {keySaved[pk] && (
+                      <span style={{ fontSize: 11, color: '#4caf50', whiteSpace: 'nowrap' }}>✓ Saved</span>
+                    )}
                   </div>
                 )}
                 <div className="model-list">
@@ -540,7 +595,7 @@ export default function ApiScreen() {
                             <input
                               type="checkbox"
                               checked={ms.enabled}
-                              onChange={e => updateModel(pk, mk, { enabled: e.target.checked })}
+                              onChange={e => toggleModel(pk, mk, e.target.checked)}
                             />
                             <span className="toggle-slider" />
                           </label>

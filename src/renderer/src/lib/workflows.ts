@@ -22,8 +22,6 @@ export interface WorkflowDef {
   systemPrompt?: string
   /** Files read from disk and silently injected into every message */
   contextFiles?: ContextFile[]
-  /** Regex pattern string for auto-detection (custom workflows only) */
-  keywords?: string
 }
 
 const ENABLED_KEY  = 'manyai_workflows_config'

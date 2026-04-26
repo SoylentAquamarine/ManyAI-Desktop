@@ -68,6 +68,38 @@
   --hover-bg: rgba(0,0,0,0.12);
 }
 
+/* ── Black and White ──────────────────────────────────────── */
+[data-theme="black-and-white"] {
+  --bg: #ffffff;
+  --bg2: #f0f0f0;
+  --surface: #f8f8f8;
+  --surface2: #e8e8e8;
+  --accent: #000000;
+  --accent2: #333333;
+  --accent-text: #ffffff;
+  --text: #000000;
+  --text-dim: #000000;
+  --border: #000000;
+  --input-bg: #ffffff;
+  --hover-bg: rgba(0,0,0,0.07);
+}
+
+/* ── White and Black ──────────────────────────────────────── */
+[data-theme="white-and-black"] {
+  --bg: #000000;
+  --bg2: #111111;
+  --surface: #1a1a1a;
+  --surface2: #222222;
+  --accent: #ffffff;
+  --accent2: #cccccc;
+  --accent-text: #000000;
+  --text: #ffffff;
+  --text-dim: #aaaaaa;
+  --border: #ffffff;
+  --input-bg: #0a0a0a;
+  --hover-bg: rgba(255,255,255,0.07);
+}
+
 /* ════════════════════════════════════════════════════════════
    Windows 3.1 / Windows for Workgroups 3.11 colour schemes
    Names match the Control Panel → Color Schemes dropdown.
@@ -199,6 +231,54 @@
   --border: #003820;
   --input-bg: #020208;
   --hover-bg: rgba(0,255,128,0.06);
+}
+
+/* ── LCD Default (non-reversed) ───────────────────────────── */
+[data-theme="lcd-default-nr"] {
+  --bg: #d8e8c0;
+  --bg2: #c8dca8;
+  --surface: #e0eeca;
+  --surface2: #cce0b0;
+  --accent: #2a5000;
+  --accent2: #1a3800;
+  --accent-text: #d8e8c0;
+  --text: #1a3000;
+  --text-dim: #1a3000;
+  --border: #4a7820;
+  --input-bg: #e8f0d4;
+  --hover-bg: rgba(0,0,0,0.07);
+}
+
+/* ── LCD Reversed - Dark (non-reversed) ────────────────────── */
+[data-theme="lcd-dark-nr"] {
+  --bg: #c0ffc0;
+  --bg2: #a8f0a8;
+  --surface: #d0ffd0;
+  --surface2: #b8f8b8;
+  --accent: #003800;
+  --accent2: #005000;
+  --accent-text: #c0ffc0;
+  --text: #001800;
+  --text-dim: #001800;
+  --border: #006000;
+  --input-bg: #d8ffd8;
+  --hover-bg: rgba(0,0,0,0.07);
+}
+
+/* ── LCD Reversed - Light (non-reversed) ───────────────────── */
+[data-theme="lcd-light-nr"] {
+  --bg: #e8f0e0;
+  --bg2: #dce8d0;
+  --surface: #eef4e8;
+  --surface2: #e0ecd6;
+  --accent: #304820;
+  --accent2: #486030;
+  --accent-text: #e8f0e0;
+  --text: #1c2c10;
+  --text-dim: #1c2c10;
+  --border: #4a6830;
+  --input-bg: #f0f6ea;
+  --hover-bg: rgba(0,0,0,0.06);
 }
 
 /* ── LCD Default Screen Settings ──────────────────────────── */

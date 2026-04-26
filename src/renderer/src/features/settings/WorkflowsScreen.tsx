@@ -11,7 +11,6 @@ const BLANK: Omit<WorkflowDef, 'builtIn'> = {
   workflowType: ['chat'],
   systemPrompt: '',
   contextFiles: [],
-  keywords: '',
 }
 
 interface WorkflowsScreenProps {
@@ -62,7 +61,6 @@ export default function WorkflowsScreen({ autoOpenAdd = false, onAutoOpenAddCons
       workflowType: w.workflowType ?? ['chat'],
       systemPrompt: w.systemPrompt ?? '',
       contextFiles: w.contextFiles ?? [],
-      keywords: w.keywords ?? '',
     })
     setFormErr('')
     setEditing(w)
@@ -86,7 +84,6 @@ export default function WorkflowsScreen({ autoOpenAdd = false, onAutoOpenAddCons
       workflowType: (form.workflowType as WorkflowType[] | undefined)?.length ? form.workflowType as WorkflowType[] : ['chat'],
       systemPrompt: form.systemPrompt?.trim() || undefined,
       contextFiles: form.contextFiles?.length ? form.contextFiles : undefined,
-      keywords: form.keywords?.trim() || undefined,
     }
 
     setWorkflows(prev => {
@@ -149,7 +146,7 @@ export default function WorkflowsScreen({ autoOpenAdd = false, onAutoOpenAddCons
       </div>
 
       <div className="api-list">
-        {workflows.map(w => (
+        {[...workflows].sort((a, b) => a.label.localeCompare(b.label)).map(w => (
           <div key={w.type} className="route-card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 22, flexShrink: 0 }}>{w.icon}</span>
             <div style={{ flex: 1 }}>
@@ -310,15 +307,6 @@ export default function WorkflowsScreen({ autoOpenAdd = false, onAutoOpenAddCons
                   {addingFile ? 'Picking…' : '+ Attach Files'}
                 </button>
               </div>
-            </Field>
-
-            <Field label="Auto-detect Keywords" hint="Regex pattern — when matched, this workflow is auto-selected. Leave blank to skip auto-detection.">
-              <input
-               
-                value={form.keywords}
-                onChange={e => setForm(f => ({ ...f, keywords: e.target.value }))}
-                placeholder="e.g. \b(resume|cover letter|job|hiring)\b"
-              />
             </Field>
 
             {formErr && (

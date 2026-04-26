@@ -14,7 +14,6 @@ export interface TaskMeta {
   label: string;
   icon: string;
   description: string;
-  keywords: RegExp;
 }
 
 export const TASK_META: Record<string, TaskMeta> = Object.fromEntries(
@@ -22,7 +21,6 @@ export const TASK_META: Record<string, TaskMeta> = Object.fromEntries(
     label: w.label,
     icon: w.icon,
     description: w.description,
-    keywords: w.keywords,
   }])
 );
 

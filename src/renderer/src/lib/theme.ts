@@ -18,6 +18,8 @@ export type ThemeId =
   | 'dark'
   | 'light'
   | 'hotdog'
+  | 'black-and-white'
+  | 'white-and-black'
   // ── Windows 3.1 / 3.11 schemes ────────────────────────────
   | 'win-default'
   | 'arizona'
@@ -28,8 +30,11 @@ export type ThemeId =
   | 'emerald-city'
   | 'fluorescent'
   | 'lcd-default'
+  | 'lcd-default-nr'
   | 'lcd-reversed-dark'
+  | 'lcd-dark-nr'
   | 'lcd-reversed-light'
+  | 'lcd-light-nr'
   | 'mahogany'
   | 'monochrome'
   | 'ocean'
@@ -57,6 +62,8 @@ export const THEMES: ThemeDef[] = [
   { id: 'dark',                label: 'Dark',                       preview: 'linear-gradient(135deg,#1e1e1e 50%,#4ecdc4 50%)' },
   { id: 'light',               label: 'Light',                      preview: 'linear-gradient(135deg,#f3f3f3 50%,#0078d4 50%)' },
   { id: 'hotdog',              label: 'Hotdog Stand',               preview: 'linear-gradient(135deg,#ff0000 50%,#ffff00 50%)' },
+  { id: 'black-and-white',    label: 'Black and White',            preview: 'linear-gradient(135deg,#ffffff 50%,#000000 50%)' },
+  { id: 'white-and-black',    label: 'White and Black',            preview: 'linear-gradient(135deg,#000000 50%,#ffffff 50%)' },
 
   // ── Windows 3.1 / 3.11 ────────────────────────────────────
   { id: 'win-default',         label: 'Windows Default',            preview: 'linear-gradient(135deg,#1c2040 50%,#4060c0 50%)',  group: 'Windows 3.1' },
@@ -68,8 +75,11 @@ export const THEMES: ThemeDef[] = [
   { id: 'emerald-city',        label: 'Emerald City',               preview: 'linear-gradient(135deg,#001400 50%,#00b040 50%)' },
   { id: 'fluorescent',         label: 'Fluorescent',                preview: 'linear-gradient(135deg,#080810 50%,#00ff80 50%)' },
   { id: 'lcd-default',         label: 'LCD Default Screen Settings',preview: 'linear-gradient(135deg,#0a1a0a 50%,#70b040 50%)' },
+  { id: 'lcd-default-nr',      label: 'LCD Default (Non-Reversed)', preview: 'linear-gradient(135deg,#d8e8c0 50%,#2a5000 50%)' },
   { id: 'lcd-reversed-dark',   label: 'LCD Reversed - Dark',        preview: 'linear-gradient(135deg,#001800 50%,#00ff00 50%)' },
+  { id: 'lcd-dark-nr',         label: 'LCD Dark (Non-Reversed)',    preview: 'linear-gradient(135deg,#c0ffc0 50%,#003800 50%)' },
   { id: 'lcd-reversed-light',  label: 'LCD Reversed - Light',       preview: 'linear-gradient(135deg,#1c2c1c 50%,#60a040 50%)' },
+  { id: 'lcd-light-nr',        label: 'LCD Light (Non-Reversed)',   preview: 'linear-gradient(135deg,#e8f0e0 50%,#304820 50%)' },
   { id: 'mahogany',            label: 'Mahogany',                   preview: 'linear-gradient(135deg,#1a0800 50%,#8c3000 50%)' },
   { id: 'monochrome',          label: 'Monochrome',                 preview: 'linear-gradient(135deg,#000000 50%,#aaaaaa 50%)' },
   { id: 'ocean',               label: 'Ocean',                      preview: 'linear-gradient(135deg,#000820 50%,#0050c0 50%)' },

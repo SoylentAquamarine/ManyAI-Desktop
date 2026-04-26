@@ -5,7 +5,6 @@ export const summarizationWorkflow: WorkflowPlugin = {
   label: 'Summarize',
   icon: '📋',
   description: 'Summarizing documents, extracting key points',
-  keywords: /\b(summarize|summary|tldr|tl;dr|brief|condense|shorten|overview|key points|main points|digest)\b/i,
   defaultRoutes: [
     { provider: 'gemini', model: 'gemini-2.5-flash' },
     { provider: 'cohere', model: 'command-r-plus-08-2024' },

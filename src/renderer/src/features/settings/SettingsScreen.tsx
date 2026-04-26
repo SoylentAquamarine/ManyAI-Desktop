@@ -11,13 +11,15 @@
 import { useState } from 'react'
 import ApiScreen from './ApiScreen'
 import WorkflowsScreen from './WorkflowsScreen'
+import AboutScreen from './AboutScreen'
 import { loadAllResponses } from '../../lib/savedResponses'
 import { THEMES, loadTheme, saveTheme, type ThemeId } from '../../lib/theme'
 import { getWorkingDir, setWorkingDir, getBackupsDir } from '../../lib/workingDir'
 import { encryptText, decryptText } from '../../lib/crypto'
 import { loadZoom, increaseZoom, decreaseZoom, ZOOM_MIN, ZOOM_MAX } from '../../lib/zoom'
+import { FONTS, loadFont, saveFont } from '../../lib/font'
 
-type SettingsTab = 'general' | 'api' | 'workflows' | 'backup'
+type SettingsTab = 'general' | 'api' | 'workflows' | 'backup' | 'about'
 
 interface SettingsScreenProps {
   /** Which tab to open on mount. */
@@ -60,9 +62,10 @@ export default function SettingsScreen({
         background: 'var(--bg)', flexWrap: 'wrap',
       }}>
         {tabBtn('general',   'General')}
-        {tabBtn('api',       'API')}
+        {tabBtn('api',       'Providers')}
         {tabBtn('workflows', 'Workflows')}
         {tabBtn('backup',    'Backup / Import')}
+        {tabBtn('about',     'About')}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -75,6 +78,7 @@ export default function SettingsScreen({
           />
         )}
         {tab === 'backup' && <BackupConfig />}
+        {tab === 'about'  && <AboutScreen />}
       </div>
     </div>
   )
@@ -85,12 +89,18 @@ export default function SettingsScreen({
 function GeneralSettings() {
   const [theme,   setTheme]   = useState<ThemeId>(() => loadTheme())
   const [zoom,    setZoom]    = useState(() => loadZoom())
+  const [font,    setFont]    = useState(() => loadFont())
   const [workDir, setWorkDir] = useState(() => getWorkingDir())
   const [dirStatus, setDirStatus] = useState('')
 
   const handleTheme = (id: ThemeId) => {
     setTheme(id)
     saveTheme(id)
+  }
+
+  const handleFont = (id: string) => {
+    setFont(id)
+    saveFont(id)
   }
 
   const handlePickDir = async () => {
@@ -164,6 +174,30 @@ function GeneralSettings() {
             style={{ fontSize: 18, padding: '2px 12px', lineHeight: 1 }}
             title="Increase font size"
           >A+</button>
+        </div>
+
+        {/* ── Font face ──────────────────────────────────────── */}
+        <div style={{ color: 'var(--text-dim)', fontSize: 14, padding: '16px 0 8px' }}>Font Face</div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '4px 0 12px' }}>
+          {FONTS.map(f => (
+            <button
+              key={f.id}
+              onClick={() => handleFont(f.id)}
+              title={f.label}
+              style={{
+                padding: '6px 14px',
+                borderRadius: 8,
+                cursor: 'pointer',
+                border: font === f.id ? '2px solid var(--accent)' : '2px solid var(--border)',
+                background: 'var(--surface)',
+                color: 'var(--text)',
+                fontSize: 13,
+                fontFamily: f.stack,
+              }}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
 
         {/* ── Working directory ───────────────────────────────── */}

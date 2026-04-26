@@ -5,7 +5,6 @@ export const generalWorkflow: WorkflowPlugin = {
   label: 'General',
   icon: '💬',
   description: 'Everything else — Q&A, chat, information',
-  keywords: /./,
   defaultRoutes: [
     { provider: 'cerebras',    model: 'llama3.1-8b' },
     { provider: 'groq',        model: 'llama-3.1-8b-instant' },
