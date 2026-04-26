@@ -283,11 +283,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   flex-direction: column;
   gap: 2px;
   flex-shrink: 0;
-  /* Stick to the visible bottom of the scroll container at any zoom level */
-  position: sticky;
-  bottom: 0;
-  background: var(--surface);
-  z-index: 1;
 }
 .nav-btn {
   display: flex;

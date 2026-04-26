@@ -18,11 +18,28 @@ export function loadZoom(): number {
   return isNaN(raw) ? DEFAULT : Math.max(MIN, Math.min(MAX, raw))
 }
 
-/** Persist and immediately apply a zoom percentage. */
+/**
+ * Persist and immediately apply a zoom percentage.
+ *
+ * We scale #root with transform:scale() instead of body.style.zoom so that
+ * 100vh / 100% units stay anchored to the real viewport size. body.style.zoom
+ * inflates vh units, which pushes fixed-height containers (like the right panel)
+ * off-screen. transform:scale keeps the coordinate space intact — we just
+ * shrink the #root bounding box to compensate so nothing overflows.
+ */
 export function applyZoom(pct: number): void {
   const clamped = Math.max(MIN, Math.min(MAX, pct))
   localStorage.setItem(LS_KEY, String(clamped))
-  document.body.style.zoom = `${clamped}%`
+
+  const root = document.getElementById('root')
+  if (!root) return
+
+  const f = clamped / 100
+  root.style.transform       = `scale(${f})`
+  root.style.transformOrigin = 'top left'
+  // Counter-scale the dimensions so the element fills the viewport after scaling
+  root.style.width  = `${100 / f}%`
+  root.style.height = `${100 / f}vh`
 }
 
 export function increaseZoom(): number {
