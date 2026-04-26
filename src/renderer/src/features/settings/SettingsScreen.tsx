@@ -119,45 +119,31 @@ function GeneralSettings() {
 
         {/* ── Appearance ─────────────────────────────────────── */}
         <div style={{ color: 'var(--text-dim)', fontSize: 14, padding: '24px 0 8px' }}>Appearance</div>
-        {(() => {
-          const groups: { label: string; items: typeof THEMES }[] = []
-          for (const t of THEMES) {
-            if (t.group) groups.push({ label: t.group, items: [] })
-            groups[groups.length - 1]?.items.push(t)
-          }
-          return groups.map(g => (
-            <div key={g.label} style={{ marginBottom: 12 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                {g.label}
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {g.items.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => handleTheme(t.id)}
-                    title={t.label}
-                    style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-                      padding: '6px 8px', borderRadius: 8, cursor: 'pointer',
-                      border: theme === t.id ? '2px solid var(--accent)' : '2px solid var(--border)',
-                      background: 'var(--surface)',
-                      color: 'var(--text)', fontSize: 11, maxWidth: 80,
-                    }}
-                  >
-                    <div style={{
-                      width: 40, height: 26, borderRadius: 4,
-                      background: t.preview,
-                      border: '1px solid var(--border)',
-                    }} />
-                    <span style={{ textAlign: 'center', lineHeight: 1.3, wordBreak: 'break-word' }}>
-                      {t.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))
-        })()}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '4px 0 12px' }}>
+          {THEMES.map(t => (
+            <button
+              key={t.id}
+              onClick={() => handleTheme(t.id)}
+              title={t.label}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+                padding: '6px 8px', borderRadius: 8, cursor: 'pointer',
+                border: theme === t.id ? '2px solid var(--accent)' : '2px solid var(--border)',
+                background: 'var(--surface)',
+                color: 'var(--text)', fontSize: 11, maxWidth: 80,
+              }}
+            >
+              <div style={{
+                width: 40, height: 26, borderRadius: 4,
+                background: t.preview,
+                border: '1px solid var(--border)',
+              }} />
+              <span style={{ textAlign: 'center', lineHeight: 1.3, wordBreak: 'break-word' }}>
+                {t.label}
+              </span>
+            </button>
+          ))}
+        </div>
 
         {/* ── Font size ──────────────────────────────────────── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0 4px' }}>
