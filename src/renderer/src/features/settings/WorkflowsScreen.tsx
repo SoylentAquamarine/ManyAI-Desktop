@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { loadWorkflows, saveWorkflows, saveRemovedBuiltins, loadRemovedBuiltins, WorkflowDef } from '../../lib/workflows'
 import { WORKFLOW_TYPES, WORKFLOW_TYPE_LABELS, type WorkflowType } from '../../lib/workflowTypes'
 
@@ -14,7 +14,12 @@ const BLANK: Omit<WorkflowDef, 'builtIn'> = {
   keywords: '',
 }
 
-export default function WorkflowsScreen() {
+interface WorkflowsScreenProps {
+  autoOpenAdd?: boolean
+  onAutoOpenAddConsumed?: () => void
+}
+
+export default function WorkflowsScreen({ autoOpenAdd = false, onAutoOpenAddConsumed }: WorkflowsScreenProps) {
   const [workflows, setWorkflows]   = useState<WorkflowDef[]>(() => loadWorkflows())
   const [removedBuiltins, setRemovedBuiltins] = useState<string[]>(() => loadRemovedBuiltins())
   const [saved, setSaved]           = useState(false)
@@ -39,6 +44,13 @@ export default function WorkflowsScreen() {
     setFormErr('')
     setEditing({ ...BLANK, builtIn: false } as WorkflowDef)
   }
+
+  useEffect(() => {
+    if (autoOpenAdd) {
+      openAdd()
+      onAutoOpenAddConsumed?.()
+    }
+  }, [])
 
   const openEdit = (w: WorkflowDef) => {
     setForm({

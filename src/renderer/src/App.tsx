@@ -5,6 +5,7 @@ import SavedScreen from './features/editor/SavedScreen'
 import RightPanel from './components/RightPanel'
 import { TASK_META } from './lib/routing'
 import { loadWorkflows, getWorkflow } from './lib/workflows'
+import { loadTheme, applyTheme } from './lib/theme'
 import type { TaskType } from './lib/providers'
 
 export type PanelType = 'saved' | 'settings'
@@ -55,6 +56,10 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('manyai_continuous') ?? '{}') } catch { return {} }
   })
   const [workflowVersion, setWorkflowVersion] = useState(0)
+  const [settingsTriggerAdd, setSettingsTriggerAdd] = useState(false)
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'api' | 'workflows' | 'backup'>('general')
+
+  useEffect(() => { applyTheme(loadTheme()) }, [])
 
   const injectFns = useRef<Record<string, (p: string) => void>>({})
   const [rightWidth, setRightWidth] = useState(() => {
@@ -136,6 +141,13 @@ export default function App() {
     setShowPicker(false)
   }
 
+  const handleNewWorkflow = () => {
+    setSettingsInitialTab('workflows')
+    setSettingsTriggerAdd(true)
+    setPanel('settings')
+    setShowPicker(false)
+  }
+
   const toggleContinuous = (workflowType: string) => {
     setContinuousMap(prev => {
       const next = { ...prev, [workflowType]: !(prev[workflowType] ?? true) }
@@ -194,7 +206,13 @@ export default function App() {
           ))}
 
           {panel === 'saved'    && <SavedScreen />}
-          {panel === 'settings' && <SettingsScreen />}
+          {panel === 'settings' && (
+            <SettingsScreen
+              initialTab={settingsInitialTab}
+              triggerAdd={settingsTriggerAdd}
+              onTriggerAddConsumed={() => setSettingsTriggerAdd(false)}
+            />
+          )}
         </div>
       </div>
 
@@ -206,6 +224,7 @@ export default function App() {
           showPicker={showPicker}
           onSelectWorkflow={addTab}
           onCancelPicker={() => setShowPicker(false)}
+          onNewWorkflow={handleNewWorkflow}
           activeWorkflow={(() => {
             const t = tabs.find(t => t.id === activeTabId)
             if (!t) return null

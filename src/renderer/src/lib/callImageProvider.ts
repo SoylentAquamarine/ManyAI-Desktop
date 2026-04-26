@@ -40,7 +40,8 @@ export async function callImageProvider(
   if (providerKey === 'pollinations') {
     const modelConfig = getAllProviders()[providerKey]?.models.find(m => m.id === model)
     const [pw, ph] = (modelConfig?.imageSize ?? '768x768').split('x')
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${pw}&height=${ph}&nologo=true&model=${encodeURIComponent(model)}`
+    const seedParam = modelConfig?.randomSeed ? `&seed=${Math.floor(Math.random() * 2147483647)}` : ''
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${pw}&height=${ph}&nologo=true&model=${encodeURIComponent(model)}${seedParam}`
     const { base64, mime } = await fetchImageViaMain(url)
     return { imageUrl: `data:${mime};base64,${base64}`, provider: providerKey, model }
   }

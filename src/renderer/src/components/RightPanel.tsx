@@ -26,6 +26,7 @@ interface Props {
   showPicker: boolean
   onSelectWorkflow: (type: TaskType) => void
   onCancelPicker: () => void
+  onNewWorkflow: () => void
   activeWorkflow: WorkflowDef | null
   continuousState: boolean
   onToggleContinuous: () => void
@@ -36,7 +37,7 @@ const MAX_CHAIN = 255
 
 export default function RightPanel({
   activePanel, onTogglePanel,
-  showPicker, onSelectWorkflow, onCancelPicker,
+  showPicker, onSelectWorkflow, onCancelPicker, onNewWorkflow,
   activeWorkflow, continuousState, onToggleContinuous,
   onWorkflowSaved,
 }: Props) {
@@ -88,8 +89,12 @@ export default function RightPanel({
     const chain = getChain(task)
     if (chain.length >= MAX_CHAIN) return
     const used = new Set(chain.map(e => e.provider))
-    const next = allProviderOrder.find(k => !used.has(k)) ?? 'pollinations'
-    setChain(task, [...chain, { provider: next, model: allProviders[next]?.model ?? '' }])
+    const wts = WORKFLOW_REGISTRY.find(w => w.type === task)?.workflowType ?? ['chat']
+    const capableModelsFor = (pk: string) =>
+      (allProviders[pk]?.models ?? []).filter(m => wts.every(wt => (m.capabilities ?? ['chat']).includes(wt)))
+    const next = allProviderOrder.find(k => !used.has(k) && capableModelsFor(k).length > 0) ?? 'pollinations'
+    const model = capableModelsFor(next)[0]?.id ?? allProviders[next]?.model ?? ''
+    setChain(task, [...chain, { provider: next, model }])
   }
 
   const removeEntry = (task: string, idx: number) => {
@@ -132,7 +137,14 @@ export default function RightPanel({
                 </button>
               ))}
             </div>
-            <button className="btn-ghost" onClick={onCancelPicker} style={{ marginTop: 10, width: '100%', fontSize: 11 }}>
+            <button
+              className="btn-ghost"
+              onClick={onNewWorkflow}
+              style={{ marginTop: 10, width: '100%', fontSize: 11 }}
+            >
+              + New Workflow
+            </button>
+            <button className="btn-ghost" onClick={onCancelPicker} style={{ marginTop: 4, width: '100%', fontSize: 11 }}>
               Cancel
             </button>
           </div>
@@ -405,9 +417,9 @@ function WorkflowDetail({
         </div>
       )}
 
-      {/* Routing */}
+      {/* Parallel */}
       <div>
-        {sectionLabel('Routing')}
+        {sectionLabel('Parallel')}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           {chain.map((entry, idx) => {
             const avail = availableProviders.includes(entry.provider)
@@ -427,8 +439,8 @@ function WorkflowDetail({
                     style={{ flexShrink: 0 }}
                     title={entryEnabled ? 'Disable this provider' : 'Enable this provider'}
                   />
-                  <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 24, flexShrink: 0 }}>
-                    {idx === 0 ? '1st' : idx === 1 ? '2nd' : idx === 2 ? '3rd' : `${idx + 1}th`}
+                  <span style={{ fontSize: 10, color: 'var(--text-dim)', width: 16, flexShrink: 0 }}>
+                    {idx + 1}
                   </span>
                   {!avail && (
                     <span style={{ fontSize: 9, color: 'var(--accent2, #e55)', background: 'rgba(238,85,85,0.12)', borderRadius: 3, padding: '1px 4px' }}>no key</span>
@@ -473,7 +485,7 @@ function WorkflowDetail({
               className="btn-ghost"
               onClick={() => addEntry(task)}
               style={{ fontSize: 11, padding: '3px 8px', alignSelf: 'flex-start' }}
-            >+ Add fallback</button>
+            >+ Add provider</button>
           )}
         </div>
       </div>

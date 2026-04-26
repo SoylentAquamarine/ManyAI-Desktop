@@ -101,7 +101,7 @@ export default function RoutingScreen() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span style={{ fontSize: 13, fontWeight: 600 }}>Workflow Models</span>
           <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>
-            Controls which models are available to each workflow, ordered by priority. Only models satisfying ALL of the workflow's required types are shown. First available wins.
+            Controls which providers run in parallel for each workflow. Enabled providers all receive the prompt simultaneously. Only models satisfying ALL of the workflow's required types are shown.
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -134,7 +134,7 @@ export default function RoutingScreen() {
                   const modelList = getCapableModels(task, entry.provider)
                   return (
                     <div key={idx} className="chain-row">
-                      <span className="chain-num">{idx === 0 ? '1st' : idx === 1 ? '2nd' : idx === 2 ? '3rd' : `${idx+1}th`}</span>
+                      <span className="chain-num">{idx + 1}</span>
                       <select value={entry.provider} style={{ flex: 1 }}
                         onChange={e => onProviderChange(task, idx, e.target.value)}>
                         {providerList.map(pk => (
@@ -159,7 +159,7 @@ export default function RoutingScreen() {
               </div>
 
               {chain.length < MAX_CHAIN && (
-                <button className="chain-add" onClick={() => addEntry(task)}>+ Add fallback</button>
+                <button className="chain-add" onClick={() => addEntry(task)}>+ Add provider</button>
               )}
 
               <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 6 }}>

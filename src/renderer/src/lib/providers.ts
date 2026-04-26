@@ -23,6 +23,8 @@ export interface ProviderModel {
   maxTokens?: number;
   /** Image generation size, e.g. "1024x1024". Defaults to "1024x1024". */
   imageSize?: string;
+  /** Append a random seed to each image request to bypass provider-side caching. */
+  randomSeed?: boolean;
 }
 
 export interface Provider {
@@ -297,12 +299,12 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
       { id: 'openai',       name: 'OpenAI (via Pollinations)',  capabilities: ['chat'] },
       { id: 'mistral',      name: 'Mistral (via Pollinations)', capabilities: ['chat'] },
       { id: 'llama',        name: 'Llama (via Pollinations)',   capabilities: ['chat'] },
-      { id: 'flux',         name: 'Flux',                       capabilities: ['image'] },
-      { id: 'flux-realism', name: 'Flux Realism',               capabilities: ['image'] },
-      { id: 'flux-anime',   name: 'Flux Anime',                 capabilities: ['image'] },
-      { id: 'flux-3d',      name: 'Flux 3D',                    capabilities: ['image'] },
-      { id: 'turbo',        name: 'Turbo',                      capabilities: ['image'] },
-      { id: 'gptimage',     name: 'GPT Image',                  capabilities: ['image'] },
+      { id: 'flux',         name: 'Flux',                       capabilities: ['image'], randomSeed: true },
+      { id: 'flux-realism', name: 'Flux Realism',               capabilities: ['image'], randomSeed: true },
+      { id: 'flux-anime',   name: 'Flux Anime',                 capabilities: ['image'], randomSeed: true },
+      { id: 'flux-3d',      name: 'Flux 3D',                    capabilities: ['image'], randomSeed: true },
+      { id: 'turbo',        name: 'Turbo',                      capabilities: ['image'], randomSeed: true },
+      { id: 'gptimage',     name: 'GPT Image',                  capabilities: ['image'], randomSeed: true },
     ],
     baseUrl: 'https://text.pollinations.ai',
     needsKey: false,

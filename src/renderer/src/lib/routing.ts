@@ -85,6 +85,29 @@ export function saveRoutingPrefs(prefs: RoutingPrefs): void {
   localStorage.setItem(ROUTING_KEY, JSON.stringify(prefs));
 }
 
+export function resolveAllProviders(
+  taskType: TaskType,
+  prefs: RoutingPrefs,
+  availableKeys: Set<string>,
+  enabledProviders: Partial<Record<string, boolean>>,
+): import('../workflows').RouteEntry[] {
+  const isUsable = (pk: string) =>
+    (pk === 'pollinations' || availableKeys.has(pk)) && enabledProviders[pk] !== false;
+
+  const workflowTypes = WORKFLOW_REGISTRY.find(w => w.type === taskType)?.workflowType ?? ['chat'];
+  const allProviders = getAllProviders();
+  const modelCapable = (caps: string[] | undefined) =>
+    workflowTypes.every(wt => (caps ?? ['chat']).includes(wt));
+
+  const chain = prefs.routes[taskType] ?? DEFAULT_ROUTES[taskType] ?? DEFAULT_ROUTES[FIRST_CHAT_TYPE] ?? [];
+  return chain.filter(entry => {
+    if (entry.enabled === false) return false;
+    if (!isUsable(entry.provider)) return false;
+    const model = allProviders[entry.provider]?.models.find(m => m.id === entry.model);
+    return modelCapable(model?.capabilities);
+  });
+}
+
 export function resolveProvider(
   taskType: TaskType,
   prefs: RoutingPrefs,
