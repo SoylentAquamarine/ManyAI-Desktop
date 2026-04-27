@@ -12,7 +12,7 @@
  *   select-directory   — directory picker, returns {path}
  */
 
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { ipcMain, dialog, BrowserWindow, shell } from 'electron'
 import fs from 'fs'
 import path from 'path'
 
@@ -154,6 +154,13 @@ export function registerFileIpc(): void {
     })
     if (result.canceled || !result.filePaths[0]) return { error: 'Cancelled' }
     return { path: result.filePaths[0] }
+  })
+
+  // ── open-path ──────────────────────────────────────────────────────────────
+  // Opens a file or directory in the OS default application.
+  ipcMain.handle('open-path', async (_event, filePath: string) => {
+    const err = await shell.openPath(filePath)
+    return err ? { error: err } : { ok: true }
   })
 
   // ── fetch-url ──────────────────────────────────────────────────────────────

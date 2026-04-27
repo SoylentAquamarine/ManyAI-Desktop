@@ -14,6 +14,7 @@
 import { getAllProviders, getAllProviderOrder } from './providers'
 import { loadAllKeys } from './keyStore'
 import { loadEnabledProviders } from './providerPrefs'
+import { healthCheck } from './healthCheck'
 import type { RouteEntry } from '../workflows'
 import type { WorkflowType } from './workflowTypes'
 
@@ -111,7 +112,8 @@ export const smartRouter = {
       ? successes.reduce((s, e) => s + e.latencyMs, 0) / successes.length
       : 30000
     const speedScore = Math.max(0, 1 - avgLatency / 30000)
-    return successRate * 0.7 + speedScore * 0.3
+    const healthPenalty = healthCheck.getPenalty(provider)
+    return Math.max(0, successRate * 0.7 + speedScore * 0.3 - healthPenalty)
   },
 
   /**

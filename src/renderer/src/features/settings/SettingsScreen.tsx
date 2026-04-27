@@ -14,13 +14,14 @@ import ApiScreen from './ApiScreen'
 import WorkflowsScreen from './WorkflowsScreen'
 import AboutScreen from './AboutScreen'
 import SmartRoutingScreen from './SmartRoutingScreen'
+import HealthScreen from './HealthScreen'
 import { THEMES, loadTheme, saveTheme, type ThemeId } from '../../lib/theme'
 import { getWorkingDir, setWorkingDir, getBackupsDir } from '../../lib/workingDir'
 import { encryptText, decryptText } from '../../lib/crypto'
 import { loadZoom, increaseZoom, decreaseZoom, ZOOM_MIN, ZOOM_MAX } from '../../lib/zoom'
 import { FONTS, loadFont, saveFont } from '../../lib/font'
 
-type SettingsTab = 'general' | 'api' | 'workflows' | 'smartrouting' | 'backup' | 'about'
+type SettingsTab = 'general' | 'api' | 'workflows' | 'smartrouting' | 'health' | 'backup' | 'about'
 
 interface SettingsScreenProps {
   /** Which tab to open on mount. */
@@ -66,6 +67,7 @@ export default function SettingsScreen({
         {tabBtn('api',          'Providers')}
         {tabBtn('workflows',    'Workflows')}
         {tabBtn('smartrouting', 'Smart Routing')}
+        {tabBtn('health',       'Health')}
         {tabBtn('backup',       'Import / Export')}
         {tabBtn('about',        'About')}
       </div>
@@ -80,6 +82,7 @@ export default function SettingsScreen({
           />
         )}
         {tab === 'smartrouting' && <SmartRoutingScreen />}
+        {tab === 'health'       && <HealthScreen />}
         {tab === 'backup' && <BackupConfig />}
         {tab === 'about'  && <AboutScreen />}
       </div>
