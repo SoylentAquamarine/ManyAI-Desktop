@@ -12,7 +12,6 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ircStore } from '../../lib/ircStore'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -251,21 +250,33 @@ export default function IrcScreen() {
     return () => { window.electron.ipcRenderer.removeListener('irc-event', handler) }
   }, [activeChannel, currentNick, addMessage, addSystem, addError, ensureChannel])
 
-  // ── Sync to ircStore so RightPanel can show the user list ───────────────────
+  // ── User list pane resize ───────────────────────────────────────────────────
+
+  const [userPaneWidth, setUserPaneWidth] = useState(() =>
+    parseInt(localStorage.getItem('manyai_irc_userpane') ?? '140', 10)
+  )
+  const draggingPane = useRef(false)
+  const dragStartX = useRef(0)
+  const dragStartW = useRef(0)
 
   useEffect(() => {
-    const ch = activeChannel
-    const chState = ch ? channels.get(ch) : undefined
-    const rawNames = chState?.names ?? []
-    // Sort: ops (@) first, then alphabetical within each group
-    const sorted = [...rawNames].sort((a, b) => {
-      const aOp = a.startsWith('@') ? 0 : 1
-      const bOp = b.startsWith('@') ? 0 : 1
-      if (aOp !== bOp) return aOp - bOp
-      return a.toLowerCase().localeCompare(b.toLowerCase())
-    })
-    ircStore.setState({ connected, currentNick, activeChannel: ch, users: sorted })
-  }, [connected, currentNick, activeChannel, channels])
+    const onMove = (e: MouseEvent) => {
+      if (!draggingPane.current) return
+      const delta = dragStartX.current - e.clientX
+      const next = Math.max(80, Math.min(300, dragStartW.current + delta))
+      setUserPaneWidth(next)
+    }
+    const onUp = () => {
+      if (!draggingPane.current) return
+      draggingPane.current = false
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+      setUserPaneWidth(w => { localStorage.setItem('manyai_irc_userpane', String(w)); return w })
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+    return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp) }
+  }, [])
 
   // ── Auto-scroll ─────────────────────────────────────────────────────────────
 
@@ -556,52 +567,115 @@ export default function IrcScreen() {
         </div>
       )}
 
-      {/* ── Message area ───────────────────────────────────────────────────── */}
-      <div
-        ref={scrollContainerRef}
-        onScroll={() => {
-          const c = scrollContainerRef.current
-          if (!c) return
-          pinnedToBottom.current = c.scrollTop + c.clientHeight >= c.scrollHeight - 40
-        }}
-        style={{
-          flex: 1, overflowY: 'auto', padding: '8px 12px',
-          display: 'flex', flexDirection: 'column', gap: 1,
-        }}
-      >
-        {!connected && !connecting && (
-          <div style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
-            Fill in the connection form above to connect to an IRC server.
-          </div>
-        )}
-        {connected && !activeChannel && (
-          <div style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
-            Connected. Join a channel to start chatting.
-          </div>
-        )}
-        {visibleMessages.map(msg => (
-          <div key={msg.id} style={{ display: 'flex', gap: 6, lineHeight: 1.4, fontSize: 13 }}>
-            <span style={{ color: 'var(--text-dim)', flexShrink: 0, fontSize: 11, paddingTop: 1 }}>
-              {formatTime(msg.ts)}
-            </span>
-            {msg.type === 'message' ? (
-              <>
-                <span style={{ color: 'var(--accent)', flexShrink: 0, fontWeight: 600 }}>
-                  {msg.nick === currentNick ? `[${msg.nick}]` : `<${msg.nick}>`}
-                </span>
-                <span style={{ color: 'var(--text)', wordBreak: 'break-word' }}>{msg.text}</span>
-              </>
-            ) : (
-              <span style={{
-                color: msg.type === 'error' ? '#e55' : 'var(--text-dim)',
-                fontStyle: 'italic', wordBreak: 'break-word',
-              }}>
-                {msg.text}
+      {/* ── Message area + user list ────────────────────────────────────────── */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+        {/* Messages */}
+        <div
+          ref={scrollContainerRef}
+          onScroll={() => {
+            const c = scrollContainerRef.current
+            if (!c) return
+            pinnedToBottom.current = c.scrollTop + c.clientHeight >= c.scrollHeight - 40
+          }}
+          style={{
+            flex: 1, overflowY: 'auto', padding: '8px 12px',
+            display: 'flex', flexDirection: 'column', gap: 1,
+          }}
+        >
+          {!connected && !connecting && (
+            <div style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
+              Fill in the connection form above to connect to an IRC server.
+            </div>
+          )}
+          {connected && !activeChannel && (
+            <div style={{ color: 'var(--text-dim)', fontSize: 13, textAlign: 'center', marginTop: 40 }}>
+              Connected. Join a channel to start chatting.
+            </div>
+          )}
+          {visibleMessages.map(msg => (
+            <div key={msg.id} style={{ display: 'flex', gap: 6, lineHeight: 1.4, fontSize: 13 }}>
+              <span style={{ color: 'var(--text-dim)', flexShrink: 0, fontSize: 11, paddingTop: 1 }}>
+                {formatTime(msg.ts)}
               </span>
-            )}
+              {msg.type === 'message' ? (
+                <>
+                  <span style={{ color: 'var(--accent)', flexShrink: 0, fontWeight: 600 }}>
+                    {msg.nick === currentNick ? `[${msg.nick}]` : `<${msg.nick}>`}
+                  </span>
+                  <span style={{ color: 'var(--text)', wordBreak: 'break-word' }}>{msg.text}</span>
+                </>
+              ) : (
+                <span style={{
+                  color: msg.type === 'error' ? '#e55' : 'var(--text-dim)',
+                  fontStyle: 'italic', wordBreak: 'break-word',
+                }}>
+                  {msg.text}
+                </span>
+              )}
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        {/* Drag handle */}
+        {connected && (
+          <div
+            onMouseDown={e => {
+              draggingPane.current = true
+              dragStartX.current = e.clientX
+              dragStartW.current = userPaneWidth
+              document.body.style.cursor = 'col-resize'
+              document.body.style.userSelect = 'none'
+            }}
+            style={{
+              width: 4, cursor: 'col-resize', flexShrink: 0,
+              background: 'var(--border)',
+              transition: 'background 0.15s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--border)')}
+          />
+        )}
+
+        {/* User list */}
+        {connected && (
+          <div style={{
+            width: userPaneWidth, flexShrink: 0, overflowY: 'auto',
+            borderLeft: 'none', background: 'var(--bg2)',
+            display: 'flex', flexDirection: 'column',
+          }}>
+            <div style={{
+              fontSize: 10, fontWeight: 600, color: 'var(--text-dim)',
+              textTransform: 'uppercase', letterSpacing: '0.5px',
+              padding: '6px 8px 4px', borderBottom: '1px solid var(--border)',
+              flexShrink: 0,
+            }}>
+              {activeState
+                ? `${activeChannel} · ${activeState.names.length}`
+                : 'Users'}
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '4px 0' }}>
+              {[...(activeState?.names ?? [])].sort((a, b) => {
+                const aOp = a.startsWith('@') ? 0 : 1
+                const bOp = b.startsWith('@') ? 0 : 1
+                if (aOp !== bOp) return aOp - bOp
+                return a.toLowerCase().localeCompare(b.toLowerCase())
+              }).map(nick => (
+                <div key={nick} style={{
+                  fontSize: 11, padding: '2px 8px',
+                  color: nick.startsWith('@') ? 'var(--accent)' : 'var(--text)',
+                  fontWeight: nick.startsWith('@') ? 600 : 400,
+                  fontFamily: 'monospace',
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {nick}
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
-        <div ref={messagesEndRef} />
+        )}
+
       </div>
 
       {/* ── Input row ──────────────────────────────────────────────────────── */}

@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { ircStore, type IrcPanelState } from '../lib/ircStore'
 import {
   enabledWorkflows, loadWorkflows, saveWorkflows,
   loadRemovedBuiltins, saveRemovedBuiltins,
@@ -116,13 +115,6 @@ export default function RightPanel({
   activeWorkflow, continuousState, onToggleContinuous,
   onWorkflowSaved, activeWorkflowType,
 }: Props) {
-  const [ircState, setIrcState] = useState<IrcPanelState>(ircStore.getState)
-
-  useEffect(() => {
-    if (activeWorkflowType !== 'irc') return
-    return ircStore.subscribe(setIrcState)
-  }, [activeWorkflowType])
-
   const workflows = enabledWorkflows()
   const [prefs, setPrefs] = useState<RoutingPrefs>(() => loadRoutingPrefs())
 
@@ -198,35 +190,6 @@ export default function RightPanel({
             <div style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.5 }}>
               SSH / Telnet client.<br />
               Use <strong>→ Workflow</strong> in the toolbar to pipe terminal output into any active workflow tab.
-            </div>
-          </div>
-
-        ) : activeWorkflowType === 'irc' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '0 4px' }}>
-              {ircState.activeChannel ? ircState.activeChannel : 'Not in a channel'}
-            </div>
-            {ircState.connected && ircState.users.length > 0 && (
-              <div style={{ fontSize: 10, color: 'var(--text-dim)', padding: '0 4px', marginBottom: 2 }}>
-                {ircState.users.length} user{ircState.users.length !== 1 ? 's' : ''}
-              </div>
-            )}
-            {!ircState.connected && (
-              <div style={{ fontSize: 11, color: 'var(--text-dim)', padding: '0 4px' }}>Not connected</div>
-            )}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {ircState.users.map(nick => {
-                const isOp = nick.startsWith('@')
-                return (
-                  <div key={nick} style={{
-                    fontSize: 11, padding: '2px 8px', borderRadius: 4,
-                    color: isOp ? 'var(--accent)' : 'var(--text)',
-                    fontWeight: isOp ? 600 : 400,
-                  }}>
-                    {nick}
-                  </div>
-                )
-              })}
             </div>
           </div>
 
