@@ -1,5 +1,12 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 
+interface FtpEntry {
+  name: string
+  type: 'file' | 'dir' | 'link'
+  size: number
+  date: string
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -61,6 +68,7 @@ declare global {
       ircSetNick: (args: { nick: string }) => Promise<{ ok: true } | { error: string }>
 
       terminal: {
+        // SSH shell
         connect(opts: { sessionId: string; host: string; port: number; username: string; password?: string; privateKey?: string }): Promise<{ ok: true } | { error: string }>
         send(sessionId: string, data: string): Promise<{ ok: true } | { error: string }>
         resize(sessionId: string, cols: number, rows: number): Promise<void>
@@ -68,6 +76,20 @@ declare global {
         onData(sessionId: string, cb: (data: string) => void): () => void
         onClose(sessionId: string, cb: () => void): () => void
         onError(sessionId: string, cb: (msg: string) => void): () => void
+        // SFTP
+        sftpConnect(opts: { sessionId: string; host: string; port: number; username: string; password?: string; privateKey?: string }): Promise<{ ok: true } | { error: string }>
+        sftpList(sessionId: string, remotePath: string): Promise<{ entries: FtpEntry[] } | { error: string }>
+        sftpDownload(sessionId: string, remotePath: string): Promise<{ ok: true; path: string } | { canceled: true } | { error: string }>
+        sftpUpload(sessionId: string, remotePath: string): Promise<{ ok: true } | { canceled: true } | { error: string }>
+        sftpMkdir(sessionId: string, remotePath: string): Promise<{ ok: true } | { error: string }>
+        sftpDelete(sessionId: string, remotePath: string, isDir: boolean): Promise<{ ok: true } | { error: string }>
+        // FTP / FTPS
+        ftpConnect(opts: { sessionId: string; host: string; port: number; username: string; password?: string; secure: boolean }): Promise<{ ok: true } | { error: string }>
+        ftpList(sessionId: string, remotePath: string): Promise<{ entries: FtpEntry[] } | { error: string }>
+        ftpDownload(sessionId: string, remotePath: string): Promise<{ ok: true; path: string } | { canceled: true } | { error: string }>
+        ftpUpload(sessionId: string, remotePath: string): Promise<{ ok: true } | { canceled: true } | { error: string }>
+        ftpMkdir(sessionId: string, remotePath: string): Promise<{ ok: true } | { error: string }>
+        ftpDelete(sessionId: string, remotePath: string, isDir: boolean): Promise<{ ok: true } | { error: string }>
       }
     }
   }
