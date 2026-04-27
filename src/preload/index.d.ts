@@ -38,6 +38,24 @@ declare global {
 
       /** Show a directory-picker dialog. */
       selectDirectory: (defaultPath?: string) => Promise<{ path: string } | { error: string }>
+
+      /** Open a TCP connection to an IRC server. Listen for 'irc-event' connected to confirm. */
+      ircConnect: (args: { server: string; port: number; nick: string; username: string; realname: string; password?: string }) => Promise<{ ok: true } | { error: string }>
+
+      /** Send QUIT and close the socket. */
+      ircDisconnect: () => Promise<{ ok: true } | { error: string }>
+
+      /** Send PRIVMSG to a channel or nick. */
+      ircSendMessage: (args: { target: string; text: string }) => Promise<{ ok: true } | { error: string }>
+
+      /** Send JOIN for a channel. */
+      ircJoin: (args: { channel: string }) => Promise<{ ok: true } | { error: string }>
+
+      /** Send PART for a channel. */
+      ircPart: (args: { channel: string }) => Promise<{ ok: true } | { error: string }>
+
+      /** Send NICK to change the current nick. */
+      ircSetNick: (args: { nick: string }) => Promise<{ ok: true } | { error: string }>
     }
   }
 }

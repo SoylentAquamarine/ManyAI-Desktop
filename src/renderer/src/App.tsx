@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import ChatScreen from './features/chat/ChatScreen'
+import IrcScreen from './features/irc/IrcScreen'
 import SettingsScreen from './features/settings/SettingsScreen'
 import RightPanel from './components/RightPanel'
 import { TASK_META } from './lib/routing'
@@ -196,13 +197,17 @@ export default function App() {
               key={t.id}
               style={{ display: panel === null && activeTabId === t.id ? 'flex' : 'none', flex: 1, flexDirection: 'column', overflow: 'hidden' }}
             >
-              <ChatScreen
-                tabId={t.id}
-                workflowType={t.workflowType}
-                continuousState={continuousMap[t.workflowType] ?? true}
-                onInjectReady={(fn) => { injectFns.current[t.id] = fn }}
-                onFirstMessage={() => {}}
-              />
+              {t.workflowType === 'irc' ? (
+                <IrcScreen />
+              ) : (
+                <ChatScreen
+                  tabId={t.id}
+                  workflowType={t.workflowType}
+                  continuousState={continuousMap[t.workflowType] ?? true}
+                  onInjectReady={(fn) => { injectFns.current[t.id] = fn }}
+                  onFirstMessage={() => {}}
+                />
+              )}
             </div>
           ))}
 

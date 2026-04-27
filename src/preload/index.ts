@@ -2,10 +2,12 @@ import { contextBridge } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { filesApi } from './api/files'
 import { imagesApi } from './api/images'
+import { ircApi } from './api/irc'
 
 const api = {
   ...filesApi,
   ...imagesApi,
+  ...ircApi,
 }
 
 if (process.contextIsolated) {
