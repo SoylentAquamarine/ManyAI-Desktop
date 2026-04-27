@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import ChatScreen from './features/chat/ChatScreen'
 import IrcScreen from './features/irc/IrcScreen'
 import RssScreen from './features/rss/RssScreen'
+import TerminalScreen from './features/terminal/TerminalScreen'
 import SettingsScreen from './features/settings/SettingsScreen'
 import RightPanel from './components/RightPanel'
 import { workflowBus } from './lib/workflowBus'
@@ -213,6 +214,8 @@ export default function App() {
             >
               {t.workflowType === 'irc' ? (
                 <IrcScreen />
+              ) : t.workflowType === 'terminal' ? (
+                <TerminalScreen />
               ) : t.workflowType === 'rss' ? (
                 <RssScreen
                   availableTabs={tabs

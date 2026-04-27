@@ -59,6 +59,16 @@ declare global {
 
       /** Send NICK to change the current nick. */
       ircSetNick: (args: { nick: string }) => Promise<{ ok: true } | { error: string }>
+
+      terminal: {
+        connect(opts: { sessionId: string; host: string; port: number; username: string; password?: string; privateKey?: string }): Promise<{ ok: true } | { error: string }>
+        send(sessionId: string, data: string): Promise<{ ok: true } | { error: string }>
+        resize(sessionId: string, cols: number, rows: number): Promise<void>
+        disconnect(sessionId: string): Promise<{ ok: true }>
+        onData(sessionId: string, cb: (data: string) => void): () => void
+        onClose(sessionId: string, cb: () => void): () => void
+        onError(sessionId: string, cb: (msg: string) => void): () => void
+      }
     }
   }
 }

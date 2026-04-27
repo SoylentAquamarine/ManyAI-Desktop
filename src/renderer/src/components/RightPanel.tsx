@@ -190,7 +190,18 @@ export default function RightPanel({
     <div className="right-panel">
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 8px' }}>
 
-        {activeWorkflowType === 'irc' ? (
+        {activeWorkflowType === 'terminal' ? (
+          <div style={{ padding: '0 4px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Terminal
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-dim)', lineHeight: 1.5 }}>
+              SSH / Telnet client.<br />
+              Use <strong>→ Workflow</strong> in the toolbar to pipe terminal output into any active workflow tab.
+            </div>
+          </div>
+
+        ) : activeWorkflowType === 'irc' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '0 4px' }}>
               {ircState.activeChannel ? ircState.activeChannel : 'Not in a channel'}

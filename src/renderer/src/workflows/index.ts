@@ -15,6 +15,7 @@ import { summarizationWorkflow } from './summarization'
 import { translationWorkflow }   from './translation'
 import { ircWorkflow }           from './irc'
 import { rssWorkflow }           from './rss'
+import { terminalWorkflow }      from './terminal'
 
 export type { WorkflowPlugin, RouteEntry } from './types'
 
@@ -27,4 +28,5 @@ export const WORKFLOW_REGISTRY = [
   translationWorkflow,
   ircWorkflow,
   rssWorkflow,
+  terminalWorkflow,
 ]
