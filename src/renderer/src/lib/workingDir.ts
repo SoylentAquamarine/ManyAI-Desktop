@@ -64,20 +64,8 @@ export async function saveImageToWorkingDir(dataUri: string, filename: string): 
 
   await window.api.ensureDir(dir)
 
-  // Decode base64 data URI to text that writeFileDirect can handle.
-  // We write it as a UTF-8 file that holds the raw data URI — not ideal for a
-  // real image file, so we strip the header and write raw binary via a workaround:
-  // We write the raw data URI to a temp slot and let the main process convert it.
-  // Simplest approach: write the raw data URI as a text file (the UI already reads
-  // data URIs directly from localStorage). For actual disk images, use writeFileDirect
-  // with the raw bytes by passing the entire data URI and letting Node decode it.
-
   const filePath = `${dir}/${filename}`
 
-  // Extract the base64 payload and decode to binary-looking string.
-  // writeFileDirect writes UTF-8 — for images we call a dedicated channel that
-  // handles binary. Since we don't have that yet, store data URIs as-is (they
-  // are still displayable via <img src="...">).
-  const result = await window.api.writeFileDirect(filePath, dataUri)
+  const result = await window.api.writeImageFile(filePath, dataUri)
   return 'ok' in result ? filePath : null
 }

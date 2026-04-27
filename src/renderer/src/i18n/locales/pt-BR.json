@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Salvo",
+    "settings": "Configurações",
+    "language": "Idioma"
+  },
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "edit": "Editar",
+    "delete": "Excluir",
+    "close": "Fechar",
+    "apply": "Aplicar",
+    "add": "Adicionar",
+    "remove": "Remover",
+    "loading": "Carregando…",
+    "error": "Erro",
+    "ok": "OK",
+    "yes": "Sim",
+    "no": "Não",
+    "browse": "Navegar",
+    "clear": "Limpar",
+    "test": "Testar",
+    "testAll": "Testar Tudo",
+    "export": "Exportar",
+    "import": "Importar",
+    "noKey": "sem chave"
+  },
+  "chat": {
+    "placeholder": "Digite uma mensagem…",
+    "send": "Enviar",
+    "saved": "Salvo!",
+    "saveResponse": "Salvar resposta",
+    "copyCode": "Copiar código",
+    "openFile": "Abrir arquivo",
+    "updateFile": "Atualizar arquivo",
+    "attachFile": "Anexar arquivo",
+    "attached": "Anexado:",
+    "detach": "Desanexar",
+    "noProviders": "Nenhum provedor configurado. Adicione chaves de API em Configurações → Provedores.",
+    "generating": "Gerando…",
+    "imageSaved": "Imagem salva",
+    "downloadImage": "Baixar",
+    "imageError": "Falha na geração de imagem"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Geral",
+      "providers": "Provedores",
+      "workflows": "Fluxos de Trabalho",
+      "importExport": "Importar / Exportar",
+      "about": "Sobre"
+    },
+    "general": {
+      "title": "Geral",
+      "appearance": "Aparência",
+      "theme": "Tema",
+      "font": "Fonte",
+      "zoom": "Zoom",
+      "zoomIn": "Aumentar Zoom",
+      "zoomOut": "Diminuir Zoom",
+      "resetData": "Redefinir Dados",
+      "clearConversations": "Limpar todas as conversas",
+      "clearConversationsConfirm": "Isso excluirá todas as conversas salvas. Continuar?",
+      "resetSettings": "Redefinir todas as configurações",
+      "resetSettingsConfirm": "Isso redefinirá todas as configurações para os padrões. Continuar?"
+    },
+    "importExport": {
+      "title": "Importar / Exportar",
+      "workingDir": {
+        "title": "Diretório de Trabalho",
+        "description": "Imagens e arquivos são salvos aqui.",
+        "current": "Atual:",
+        "notSet": "Não definido",
+        "pick": "Escolher pasta",
+        "clear": "Limpar"
+      },
+      "apiKeys": {
+        "title": "Chaves de API",
+        "exportBtn": "Exportar Chaves de API",
+        "importBtn": "Importar Chaves de API"
+      },
+      "providers": {
+        "title": "Provedores",
+        "exportBtn": "Exportar Provedores",
+        "importBtn": "Importar Provedores"
+      },
+      "workflows": {
+        "title": "Fluxos de Trabalho",
+        "exportBtn": "Exportar Fluxos de Trabalho",
+        "importBtn": "Importar Fluxos de Trabalho"
+      },
+      "conflict": {
+        "title": "Importar — escolha como lidar com conflitos",
+        "keepExisting": "Manter existentes (adicionar apenas o que falta)",
+        "override": "Substituir pelos valores importados",
+        "applyImport": "Aplicar Importação"
+      }
+    },
+    "providers": {
+      "title": "Provedores",
+      "apiKey": "Chave de API",
+      "keyPlaceholder": "Insira a chave de API…",
+      "keySaved": "Chave salva",
+      "keyRemoved": "Chave removida",
+      "testModel": "Testar",
+      "testAllModels": "Testar Tudo",
+      "testPassed": "Aprovado",
+      "testFailed": "Reprovado",
+      "testing": "Testando…",
+      "noModels": "Nenhum modelo"
+    },
+    "workflows": {
+      "title": "Fluxos de Trabalho",
+      "newWorkflow": "Novo Fluxo de Trabalho",
+      "addWorkflow": "Adicionar Fluxo de Trabalho",
+      "noWorkflows": "Nenhum fluxo de trabalho ainda.",
+      "description": "Descrição",
+      "instructions": "Instruções",
+      "attachedFiles": "Arquivos Anexados",
+      "attachFiles": "+ Anexar Arquivos",
+      "picking": "Selecionando…",
+      "parallel": "Paralelo",
+      "addProvider": "+ Adicionar provedor",
+      "continuousState": "Estado contínuo",
+      "historyCarried": "Histórico mantido entre mensagens",
+      "freshEachMessage": "Cada mensagem inicia nova",
+      "systemPromptPlaceholder": "Adicionado silenciosamente antes de cada mensagem…",
+      "descriptionPlaceholder": "Breve descrição",
+      "enableWorkflow": "Ativar fluxo de trabalho",
+      "disableWorkflow": "Desativar fluxo de trabalho"
+    },
+    "about": {
+      "title": "Sobre ManyAI",
+      "version": "Versão"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Nova Aba",
+    "chooseWorkflow": "Escolha um tipo de fluxo de trabalho.",
+    "newWorkflow": "+ Novo Fluxo de Trabalho",
+    "cancel": "Cancelar",
+    "noKey": "sem chave",
+    "addProvider": "+ Adicionar provedor"
+  },
+  "saved": {
+    "title": "Respostas Salvas",
+    "empty": "Nenhuma resposta salva ainda.",
+    "delete": "Excluir",
+    "copy": "Copiar"
+  },
+  "language": {
+    "title": "Idioma",
+    "select": "Selecionar idioma"
+  }
+}

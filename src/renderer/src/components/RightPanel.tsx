@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   enabledWorkflows, loadWorkflows, saveWorkflows,
   loadRemovedBuiltins, saveRemovedBuiltins,
@@ -12,6 +12,8 @@ import {
 import { WORKFLOW_REGISTRY } from '../workflows'
 import { loadAllKeys } from '../lib/keyStore'
 import { loadEnabledProviders } from '../lib/providerPrefs'
+import { LANGUAGES } from '../i18n/config'
+import i18n from '../i18n/config'
 import type { PanelType } from '../App'
 import type { TaskType } from '../lib/providers'
 
@@ -19,6 +21,77 @@ const NAV: { key: PanelType; icon: string; label: string }[] = [
   { key: 'saved',    icon: '📂', label: 'Saved' },
   { key: 'settings', icon: '⚙',  label: 'Settings' },
 ]
+
+function LanguagePicker() {
+  const [open, setOpen] = useState(false)
+  const [lang, setLang] = useState(() => localStorage.getItem('manyai_language') ?? 'en-US')
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    if (open) document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const select = (code: string) => {
+    setLang(code)
+    localStorage.setItem('manyai_language', code)
+    i18n.changeLanguage(code)
+    setOpen(false)
+  }
+
+  const current = LANGUAGES.find(l => l.code === lang) ?? LANGUAGES[0]
+
+  return (
+    <div ref={ref} style={{ position: 'relative', padding: '4px 6px 0' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="Change language"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5, width: '100%',
+          padding: '5px 8px', borderRadius: 6,
+          background: open ? 'var(--bg2)' : 'transparent',
+          border: '1px solid ' + (open ? 'var(--border)' : 'transparent'),
+          cursor: 'pointer', fontSize: 11, color: 'var(--text-dim)',
+        }}
+      >
+        <span style={{ fontSize: 14 }}>{current.flag}</span>
+        <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {current.label}
+        </span>
+        <span style={{ fontSize: 9, opacity: 0.6 }}>▾</span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', bottom: '100%', left: 6, right: 6,
+          background: 'var(--bg)', border: '1px solid var(--border)',
+          borderRadius: 8, boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          maxHeight: 260, overflowY: 'auto', zIndex: 200,
+        }}>
+          {LANGUAGES.map(l => (
+            <button
+              key={l.code}
+              onClick={() => select(l.code)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                width: '100%', padding: '6px 10px',
+                background: l.code === lang ? 'var(--accent)' : 'transparent',
+                color: l.code === lang ? 'var(--accent-text)' : 'var(--text)',
+                border: 'none', cursor: 'pointer', fontSize: 12, textAlign: 'left',
+              }}
+            >
+              <span style={{ fontSize: 14, flexShrink: 0 }}>{l.flag}</span>
+              <span>{l.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface Props {
   activePanel: PanelType | null
@@ -69,7 +142,8 @@ export default function RightPanel({
     const wts = WORKFLOW_REGISTRY.find(w => w.type === task)?.workflowType ?? ['chat']
     const models = (allProviders[pk]?.models ?? []).filter(m => wts.every(wt => (m.capabilities ?? ['chat']).includes(wt)))
     const model = models[0]?.id ?? allProviders[pk]?.model ?? ''
-    chain[idx] = { provider: pk, model }
+    // New provider = new instance: fresh GUID so history doesn't bleed across
+    chain[idx] = { provider: pk, model, instanceId: crypto.randomUUID() }
     setChain(task, chain)
   }
 
@@ -94,7 +168,7 @@ export default function RightPanel({
       (allProviders[pk]?.models ?? []).filter(m => wts.every(wt => (m.capabilities ?? ['chat']).includes(wt)))
     const next = allProviderOrder.find(k => !used.has(k) && capableModelsFor(k).length > 0) ?? 'pollinations'
     const model = capableModelsFor(next)[0]?.id ?? allProviders[next]?.model ?? ''
-    setChain(task, [...chain, { provider: next, model }])
+    setChain(task, [...chain, { provider: next, model, instanceId: crypto.randomUUID() }])
   }
 
   const removeEntry = (task: string, idx: number) => {
@@ -168,6 +242,8 @@ export default function RightPanel({
         ) : null}
 
       </div>
+
+      <LanguagePicker />
 
       <div className="right-panel-nav">
         {NAV.map(n => (

@@ -209,7 +209,7 @@ export default function WorkflowsScreen({ autoOpenAdd = false, onAutoOpenAddCons
               borderRadius: 12,
               padding: 24,
               width: 480,
-              maxHeight: '85vh',
+              maxHeight: '85%',
               overflowY: 'auto',
               boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
               display: 'flex',

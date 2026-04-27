@@ -84,6 +84,20 @@ export function registerFileIpc(): void {
     }
   })
 
+  // ── write-image-file ──────────────────────────────────────────────────────
+  // Accepts a data URI (data:image/png;base64,...), strips the header, decodes
+  // the base64 payload, and writes raw binary bytes so the file is a valid image.
+  ipcMain.handle('write-image-file', (_event, filePath: string, dataUri: string) => {
+    try {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true })
+      const base64 = dataUri.includes(',') ? dataUri.split(',')[1] : dataUri
+      fs.writeFileSync(filePath, Buffer.from(base64, 'base64'))
+      return { ok: true }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
   // ── append-file ────────────────────────────────────────────────────────────
   ipcMain.handle('append-file', (_event, filePath: string, content: string) => {
     try {

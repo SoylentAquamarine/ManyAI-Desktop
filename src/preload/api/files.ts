@@ -22,6 +22,10 @@ export const filesApi = {
   writeFileDirect: (filePath: string, content: string): Promise<{ ok: boolean } | { error: string }> =>
     ipcRenderer.invoke('write-file-direct', filePath, content),
 
+  /** Write a data-URI image as a binary file (strips base64 header, writes raw bytes). */
+  writeImageFile: (filePath: string, dataUri: string): Promise<{ ok: boolean } | { error: string }> =>
+    ipcRenderer.invoke('write-image-file', filePath, dataUri),
+
   /** Append text to a file. Creates the file and parent dirs if missing. */
   appendFile: (filePath: string, content: string): Promise<{ ok: boolean } | { error: string }> =>
     ipcRenderer.invoke('append-file', filePath, content),

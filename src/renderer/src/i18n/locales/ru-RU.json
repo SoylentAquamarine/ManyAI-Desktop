@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Сохранено",
+    "settings": "Настройки",
+    "language": "Язык"
+  },
+  "common": {
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "edit": "Редактировать",
+    "delete": "Удалить",
+    "close": "Закрыть",
+    "apply": "Применить",
+    "add": "Добавить",
+    "remove": "Удалить",
+    "loading": "Загрузка…",
+    "error": "Ошибка",
+    "ok": "ОК",
+    "yes": "Да",
+    "no": "Нет",
+    "browse": "Обзор",
+    "clear": "Очистить",
+    "test": "Тест",
+    "testAll": "Тест всех",
+    "export": "Экспорт",
+    "import": "Импорт",
+    "noKey": "нет ключа"
+  },
+  "chat": {
+    "placeholder": "Введите сообщение…",
+    "send": "Отправить",
+    "saved": "Сохранено!",
+    "saveResponse": "Сохранить ответ",
+    "copyCode": "Копировать код",
+    "openFile": "Открыть файл",
+    "updateFile": "Обновить файл",
+    "attachFile": "Прикрепить файл",
+    "attached": "Прикреплено:",
+    "detach": "Открепить",
+    "noProviders": "Поставщики не настроены. Добавьте API-ключи в Настройки → Поставщики.",
+    "generating": "Генерация…",
+    "imageSaved": "Изображение сохранено",
+    "downloadImage": "Скачать",
+    "imageError": "Ошибка генерации изображения"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Основные",
+      "providers": "Поставщики",
+      "workflows": "Рабочие процессы",
+      "importExport": "Импорт / Экспорт",
+      "about": "О программе"
+    },
+    "general": {
+      "title": "Основные",
+      "appearance": "Внешний вид",
+      "theme": "Тема",
+      "font": "Шрифт",
+      "zoom": "Масштаб",
+      "zoomIn": "Увеличить",
+      "zoomOut": "Уменьшить",
+      "resetData": "Сбросить данные",
+      "clearConversations": "Очистить все беседы",
+      "clearConversationsConfirm": "Это удалит все сохранённые беседы. Продолжить?",
+      "resetSettings": "Сбросить все настройки",
+      "resetSettingsConfirm": "Это сбросит все настройки к значениям по умолчанию. Продолжить?"
+    },
+    "importExport": {
+      "title": "Импорт / Экспорт",
+      "workingDir": {
+        "title": "Рабочая директория",
+        "description": "Здесь сохраняются изображения и файлы.",
+        "current": "Текущая:",
+        "notSet": "Не задано",
+        "pick": "Выбрать папку",
+        "clear": "Очистить"
+      },
+      "apiKeys": {
+        "title": "API-ключи",
+        "exportBtn": "Экспортировать API-ключи",
+        "importBtn": "Импортировать API-ключи"
+      },
+      "providers": {
+        "title": "Поставщики",
+        "exportBtn": "Экспортировать поставщиков",
+        "importBtn": "Импортировать поставщиков"
+      },
+      "workflows": {
+        "title": "Рабочие процессы",
+        "exportBtn": "Экспортировать рабочие процессы",
+        "importBtn": "Импортировать рабочие процессы"
+      },
+      "conflict": {
+        "title": "Импорт — выберите способ обработки конфликтов",
+        "keepExisting": "Сохранить существующие (добавить только отсутствующие)",
+        "override": "Заменить импортированными значениями",
+        "applyImport": "Применить импорт"
+      }
+    },
+    "providers": {
+      "title": "Поставщики",
+      "apiKey": "API-ключ",
+      "keyPlaceholder": "Введите API-ключ…",
+      "keySaved": "Ключ сохранён",
+      "keyRemoved": "Ключ удалён",
+      "testModel": "Тест",
+      "testAllModels": "Тест всех",
+      "testPassed": "Пройдено",
+      "testFailed": "Не пройдено",
+      "testing": "Тестирование…",
+      "noModels": "Нет моделей"
+    },
+    "workflows": {
+      "title": "Рабочие процессы",
+      "newWorkflow": "Новый рабочий процесс",
+      "addWorkflow": "Добавить рабочий процесс",
+      "noWorkflows": "Рабочих процессов пока нет.",
+      "description": "Описание",
+      "instructions": "Инструкции",
+      "attachedFiles": "Прикреплённые файлы",
+      "attachFiles": "+ Прикрепить файлы",
+      "picking": "Выбор…",
+      "parallel": "Параллельный",
+      "addProvider": "+ Добавить поставщика",
+      "continuousState": "Непрерывное состояние",
+      "historyCarried": "История передаётся между сообщениями",
+      "freshEachMessage": "Каждое сообщение начинается заново",
+      "systemPromptPlaceholder": "Тихо добавляется перед каждым сообщением…",
+      "descriptionPlaceholder": "Краткое описание",
+      "enableWorkflow": "Включить рабочий процесс",
+      "disableWorkflow": "Отключить рабочий процесс"
+    },
+    "about": {
+      "title": "О ManyAI",
+      "version": "Версия"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Новая вкладка",
+    "chooseWorkflow": "Выберите тип рабочего процесса.",
+    "newWorkflow": "+ Новый рабочий процесс",
+    "cancel": "Отмена",
+    "noKey": "нет ключа",
+    "addProvider": "+ Добавить поставщика"
+  },
+  "saved": {
+    "title": "Сохранённые ответы",
+    "empty": "Пока нет сохранённых ответов.",
+    "delete": "Удалить",
+    "copy": "Копировать"
+  },
+  "language": {
+    "title": "Язык",
+    "select": "Выберите язык"
+  }
+}

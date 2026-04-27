@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "נשמר",
+    "settings": "הגדרות",
+    "language": "שפה"
+  },
+  "common": {
+    "cancel": "ביטול",
+    "save": "שמור",
+    "edit": "ערוך",
+    "delete": "מחק",
+    "close": "סגור",
+    "apply": "החל",
+    "add": "הוסף",
+    "remove": "הסר",
+    "loading": "טוען…",
+    "error": "שגיאה",
+    "ok": "אישור",
+    "yes": "כן",
+    "no": "לא",
+    "browse": "עיין",
+    "clear": "נקה",
+    "test": "בדיקה",
+    "testAll": "בדוק הכל",
+    "export": "ייצוא",
+    "import": "יבוא",
+    "noKey": "אין מפתח"
+  },
+  "chat": {
+    "placeholder": "הקלד הודעה…",
+    "send": "שלח",
+    "saved": "נשמר!",
+    "saveResponse": "שמור תגובה",
+    "copyCode": "העתק קוד",
+    "openFile": "פתח קובץ",
+    "updateFile": "עדכן קובץ",
+    "attachFile": "צרף קובץ",
+    "attached": "מצורף:",
+    "detach": "הסר צרופה",
+    "noProviders": "אין ספקים configured. הוסף מפתחות API ב-הגדרות → ספקים.",
+    "generating": "מייצר…",
+    "imageSaved": "תמונה נשמרה",
+    "downloadImage": "הורדה",
+    "imageError": "יצירת תמונה נכשלה"
+  },
+  "settings": {
+    "tabs": {
+      "general": "כללי",
+      "providers": "ספקים",
+      "workflows": "זרימות עבודה",
+      "importExport": "ייבוא / ייצוא",
+      "about": "אודות"
+    },
+    "general": {
+      "title": "כללי",
+      "appearance": "מראה",
+      "theme": "ערכת נושא",
+      "font": "גופן",
+      "zoom": "הגדלה",
+      "zoomIn": "הגדל",
+      "zoomOut": "הקטן",
+      "resetData": "אפס נתונים",
+      "clearConversations": "נקה את כל השיחות",
+      "clearConversationsConfirm": "פעולה זו תמחק את כל השיחות שנשמרו. להמשיך?",
+      "resetSettings": "אפס את כל ההגדרות",
+      "resetSettingsConfirm": "פעולה זו תאפס את כל ההגדרות לערכים ברירת מחדל. להמשיך?"
+    },
+    "importExport": {
+      "title": "ייבוא / ייצוא",
+      "workingDir": {
+        "title": "ספריית עבודה",
+        "description": "תמונות וקבצים נשמרים כאן.",
+        "current": "נוכחי:",
+        "notSet": "לא הוגדר",
+        "pick": "בחר תיקייה",
+        "clear": "נקה"
+      },
+      "apiKeys": {
+        "title": "מפתחות API",
+        "exportBtn": "ייצוא מפתחות API",
+        "importBtn": "יבוא מפתחות API"
+      },
+      "providers": {
+        "title": "ספקים",
+        "exportBtn": "ייצוא ספקים",
+        "importBtn": "יבוא ספקים"
+      },
+      "workflows": {
+        "title": "זרימות עבודה",
+        "exportBtn": "ייצוא זרימות עבודה",
+        "importBtn": "יבוא זרימות עבודה"
+      },
+      "conflict": {
+        "title": "יבוא — בחר כיצד לטפל בקונפליקטים",
+        "keepExisting": "שמור קיים (הוסף רק חסר)",
+        "override": "החלף בערכים מיובאים",
+        "applyImport": "החל ייבוא"
+      }
+    },
+    "providers": {
+      "title": "ספקים",
+      "apiKey": "מפתח API",
+      "keyPlaceholder": "הזן מפתח API…",
+      "keySaved": "מפתח נשמר",
+      "keyRemoved": "מפתח הוסר",
+      "testModel": "בדיקה",
+      "testAllModels": "בדוק הכל",
+      "testPassed": "עבר",
+      "testFailed": "נכשל",
+      "testing": "מתבצע…",
+      "noModels": "אין מודלים"
+    },
+    "workflows": {
+      "title": "זרימות עבודה",
+      "newWorkflow": "זרימת עבודה חדשה",
+      "addWorkflow": "הוסף זרימת עבודה",
+      "noWorkflows": "אין זרימות עבודה עדיין.",
+      "description": "תיאור",
+      "instructions": "הוראות",
+      "attachedFiles": "קבצים מצורפים",
+      "attachFiles": "+ צרף קבצים",
+      "picking": "בוחר…",
+      "parallel": "מקבילי",
+      "addProvider": "+ הוסף ספק",
+      "continuousState": "מצב רציף",
+      "historyCarried": "היסטוריה נישאת בין הודעות",
+      "freshEachMessage": "כל הודעה מתחילה מחדש",
+      "systemPromptPlaceholder": "מוסיפים בשקט לפני כל הודעה…",
+      "descriptionPlaceholder": "תיאור קצר",
+      "enableWorkflow": "הפעל זרימת עבודה",
+      "disableWorkflow": "השבת זרימת עבודה"
+    },
+    "about": {
+      "title": "אודות ManyAI",
+      "version": "גרסה"
+    }
+  },
+  "rightPanel": {
+    "newTab": "לשונית חדשה",
+    "chooseWorkflow": "בחר סוג זרימת עבודה.",
+    "newWorkflow": "+ זרימת עבודה חדשה",
+    "cancel": "ביטול",
+    "noKey": "אין מפתח",
+    "addProvider": "+ הוסף ספק"
+  },
+  "saved": {
+    "title": "תגובות שנשמרו",
+    "empty": "אין תגובות שנשמרו עדיין.",
+    "delete": "מחק",
+    "copy": "העתק"
+  },
+  "language": {
+    "title": "שפה",
+    "select": "בחר שפה"
+  }
+}

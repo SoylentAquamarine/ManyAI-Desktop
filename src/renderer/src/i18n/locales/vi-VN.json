@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Đã lưu",
+    "settings": "Cài đặt",
+    "language": "Ngôn ngữ"
+  },
+  "common": {
+    "cancel": "Hủy",
+    "save": "Lưu",
+    "edit": "Chỉnh sửa",
+    "delete": "Xóa",
+    "close": "Đóng",
+    "apply": "Áp dụng",
+    "add": "Thêm",
+    "remove": "Xóa",
+    "loading": "Đang tải…",
+    "error": "Lỗi",
+    "ok": "OK",
+    "yes": "Có",
+    "no": "Không",
+    "browse": "Duyệt",
+    "clear": "Xóa",
+    "test": "Kiểm tra",
+    "testAll": "Kiểm tra tất cả",
+    "export": "Xuất",
+    "import": "Nhập",
+    "noKey": "không có khóa"
+  },
+  "chat": {
+    "placeholder": "Gõ tin nhắn…",
+    "send": "Gửi",
+    "saved": "Đã lưu!",
+    "saveResponse": "Lưu phản hồi",
+    "copyCode": "Sao chép mã",
+    "openFile": "Mở tệp",
+    "updateFile": "Cập nhật tệp",
+    "attachFile": "Đính kèm tệp",
+    "attached": "Đã đính kèm:",
+    "detach": "Gỡ",
+    "noProviders": "Không có nhà cung cấp nào được cấu hình. Thêm khóa API trong Cài đặt → Nhà cung cấp.",
+    "generating": "Đang tạo…",
+    "imageSaved": "Đã lưu ảnh",
+    "downloadImage": "Tải xuống",
+    "imageError": "Tạo ảnh thất bại"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Chung",
+      "providers": "Nhà cung cấp",
+      "workflows": "Quy trình",
+      "importExport": "Nhập / Xuất",
+      "about": "Thông tin"
+    },
+    "general": {
+      "title": "Chung",
+      "appearance": "Giao diện",
+      "theme": "Chủ đề",
+      "font": "Phông chữ",
+      "zoom": "Thu phóng",
+      "zoomIn": "Phóng to",
+      "zoomOut": "Thu nhỏ",
+      "resetData": "Đặt lại dữ liệu",
+      "clearConversations": "Xóa tất cả cuộc trò chuyện",
+      "clearConversationsConfirm": "Điều này sẽ xóa tất cả cuộc trò chuyện đã lưu. Tiếp tục?",
+      "resetSettings": "Đặt lại tất cả cài đặt",
+      "resetSettingsConfirm": "Điều này sẽ đặt lại tất cả cài đặt về mặc định. Tiếp tục?"
+    },
+    "importExport": {
+      "title": "Nhập / Xuất",
+      "workingDir": {
+        "title": "Thư mục làm việc",
+        "description": "Ảnh và tệp được lưu tại đây.",
+        "current": "Hiện tại:",
+        "notSet": "Chưa đặt",
+        "pick": "Chọn thư mục",
+        "clear": "Xóa"
+      },
+      "apiKeys": {
+        "title": "Khóa API",
+        "exportBtn": "Xuất khóa API",
+        "importBtn": "Nhập khóa API"
+      },
+      "providers": {
+        "title": "Nhà cung cấp",
+        "exportBtn": "Xuất nhà cung cấp",
+        "importBtn": "Nhập nhà cung cấp"
+      },
+      "workflows": {
+        "title": "Quy trình",
+        "exportBtn": "Xuất quy trình",
+        "importBtn": "Nhập quy trình"
+      },
+      "conflict": {
+        "title": "Nhập — chọn cách xử lý xung đột",
+        "keepExisting": "Giữ dữ liệu hiện có (chỉ thêm dữ liệu thiếu)",
+        "override": "Ghi đè bằng dữ liệu nhập",
+        "applyImport": "Áp dụng nhập"
+      }
+    },
+    "providers": {
+      "title": "Nhà cung cấp",
+      "apiKey": "Khóa API",
+      "keyPlaceholder": "Nhập khóa API…",
+      "keySaved": "Đã lưu khóa",
+      "keyRemoved": "Đã xóa khóa",
+      "testModel": "Kiểm tra",
+      "testAllModels": "Kiểm tra tất cả",
+      "testPassed": "Thành công",
+      "testFailed": "Thất bại",
+      "testing": "Đang kiểm tra…",
+      "noModels": "Không có mô hình"
+    },
+    "workflows": {
+      "title": "Quy trình",
+      "newWorkflow": "Quy trình mới",
+      "addWorkflow": "Thêm quy trình",
+      "noWorkflows": "Chưa có quy trình nào.",
+      "description": "Mô tả",
+      "instructions": "Hướng dẫn",
+      "attachedFiles": "Tệp đính kèm",
+      "attachFiles": "+ Đính kèm tệp",
+      "picking": "Đang chọn…",
+      "parallel": "Song song",
+      "addProvider": "+ Thêm nhà cung cấp",
+      "continuousState": "Trạng thái liên tục",
+      "historyCarried": "Lịch sử được giữ giữa các tin nhắn",
+      "freshEachMessage": "Mỗi tin nhắn bắt đầu mới",
+      "systemPromptPlaceholder": "Được thêm âm thầm trước mọi tin nhắn…",
+      "descriptionPlaceholder": "Mô tả ngắn",
+      "enableWorkflow": "Bật quy trình",
+      "disableWorkflow": "Tắt quy trình"
+    },
+    "about": {
+      "title": "Thông tin về ManyAI",
+      "version": "Phiên bản"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Tab mới",
+    "chooseWorkflow": "Chọn loại quy trình.",
+    "newWorkflow": "+ Quy trình mới",
+    "cancel": "Hủy",
+    "noKey": "không có khóa",
+    "addProvider": "+ Thêm nhà cung cấp"
+  },
+  "saved": {
+    "title": "Phản hồi đã lưu",
+    "empty": "Chưa có phản hồi nào được lưu.",
+    "delete": "Xóa",
+    "copy": "Sao chép"
+  },
+  "language": {
+    "title": "Ngôn ngữ",
+    "select": "Chọn ngôn ngữ"
+  }
+}

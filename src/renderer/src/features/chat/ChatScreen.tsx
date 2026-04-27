@@ -29,6 +29,8 @@ interface Message {
   imageUrl?: string
   fileRef?: string
   parallelId?: string
+  instanceId?: string   // GUID of the provider slot that produced this response
+  recipients?: string[] // instanceIds that received this user message
 }
 
 interface Props {
@@ -110,6 +112,13 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
   const historyIdx = useRef(-1)
   const draftInput = useRef('')
   const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const scrollPositions = useRef<Map<string | null, number>>(new Map())
+  const prevActiveTab = useRef<string | null>(null)
+  // true (or absent) = pinned to bottom; false = user has scrolled up
+  const pinnedToBottom = useRef<Map<string | null, boolean>>(new Map())
+  // always-current activeTab for use in the scroll handler without stale closure
+  const activeTabRef = useRef<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -120,9 +129,20 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
     if (inputKey) localStorage.setItem(inputKey, input)
   }, [input, inputKey])
 
+  // When new messages arrive: scroll active tab if pinned; clear saved position for
+  // inactive pinned tabs so they jump to bottom when the user switches back.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, activeParallelProvider])
+    const container = scrollContainerRef.current
+    if (!container) return
+    const isPinned = (tab: string | null) => pinnedToBottom.current.get(tab) !== false
+    if (isPinned(activeTabRef.current)) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+    // Inactive pinned tabs: forget their saved position → they'll default to scrollHeight on switch
+    for (const [tab, pinned] of pinnedToBottom.current) {
+      if (tab !== activeTabRef.current && pinned) scrollPositions.current.delete(tab)
+    }
+  }, [messages])
 
   useEffect(() => {
     onInjectReady?.((p: string) => {
@@ -204,25 +224,29 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
       if (parts.length) aiPrompt = parts.join('\n\n---\n\n') + '\n\n---\n\n' + aiPrompt
     }
 
+    // Resolve routes before adding the user message so we can tag who hears it.
+    // This drives the "hands over ears" model: unchecked providers don't receive
+    // the user message and won't see it in their history on future turns.
+    const keys = loadAllKeys()
+    const enabled = loadEnabledProviders()
+    const prefs = loadRoutingPrefs()
+    const allProviders = getAllProviders()
+    const availableKeys = new Set(Object.keys(keys))
+    availableKeys.add('pollinations')
+    const taskType = workflowType
+    const activeRoutes = resolveAllProviders(taskType, prefs, availableKeys, enabled)
+    const recipients = activeRoutes.map(r => r.instanceId ?? r.provider)
+
     setMessages(prev => {
       if (prev.length === 0) onFirstMessage?.(text)
-      return [...prev, { role: 'user', content: text, fileRef }]
+      return [...prev, { role: 'user', content: text, fileRef, recipients }]
     })
     setLoading(true)
 
     try {
-      const keys = loadAllKeys()
-      const enabled = loadEnabledProviders()
-      const prefs = loadRoutingPrefs()
-      const allProviders = getAllProviders()
-      const availableKeys = new Set(Object.keys(keys))
-      availableKeys.add('pollinations')
-
-      const taskType = workflowType
-
       // ── Image generation (parallel) ───────────────────────────────────────
       if (taskType === 'image') {
-        const imageRoutes = resolveAllProviders(taskType, prefs, availableKeys, enabled)
+        const imageRoutes = activeRoutes
         if (imageRoutes.length === 0) {
           setMessages(prev => [...prev, { role: 'assistant', content: 'No providers available. Add an API key in the API tab.', error: true }])
           return
@@ -235,11 +259,15 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
               // Auto-save image to working directory if configured
               const imagesDir = getImagesDir()
               if (imagesDir) {
-                const slug = text.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40) || 'image'
+                const cleaned = text.trim()
+                  .replace(/^(generate|create|make|draw|show|give me|render)\s+(me\s+)?(a\s+|an\s+)?(picture|image|photo|illustration|drawing)\s+(of\s+)?/i, '')
+                  .trim()
+                const slug = (cleaned || text.trim()).toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 50) || 'image'
+                const providerSlug = `${route.provider}-${route.model}`.replace(/[^a-z0-9]+/gi, '-').toLowerCase()
                 const ext  = result.imageUrl.match(/^data:image\/(\w+)/)?.[1] ?? 'png'
-                const filename = `${slug}_${route.provider}_${Date.now()}.${ext}`
+                const filename = `${slug}_${providerSlug}_${Date.now()}.${ext}`
                 await window.api.ensureDir(imagesDir)
-                await window.api.writeFileDirect(`${imagesDir}/${filename}`, result.imageUrl)
+                await window.api.writeImageFile(`${imagesDir}/${filename}`, result.imageUrl)
               }
               logger.providerCall(route.provider, route.model, text, { latencyMs: 0 })
               return {
@@ -248,6 +276,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
                 imageUrl: result.imageUrl,
                 provider: route.provider,
                 model: route.model,
+                instanceId: route.instanceId,
                 error: false,
                 parallelId: imageParallelId,
               }
@@ -260,6 +289,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
                 content: result.error ? `Error: ${result.error}` : result.content,
                 provider: route.provider,
                 model: route.model,
+                instanceId: route.instanceId,
                 latencyMs: result.latencyMs,
                 error: !!result.error,
                 parallelId: imageParallelId,
@@ -273,6 +303,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
               content: `Error: ${msg}`,
               provider: route.provider,
               model: route.model,
+              instanceId: route.instanceId,
               error: true,
               parallelId: imageParallelId,
             }
@@ -283,7 +314,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
       }
 
       // ── Text generation (parallel) ────────────────────────────────────────
-      const routes = resolveAllProviders(taskType, prefs, availableKeys, enabled)
+      const routes = activeRoutes
       if (routes.length === 0) {
         setMessages(prev => [...prev, {
           role: 'assistant',
@@ -295,51 +326,74 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
 
       const parallelId = `p_${Date.now()}`
 
-      const buildHistory = (providerKey: string, modelKey: string): HistoryMessage[] => {
+      const buildHistory = (route: typeof routes[number]): HistoryMessage[] => {
         if (!continuousState) return []
+        const id = route.instanceId ?? `${route.provider}::${route.model}`
         return messages
           .filter(m => {
             if (m.imageUrl) return false
-            if (m.role === 'user') return true
-            // For parallel messages, each slot sees only its own prior responses
-            if (m.parallelId) return m.provider === providerKey && m.model === modelKey
+            if (m.role === 'user') {
+              // No recipients = pre-GUID message, include for all providers
+              return !m.recipients || m.recipients.includes(id)
+            }
+            if (m.parallelId) {
+              // Match by instanceId when present; fall back to provider::model for pre-GUID messages
+              return m.instanceId ? m.instanceId === id : m.provider === route.provider && m.model === route.model
+            }
             return true
           })
           .slice(-10)
           .map(m => ({ role: m.role, content: m.content }))
       }
 
-      const results = await Promise.all(routes.map(async route => {
+      await Promise.all(routes.map(async route => {
+        const instanceId = route.instanceId ?? `${route.provider}::${route.model}`
         const p = { ...allProviders[route.provider], model: route.model }
-        const result = await callProvider(p, aiPrompt, keys[route.provider], undefined, undefined, buildHistory(route.provider, route.model))
+        let result: Awaited<ReturnType<typeof callProvider>>
+        try {
+          result = await callProvider(p, aiPrompt, keys[route.provider], undefined, undefined, buildHistory(route))
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e)
+          setMessages(prev => [...prev, {
+            role: 'assistant' as const,
+            content: `Error: ${msg}`,
+            provider: route.provider,
+            model: route.model,
+            instanceId,
+            error: true,
+            parallelId,
+          }])
+          return
+        }
         // Pin provider/model to route values — APIs may echo back a different string
         // (e.g. OpenAI returns "gpt-4o-2024-11-20", OpenRouter returns "openai/gpt-4o")
         // which would break the tab key match in visibleMessages.
         logger.providerCall(route.provider, route.model, aiPrompt, result)
-        return { ...result, provider: route.provider, model: route.model, parallelId }
+
+        const msg = {
+          role: 'assistant' as const,
+          content: result.error ? `Error: ${result.error}` : result.content,
+          provider: route.provider,
+          model: route.model,
+          instanceId,
+          latencyMs: result.latencyMs,
+          error: !!result.error,
+          parallelId,
+        }
+        setMessages(prev => [...prev, msg])
+
+        // Auto-save code when there's a single provider and a code block
+        if (routes.length === 1 && attachedFile && !result.error && hasCodeBlock(result.content)) {
+          const code = extractCode(result.content)
+          updateTmpFile(attachedFile, code).then(r => {
+            if ('ok' in r) {
+              setAttachedFile(r.updatedFile)
+              setTmpStatus(`✓ Auto-saved to ${attachedFile.name}.tmp`)
+              setTimeout(() => setTmpStatus(null), 3000)
+            }
+          })
+        }
       }))
-
-      // Auto-save code when there's a single provider and a code block
-      if (results.length === 1 && attachedFile && !results[0].error && hasCodeBlock(results[0].content)) {
-        const code = extractCode(results[0].content)
-        updateTmpFile(attachedFile, code).then(r => {
-          if ('ok' in r) {
-            setAttachedFile(r.updatedFile)
-            setTmpStatus(`✓ Auto-saved to ${attachedFile.name}.tmp`)
-            setTimeout(() => setTmpStatus(null), 3000)
-          }
-        })
-      }
-
-      setMessages(prev => [...prev, ...results.map(result => ({
-        role: 'assistant' as const,
-        content: result.error ? `Error: ${result.error}` : result.content,
-        provider: result.provider,
-        model: result.model,
-        latencyMs: result.latencyMs,
-        error: !!result.error,
-        parallelId: result.parallelId,
-      }))])
     } finally {
       setLoading(false)
       textareaRef.current?.focus()
@@ -400,27 +454,64 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
     return raw
   }
 
-  // Compute enabled parallel providers fresh from prefs on every render
-  const parallelProviders = (() => {
+  // Compute enabled parallel providers and full chain together to share one loadRoutingPrefs call
+  const { parallelProviders, fullChain } = (() => {
     const prefs = loadRoutingPrefs()
     const keys = loadAllKeys()
     const enabled = loadEnabledProviders()
     const availableKeys = new Set(Object.keys(keys))
     availableKeys.add('pollinations')
-    return resolveAllProviders(workflowType, prefs, availableKeys, enabled)
+    return {
+      parallelProviders: resolveAllProviders(workflowType, prefs, availableKeys, enabled),
+      fullChain: prefs.routes[workflowType] ?? [],
+    }
   })()
 
-  const tabKey = (provider: string, model: string) => `${provider}::${model}`
+  // instanceId is the stable GUID per provider slot; fall back to provider::model for legacy messages
+  const msgInstanceId = (msg: { instanceId?: string; provider?: string; model?: string }) =>
+    msg.instanceId ?? `${msg.provider}::${msg.model}`
+
+  const routeInstanceId = (route: { instanceId?: string; provider: string; model: string }) =>
+    route.instanceId ?? `${route.provider}::${route.model}`
+
+  // Tab bar uses history + enabled providers so unchecking a provider doesn't remove its tab.
+  // Tabs only disappear when a provider is deleted from the workflow entirely.
+  const tabProviders = (() => {
+    // Map provider::model → instanceId so legacy messages (no instanceId) deduplicate correctly
+    const legacyIdMap = new Map<string, string>()
+    for (const route of fullChain) {
+      if (route.instanceId) legacyIdMap.set(`${route.provider}::${route.model}`, route.instanceId)
+    }
+
+    const seen = new Map<string, { provider: string; model: string; instanceId: string }>()
+    for (const msg of messages) {
+      if (msg.role === 'assistant' && msg.parallelId && msg.provider && msg.model) {
+        const id = msg.instanceId
+          ?? legacyIdMap.get(`${msg.provider}::${msg.model}`)
+          ?? `${msg.provider}::${msg.model}`
+        if (!seen.has(id)) seen.set(id, { provider: msg.provider, model: msg.model, instanceId: id })
+      }
+    }
+    for (const route of parallelProviders) {
+      const id = routeInstanceId(route)
+      if (!seen.has(id)) seen.set(id, { provider: route.provider, model: route.model, instanceId: id })
+    }
+    return [...seen.values()]
+  })()
+
+  const enabledTabKeys = new Set(parallelProviders.map(routeInstanceId))
 
   const activeTab = (() => {
-    if (parallelProviders.length <= 1) return null
+    if (tabProviders.length <= 1) return null
     const key = activeParallelProvider
-    if (key && parallelProviders.some(p => tabKey(p.provider, p.model) === key)) return key
-    return tabKey(parallelProviders[0].provider, parallelProviders[0].model)
+    if (key && tabProviders.some(p => p.instanceId === key)) return key
+    return tabProviders[0].instanceId
   })()
 
+  activeTabRef.current = activeTab
+
   // When same provider appears multiple times (different models), show the model name in the tab
-  const providerCount = parallelProviders.reduce<Record<string, number>>((acc, e) => {
+  const providerCount = tabProviders.reduce<Record<string, number>>((acc, e) => {
     acc[e.provider] = (acc[e.provider] ?? 0) + 1
     return acc
   }, {})
@@ -428,9 +519,21 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
   const visibleMessages = messages.filter(msg => {
     if (msg.role === 'user') return true
     if (!msg.parallelId) return true
-    if (parallelProviders.length <= 1) return true
-    return tabKey(msg.provider ?? '', msg.model ?? '') === activeTab
+    if (tabProviders.length <= 1) return true
+    return msgInstanceId(msg) === activeTab
   })
+
+  const allProvidersMap = getAllProviders()
+
+  // Restore scroll position when switching tabs.
+  // Saving is done in the tab click handler (before DOM changes) so we capture the real position.
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container || prevActiveTab.current === activeTab) return
+    const saved = scrollPositions.current.get(activeTab)
+    container.scrollTop = saved ?? container.scrollHeight
+    prevActiveTab.current = activeTab
+  }, [activeTab])
 
   return (
     <div className="screen">
@@ -451,38 +554,43 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
         )}
       </div>
 
-      {parallelProviders.length > 1 && (
+      {tabProviders.length > 1 && (
         <div className="parallel-tab-bar">
-          {parallelProviders.map(entry => {
-            const name = getAllProviders()[entry.provider]?.name ?? entry.provider
-            const key = tabKey(entry.provider, entry.model)
-            const isActive = key === activeTab
+          {tabProviders.map(entry => {
+            const name = allProvidersMap[entry.provider]?.name ?? entry.provider
+            const isActive = entry.instanceId === activeTab
+            const isEnabled = enabledTabKeys.has(entry.instanceId)
             const label = providerCount[entry.provider] > 1 ? `${name} · ${entry.model}` : name
             return (
               <button
-                key={key}
+                key={entry.instanceId}
                 className={`parallel-tab${isActive ? ' active' : ''}`}
-                onClick={() => setActiveParallelProvider(key)}
+                onClick={() => {
+                  if (scrollContainerRef.current)
+                    scrollPositions.current.set(activeTab, scrollContainerRef.current.scrollTop)
+                  setActiveParallelProvider(entry.instanceId)
+                }}
+                title={isEnabled ? undefined : 'Paused — unchecked in workflow'}
+                style={isEnabled ? undefined : { opacity: 0.45 }}
               >
                 {label}
-                {loading && isActive && <span style={{ marginLeft: 4, opacity: 0.6 }}>…</span>}
+                {!isEnabled && <span style={{ marginLeft: 4, fontSize: 10 }}>⏸</span>}
+                {loading && isActive && isEnabled && <span style={{ marginLeft: 4, opacity: 0.6 }}>…</span>}
               </button>
             )
           })}
         </div>
       )}
 
-      <div className="chat-messages">
-        {messages.length === 0 && (
+      <div className="chat-messages" ref={scrollContainerRef} onScroll={() => {
+        const c = scrollContainerRef.current
+        if (!c) return
+        pinnedToBottom.current.set(activeTabRef.current, c.scrollTop + c.clientHeight >= c.scrollHeight - 50)
+      }}>
+        {messages.length === 0 && attachedFile && (
           <div className="empty-state">
-            <div style={{ fontSize: 32, marginBottom: 12 }}>{meta.icon}</div>
-            <div style={{ fontWeight: 600, marginBottom: 4, fontSize: 16 }}>ManyAI Desktop</div>
             <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>
-              {attachedFile
-                ? `📎 ${attachedFile.name} attached — describe what you want to do with it.`
-                : parallelProviders.length > 1
-                  ? `Sending to ${parallelProviders.length} providers in parallel.`
-                  : `Sending to the best available ${meta.label.toLowerCase()} provider.`}
+              📎 {attachedFile.name} attached — describe what you want to do with it.
             </div>
           </div>
         )}
@@ -507,7 +615,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
             )}
             {msg.role === 'assistant' && (msg.provider || msg.latencyMs) && (
               <div className="message-meta">
-                {msg.provider && `${getAllProviders()[msg.provider]?.name ?? msg.provider}${msg.model ? ' · ' + msg.model : ''}`}
+                {msg.provider && `${allProvidersMap[msg.provider]?.name ?? msg.provider}${msg.model ? ' · ' + msg.model : ''}`}
                 {msg.latencyMs && ` · ${msg.latencyMs}ms`}
               </div>
             )}

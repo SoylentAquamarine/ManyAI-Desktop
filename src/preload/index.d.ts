@@ -19,6 +19,9 @@ declare global {
       /** Overwrite (or create) a file. Creates parent directories automatically. */
       writeFileDirect: (filePath: string, content: string) => Promise<{ ok: boolean } | { error: string }>
 
+      /** Write a data-URI image as a binary file (decodes base64, writes raw bytes). */
+      writeImageFile: (filePath: string, dataUri: string) => Promise<{ ok: boolean } | { error: string }>
+
       /** Append text to a file. Creates the file + parent dirs if they don't exist. */
       appendFile: (filePath: string, content: string) => Promise<{ ok: boolean } | { error: string }>
 

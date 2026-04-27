@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Sparad",
+    "settings": "Inställningar",
+    "language": "Språk"
+  },
+  "common": {
+    "cancel": "Avbryt",
+    "save": "Spara",
+    "edit": "Redigera",
+    "delete": "Ta bort",
+    "close": "Stäng",
+    "apply": "Tillämpa",
+    "add": "Lägg till",
+    "remove": "Ta bort",
+    "loading": "Laddar…",
+    "error": "Fel",
+    "ok": "OK",
+    "yes": "Ja",
+    "no": "Nej",
+    "browse": "Bläddra",
+    "clear": "Rensa",
+    "test": "Testa",
+    "testAll": "Testa alla",
+    "export": "Exportera",
+    "import": "Importera",
+    "noKey": "ingen nyckel"
+  },
+  "chat": {
+    "placeholder": "Skriv ett meddelande…",
+    "send": "Skicka",
+    "saved": "Sparad!",
+    "saveResponse": "Spara svar",
+    "copyCode": "Kopiera kod",
+    "openFile": "Öppna fil",
+    "updateFile": "Uppdatera fil",
+    "attachFile": "Bifoga fil",
+    "attached": "Bifogad:",
+    "detach": "Ta bort bifogad",
+    "noProviders": "Inga leverantörer konfigurerade. Lägg till API-nycklar under Inställningar → Leverantörer.",
+    "generating": "Genererar…",
+    "imageSaved": "Bild sparad",
+    "downloadImage": "Ladda ner",
+    "imageError": "Bildgenerering misslyckades"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Allmänt",
+      "providers": "Leverantörer",
+      "workflows": "Arbetsflöden",
+      "importExport": "Import/Export",
+      "about": "Om"
+    },
+    "general": {
+      "title": "Allmänt",
+      "appearance": "Utseende",
+      "theme": "Tema",
+      "font": "Typsnitt",
+      "zoom": "Zoom",
+      "zoomIn": "Zooma in",
+      "zoomOut": "Zooma ut",
+      "resetData": "Återställ data",
+      "clearConversations": "Rensa alla konversationer",
+      "clearConversationsConfirm": "Detta kommer att ta bort alla sparade konversationer. Fortsätta?",
+      "resetSettings": "Återställ alla inställningar",
+      "resetSettingsConfirm": "Detta kommer att återställa alla inställningar till standard. Fortsätta?"
+    },
+    "importExport": {
+      "title": "Import/Export",
+      "workingDir": {
+        "title": "Arbetsmapp",
+        "description": "Bilder och filer sparas här.",
+        "current": "Aktuell:",
+        "notSet": "Ej angiven",
+        "pick": "Välj mapp",
+        "clear": "Rensa"
+      },
+      "apiKeys": {
+        "title": "API-nycklar",
+        "exportBtn": "Exportera API-nycklar",
+        "importBtn": "Importera API-nycklar"
+      },
+      "providers": {
+        "title": "Leverantörer",
+        "exportBtn": "Exportera leverantörer",
+        "importBtn": "Importera leverantörer"
+      },
+      "workflows": {
+        "title": "Arbetsflöden",
+        "exportBtn": "Exportera arbetsflöden",
+        "importBtn": "Importera arbetsflöden"
+      },
+      "conflict": {
+        "title": "Import – välj hur konflikter ska hanteras",
+        "keepExisting": "Behåll befintliga (lägg endast till saknade)",
+        "override": "Ersätt med importerade värden",
+        "applyImport": "Tillämpa import"
+      }
+    },
+    "providers": {
+      "title": "Leverantörer",
+      "apiKey": "API-nyckel",
+      "keyPlaceholder": "Ange API-nyckel…",
+      "keySaved": "Nyckel sparad",
+      "keyRemoved": "Nyckel borttagen",
+      "testModel": "Testa",
+      "testAllModels": "Testa alla",
+      "testPassed": "Godkänd",
+      "testFailed": "Underkänd",
+      "testing": "Testar…",
+      "noModels": "Inga modeller"
+    },
+    "workflows": {
+      "title": "Arbetsflöden",
+      "newWorkflow": "Nytt arbetsflöde",
+      "addWorkflow": "Lägg till arbetsflöde",
+      "noWorkflows": "Inga arbetsflöden ännu.",
+      "description": "Beskrivning",
+      "instructions": "Instruktioner",
+      "attachedFiles": "Bifogade filer",
+      "attachFiles": "+ Bifoga filer",
+      "picking": "Väljer…",
+      "parallel": "Parallell",
+      "addProvider": "+ Lägg till leverantör",
+      "continuousState": "Kontinuerligt tillstånd",
+      "historyCarried": "Historik förs mellan meddelanden",
+      "freshEachMessage": "Varje meddelande börjar nytt",
+      "systemPromptPlaceholder": "Tyst förifylls före varje meddelande…",
+      "descriptionPlaceholder": "Kort beskrivning",
+      "enableWorkflow": "Aktivera arbetsflöde",
+      "disableWorkflow": "Inaktivera arbetsflöde"
+    },
+    "about": {
+      "title": "Om ManyAI",
+      "version": "Version"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Ny flik",
+    "chooseWorkflow": "Välj en arbetsflödestyp.",
+    "newWorkflow": "+ Nytt arbetsflöde",
+    "cancel": "Avbryt",
+    "noKey": "ingen nyckel",
+    "addProvider": "+ Lägg till leverantör"
+  },
+  "saved": {
+    "title": "Sparade svar",
+    "empty": "Inga sparade svar ännu.",
+    "delete": "Ta bort",
+    "copy": "Kopiera"
+  },
+  "language": {
+    "title": "Språk",
+    "select": "Välj språk"
+  }
+}

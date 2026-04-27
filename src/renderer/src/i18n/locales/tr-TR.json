@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Kaydedildi",
+    "settings": "Ayarlar",
+    "language": "Dil"
+  },
+  "common": {
+    "cancel": "İptal",
+    "save": "Kaydet",
+    "edit": "Düzenle",
+    "delete": "Sil",
+    "close": "Kapat",
+    "apply": "Uygula",
+    "add": "Ekle",
+    "remove": "Kaldır",
+    "loading": "Yükleniyor…",
+    "error": "Hata",
+    "ok": "Tamam",
+    "yes": "Evet",
+    "no": "Hayır",
+    "browse": "Gözat",
+    "clear": "Temizle",
+    "test": "Test",
+    "testAll": "Tümünü Test Et",
+    "export": "Dışa Aktar",
+    "import": "İçe Aktar",
+    "noKey": "anahtar yok"
+  },
+  "chat": {
+    "placeholder": "Bir mesaj yazın…",
+    "send": "Gönder",
+    "saved": "Kaydedildi!",
+    "saveResponse": "Yanıtı kaydet",
+    "copyCode": "Kodu kopyala",
+    "openFile": "Dosyayı aç",
+    "updateFile": "Dosyayı güncelle",
+    "attachFile": "Dosya ekle",
+    "attached": "Eklenen:",
+    "detach": "Çıkar",
+    "noProviders": "Hiçbir sağlayıcı yapılandırılmamış. Ayarlar → Sağlayıcılar bölümünden API anahtarları ekleyin.",
+    "generating": "Oluşturuluyor…",
+    "imageSaved": "Resim kaydedildi",
+    "downloadImage": "İndir",
+    "imageError": "Resim oluşturulamadı"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Genel",
+      "providers": "Sağlayıcılar",
+      "workflows": "İş Akışları",
+      "importExport": "İçe/Dışa Aktar",
+      "about": "Hakkında"
+    },
+    "general": {
+      "title": "Genel",
+      "appearance": "Görünüm",
+      "theme": "Tema",
+      "font": "Yazı Tipi",
+      "zoom": "Yakınlaştır",
+      "zoomIn": "Yakınlaştır",
+      "zoomOut": "Uzaklaştır",
+      "resetData": "Verileri Sıfırla",
+      "clearConversations": "Tüm sohbetleri temizle",
+      "clearConversationsConfirm": "Tüm kaydedilmiş sohbetler silinecek. Devam etmek istiyor musunuz?",
+      "resetSettings": "Tüm ayarları sıfırla",
+      "resetSettingsConfirm": "Tüm ayarlar varsayılanlara sıfırlanacak. Devam etmek istiyor musunuz?"
+    },
+    "importExport": {
+      "title": "İçe/Dışa Aktar",
+      "workingDir": {
+        "title": "Çalışma Dizini",
+        "description": "Resimler ve dosyalar burada kaydedilir.",
+        "current": "Mevcut:",
+        "notSet": "Belirtilmemiş",
+        "pick": "Klasör seç",
+        "clear": "Temizle"
+      },
+      "apiKeys": {
+        "title": "API Anahtarları",
+        "exportBtn": "API Anahtarlarını Dışa Aktar",
+        "importBtn": "API Anahtarlarını İçe Aktar"
+      },
+      "providers": {
+        "title": "Sağlayıcılar",
+        "exportBtn": "Sağlayıcıları Dışa Aktar",
+        "importBtn": "Sağlayıcıları İçe Aktar"
+      },
+      "workflows": {
+        "title": "İş Akışları",
+        "exportBtn": "İş Akışlarını Dışa Aktar",
+        "importBtn": "İş Akışlarını İçe Aktar"
+      },
+      "conflict": {
+        "title": "İçe Aktar — çakışmaları nasıl yönetmek istediğinizi seçin",
+        "keepExisting": "Mevcut olanları koru (sadece eksikleri ekle)",
+        "override": "İçe aktarılan değerlerle üzerine yaz",
+        "applyImport": "İçe Aktarıma Uygula"
+      }
+    },
+    "providers": {
+      "title": "Sağlayıcılar",
+      "apiKey": "API Anahtarı",
+      "keyPlaceholder": "API anahtarını girin…",
+      "keySaved": "Anahtar kaydedildi",
+      "keyRemoved": "Anahtar kaldırıldı",
+      "testModel": "Test",
+      "testAllModels": "Tümünü Test Et",
+      "testPassed": "Başarılı",
+      "testFailed": "Başarısız",
+      "testing": "Test ediliyor…",
+      "noModels": "Hiçbir model yok"
+    },
+    "workflows": {
+      "title": "İş Akışları",
+      "newWorkflow": "Yeni İş Akışı",
+      "addWorkflow": "İş Akışı Ekle",
+      "noWorkflows": "Henüz hiçbir iş akışı yok.",
+      "description": "Açıklama",
+      "instructions": "Talimatlar",
+      "attachedFiles": "Eklenmiş Dosyalar",
+      "attachFiles": "+ Dosya Ekle",
+      "picking": "Seçiliyor…",
+      "parallel": "Eş zamanlı",
+      "addProvider": "+ Sağlayıcı Ekle",
+      "continuousState": "Sürekli durum",
+      "historyCarried": "Geçmiş mesajlar arasında taşınır",
+      "freshEachMessage": "Her mesaj yeni başlar",
+      "systemPromptPlaceholder": "Her mesajdan önce sessizce eklenir…",
+      "descriptionPlaceholder": "Kısa açıklama",
+      "enableWorkflow": "İş akışını etkinleştir",
+      "disableWorkflow": "İş akışını devre dışı bırak"
+    },
+    "about": {
+      "title": "ManyAI Hakkında",
+      "version": "Sürüm"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Yeni Sekme",
+    "chooseWorkflow": "Bir iş akışı türü seçin.",
+    "newWorkflow": "+ Yeni İş Akışı",
+    "cancel": "İptal",
+    "noKey": "anahtar yok",
+    "addProvider": "+ Sağlayıcı Ekle"
+  },
+  "saved": {
+    "title": "Kaydedilmiş Yanıtlar",
+    "empty": "Henüz kaydedilmiş yanıt yok.",
+    "delete": "Sil",
+    "copy": "Kopyala"
+  },
+  "language": {
+    "title": "Dil",
+    "select": "Dil seçin"
+  }
+}

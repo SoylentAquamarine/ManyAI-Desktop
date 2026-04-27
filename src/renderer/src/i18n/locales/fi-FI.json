@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Tallennettu",
+    "settings": "Asetukset",
+    "language": "Kieli"
+  },
+  "common": {
+    "cancel": "Peruuta",
+    "save": "Tallenna",
+    "edit": "Muokkaa",
+    "delete": "Poista",
+    "close": "Sulje",
+    "apply": "Käytä",
+    "add": "Lisää",
+    "remove": "Poista",
+    "loading": "Ladataan…",
+    "error": "Virhe",
+    "ok": "OK",
+    "yes": "Kyllä",
+    "no": "Ei",
+    "browse": "Selaa",
+    "clear": "Tyhjennä",
+    "test": "Testaa",
+    "testAll": "Testaa kaikki",
+    "export": "Vie",
+    "import": "Tuo",
+    "noKey": "ei avainta"
+  },
+  "chat": {
+    "placeholder": "Kirjoita viesti…",
+    "send": "Lähetä",
+    "saved": "Tallennettu!",
+    "saveResponse": "Tallenna vastaus",
+    "copyCode": "Kopioi koodi",
+    "openFile": "Avaa tiedosto",
+    "updateFile": "Päivitä tiedosto",
+    "attachFile": "Liitä tiedosto",
+    "attached": "Liitetty:",
+    "detach": "Poista liite",
+    "noProviders": "Palveluntarjoajia ei ole määritetty. Lisää API-avaimia Asetukset → Palveluntarjoajat.",
+    "generating": "Luodaan…",
+    "imageSaved": "Kuva tallennettu",
+    "downloadImage": "Lataa",
+    "imageError": "Kuvan luonti epäonnistui"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Yleiset",
+      "providers": "Palveluntarjoajat",
+      "workflows": "Työnkulut",
+      "importExport": "Tuonti / Vienti",
+      "about": "Tietoja"
+    },
+    "general": {
+      "title": "Yleiset",
+      "appearance": "Ulkoasu",
+      "theme": "Teema",
+      "font": "Fontti",
+      "zoom": "Zoomaa",
+      "zoomIn": "Lähennä",
+      "zoomOut": "Loitonna",
+      "resetData": "Nollaa tiedot",
+      "clearConversations": "Tyhjennä kaikki keskustelut",
+      "clearConversationsConfirm": "Tämä poistaa kaikki tallennetut keskustelut. Jatketaanko?",
+      "resetSettings": "Nollaa kaikki asetukset",
+      "resetSettingsConfirm": "Tämä palauttaa kaikki asetukset oletusarvoihin. Jatketaanko?"
+    },
+    "importExport": {
+      "title": "Tuonti / Vienti",
+      "workingDir": {
+        "title": "Työhakemisto",
+        "description": "Kuvat ja tiedostot tallennetaan tähän.",
+        "current": "Nykyinen:",
+        "notSet": "Ei asetettu",
+        "pick": "Valitse kansio",
+        "clear": "Tyhjennä"
+      },
+      "apiKeys": {
+        "title": "API-avaimet",
+        "exportBtn": "Vie API-avaimet",
+        "importBtn": "Tuo API-avaimet"
+      },
+      "providers": {
+        "title": "Palveluntarjoajat",
+        "exportBtn": "Vie palveluntarjoajat",
+        "importBtn": "Tuo palveluntarjoajat"
+      },
+      "workflows": {
+        "title": "Työnkulut",
+        "exportBtn": "Vie työnkulut",
+        "importBtn": "Tuo työnkulut"
+      },
+      "conflict": {
+        "title": "Tuonti — valitse ristiriitojen käsittelytapa",
+        "keepExisting": "Pidä olemassa olevat (lisää vain puuttuvat)",
+        "override": "Korvaa tuodut arvot",
+        "applyImport": "Käytä tuontia"
+      }
+    },
+    "providers": {
+      "title": "Palveluntarjoajat",
+      "apiKey": "API-avain",
+      "keyPlaceholder": "Anna API-avain…",
+      "keySaved": "Avain tallennettu",
+      "keyRemoved": "Avain poistettu",
+      "testModel": "Testaa",
+      "testAllModels": "Testaa kaikki",
+      "testPassed": "Onnistui",
+      "testFailed": "Epäonnistui",
+      "testing": "Testataan…",
+      "noModels": "Ei malleja"
+    },
+    "workflows": {
+      "title": "Työnkulut",
+      "newWorkflow": "Uusi työnkulku",
+      "addWorkflow": "Lisää työnkulku",
+      "noWorkflows": "Ei työnkulkuja vielä.",
+      "description": "Kuvaus",
+      "instructions": "Ohjeet",
+      "attachedFiles": "Liitetyt tiedostot",
+      "attachFiles": "+ Liitä tiedostoja",
+      "picking": "Valitaan…",
+      "parallel": "Rinnakkainen",
+      "addProvider": "+ Lisää palveluntarjoaja",
+      "continuousState": "Jatkuva tila",
+      "historyCarried": "Historia säilyy viestien välillä",
+      "freshEachMessage": "Jokainen viesti alkaa alusta",
+      "systemPromptPlaceholder": "Liitetään hiljaisesti jokaiseen viestiin…",
+      "descriptionPlaceholder": "Lyhyt kuvaus",
+      "enableWorkflow": "Ota työnkulku käyttöön",
+      "disableWorkflow": "Poista työnkulku käytöstä"
+    },
+    "about": {
+      "title": "Tietoja ManyAI:stä",
+      "version": "Versio"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Uusi välilehti",
+    "chooseWorkflow": "Valitse työnkulun tyyppi.",
+    "newWorkflow": "+ Uusi työnkulku",
+    "cancel": "Peruuta",
+    "noKey": "ei avainta",
+    "addProvider": "+ Lisää palveluntarjoaja"
+  },
+  "saved": {
+    "title": "Tallennetut vastaukset",
+    "empty": "Ei vielä tallennettuja vastauksia.",
+    "delete": "Poista",
+    "copy": "Kopioi"
+  },
+  "language": {
+    "title": "Kieli",
+    "select": "Valitse kieli"
+  }
+}

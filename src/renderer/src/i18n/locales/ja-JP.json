@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "保存済み",
+    "settings": "設定",
+    "language": "言語"
+  },
+  "common": {
+    "cancel": "キャンセル",
+    "save": "保存",
+    "edit": "編集",
+    "delete": "削除",
+    "close": "閉じる",
+    "apply": "適用",
+    "add": "追加",
+    "remove": "削除",
+    "loading": "読み込み中…",
+    "error": "エラー",
+    "ok": "OK",
+    "yes": "はい",
+    "no": "いいえ",
+    "browse": "参照",
+    "clear": "クリア",
+    "test": "テスト",
+    "testAll": "すべてテスト",
+    "export": "エクスポート",
+    "import": "インポート",
+    "noKey": "キーなし"
+  },
+  "chat": {
+    "placeholder": "メッセージを入力…",
+    "send": "送信",
+    "saved": "保存されました！",
+    "saveResponse": "応答を保存",
+    "copyCode": "コードをコピー",
+    "openFile": "ファイルを開く",
+    "updateFile": "ファイルを更新",
+    "attachFile": "ファイルを添付",
+    "attached": "添付済み：",
+    "detach": "取り外し",
+    "noProviders": "プロバイダーが設定されていません。設定 → プロバイダーでAPIキーを追加してください。",
+    "generating": "生成中…",
+    "imageSaved": "画像を保存しました",
+    "downloadImage": "ダウンロード",
+    "imageError": "画像生成に失敗しました"
+  },
+  "settings": {
+    "tabs": {
+      "general": "全般",
+      "providers": "プロバイダー",
+      "workflows": "ワークフロー",
+      "importExport": "インポート/エクスポート",
+      "about": "情報"
+    },
+    "general": {
+      "title": "全般",
+      "appearance": "外観",
+      "theme": "テーマ",
+      "font": "フォント",
+      "zoom": "ズーム",
+      "zoomIn": "ズームイン",
+      "zoomOut": "ズームアウト",
+      "resetData": "データをリセット",
+      "clearConversations": "すべての会話を消去",
+      "clearConversationsConfirm": "保存された会話がすべて削除されます。続行しますか？",
+      "resetSettings": "すべての設定をリセット",
+      "resetSettingsConfirm": "すべての設定がデフォルトにリセットされます。続行しますか？"
+    },
+    "importExport": {
+      "title": "インポート/エクスポート",
+      "workingDir": {
+        "title": "作業ディレクトリ",
+        "description": "画像やファイルはここに保存されます。",
+        "current": "現在：",
+        "notSet": "未設定",
+        "pick": "フォルダーを選択",
+        "clear": "クリア"
+      },
+      "apiKeys": {
+        "title": "APIキー",
+        "exportBtn": "APIキーをエクスポート",
+        "importBtn": "APIキーをインポート"
+      },
+      "providers": {
+        "title": "プロバイダー",
+        "exportBtn": "プロバイダーをエクスポート",
+        "importBtn": "プロバイダーをインポート"
+      },
+      "workflows": {
+        "title": "ワークフロー",
+        "exportBtn": "ワークフローをエクスポート",
+        "importBtn": "ワークフローをインポート"
+      },
+      "conflict": {
+        "title": "インポート — 競合時の処理方法を選択",
+        "keepExisting": "既存を維持（不足分を追加のみ）",
+        "override": "インポートした値で上書き",
+        "applyImport": "インポートを適用"
+      }
+    },
+    "providers": {
+      "title": "プロバイダー",
+      "apiKey": "APIキー",
+      "keyPlaceholder": "APIキーを入力…",
+      "keySaved": "キーを保存しました",
+      "keyRemoved": "キーを削除しました",
+      "testModel": "テスト",
+      "testAllModels": "すべてテスト",
+      "testPassed": "成功",
+      "testFailed": "失敗",
+      "testing": "テスト中…",
+      "noModels": "モデルなし"
+    },
+    "workflows": {
+      "title": "ワークフロー",
+      "newWorkflow": "新規ワークフロー",
+      "addWorkflow": "ワークフローを追加",
+      "noWorkflows": "ワークフローはまだありません。",
+      "description": "説明",
+      "instructions": "指示",
+      "attachedFiles": "添付ファイル",
+      "attachFiles": "+ ファイルを添付",
+      "picking": "選択中…",
+      "parallel": "並列",
+      "addProvider": "+ プロバイダーを追加",
+      "continuousState": "連続状態",
+      "historyCarried": "メッセージ間で履歴を引き継ぐ",
+      "freshEachMessage": "各メッセージは新規で開始",
+      "systemPromptPlaceholder": "すべてのメッセージの前に静かに追加されます…",
+      "descriptionPlaceholder": "短い説明",
+      "enableWorkflow": "ワークフローを有効化",
+      "disableWorkflow": "ワークフローを無効化"
+    },
+    "about": {
+      "title": "ManyAIについて",
+      "version": "バージョン"
+    }
+  },
+  "rightPanel": {
+    "newTab": "新しいタブ",
+    "chooseWorkflow": "ワークフロータイプを選択してください。",
+    "newWorkflow": "+ 新規ワークフロー",
+    "cancel": "キャンセル",
+    "noKey": "キーなし",
+    "addProvider": "+ プロバイダーを追加"
+  },
+  "saved": {
+    "title": "保存済み応答",
+    "empty": "保存済み応答はまだありません。",
+    "delete": "削除",
+    "copy": "コピー"
+  },
+  "language": {
+    "title": "言語",
+    "select": "言語を選択"
+  }
+}

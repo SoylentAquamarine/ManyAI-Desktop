@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "सहेजा गया",
+    "settings": "सेटिंग्स",
+    "language": "भाषा"
+  },
+  "common": {
+    "cancel": "रद्द करें",
+    "save": "सहेजें",
+    "edit": "संपादित करें",
+    "delete": "हटाएं",
+    "close": "बंद करें",
+    "apply": "लागू करें",
+    "add": "जोड़ें",
+    "remove": "हटाएं",
+    "loading": "लोड हो रहा है…",
+    "error": "त्रुटि",
+    "ok": "ठीक है",
+    "yes": "हाँ",
+    "no": "नहीं",
+    "browse": "ब्राउज़ करें",
+    "clear": "साफ करें",
+    "test": "परीक्षण",
+    "testAll": "सभी का परीक्षण",
+    "export": "निर्यात",
+    "import": "आयात",
+    "noKey": "कोई कुंजी नहीं"
+  },
+  "chat": {
+    "placeholder": "एक संदेश टाइप करें…",
+    "send": "भेजें",
+    "saved": "सहेज लिया गया!",
+    "saveResponse": "प्रतिक्रिया सहेजें",
+    "copyCode": "कोड कॉपी करें",
+    "openFile": "फ़ाइल खोलें",
+    "updateFile": "फ़ाइल अपडेट करें",
+    "attachFile": "फ़ाइल संलग्न करें",
+    "attached": "संलग्न:",
+    "detach": "हटाएं",
+    "noProviders": "कोई प्रदाता कॉन्फ़िगर नहीं किया गया है। सेटिंग्स → प्रदाताओं में एपीआई कुंजियाँ जोड़ें।",
+    "generating": "उत्पन्न किया जा रहा है…",
+    "imageSaved": "छवि सहेजी गई",
+    "downloadImage": "डाउनलोड करें",
+    "imageError": "छवि निर्माण विफल रहा"
+  },
+  "settings": {
+    "tabs": {
+      "general": "सामान्य",
+      "providers": "प्रदाता",
+      "workflows": "वर्कफ़्लोज़",
+      "importExport": "आयात / निर्यात",
+      "about": "के बारे में"
+    },
+    "general": {
+      "title": "सामान्य",
+      "appearance": "दिखावट",
+      "theme": "थीम",
+      "font": "फॉन्ट",
+      "zoom": "ज़ूम",
+      "zoomIn": "ज़ूम इन",
+      "zoomOut": "ज़ूम आउट",
+      "resetData": "डेटा रीसेट करें",
+      "clearConversations": "सभी वार्तालाप हटाएं",
+      "clearConversationsConfirm": "इससे सभी सहेजे गए वार्तालाप हट जाएंगे। क्या जारी रखना है?",
+      "resetSettings": "सभी सेटिंग्स रीसेट करें",
+      "resetSettingsConfirm": "इससे सभी सेटिंग्स डिफ़ॉल्ट पर रीसेट हो जाएंगी। क्या जारी रखना है?"
+    },
+    "importExport": {
+      "title": "आयात / निर्यात",
+      "workingDir": {
+        "title": "कार्य निर्देशिका",
+        "description": "छवियाँ और फ़ाइलें यहाँ सहेजी जाती हैं।",
+        "current": "वर्तमान:",
+        "notSet": "सेट नहीं",
+        "pick": "फ़ोल्डर चुनें",
+        "clear": "साफ करें"
+      },
+      "apiKeys": {
+        "title": "एपीआई कुंजियाँ",
+        "exportBtn": "एपीआई कुंजियाँ निर्यात करें",
+        "importBtn": "एपीआई कुंजियाँ आयात करें"
+      },
+      "providers": {
+        "title": "प्रदाता",
+        "exportBtn": "प्रदाता निर्यात करें",
+        "importBtn": "प्रदाता आयात करें"
+      },
+      "workflows": {
+        "title": "वर्कफ़्लोज़",
+        "exportBtn": "वर्कफ़्लोज़ निर्यात करें",
+        "importBtn": "वर्कफ़्लोज़ आयात करें"
+      },
+      "conflict": {
+        "title": "आयात — विरोधाभासों को संभालने का तरीका चुनें",
+        "keepExisting": "मौजूदा रखें (केवल गुम जोड़ें)",
+        "override": "आयातित मानों से ओवरराइड करें",
+        "applyImport": "आयात लागू करें"
+      }
+    },
+    "providers": {
+      "title": "प्रदाता",
+      "apiKey": "एपीआई कुंजी",
+      "keyPlaceholder": "एपीआई कुंजी दर्ज करें…",
+      "keySaved": "कुंजी सहेजी गई",
+      "keyRemoved": "कुंजी हटाई गई",
+      "testModel": "परीक्षण",
+      "testAllModels": "सभी का परीक्षण",
+      "testPassed": "पास",
+      "testFailed": "फेल",
+      "testing": "परीक्षण किया जा रहा है…",
+      "noModels": "कोई मॉडल नहीं"
+    },
+    "workflows": {
+      "title": "वर्कफ़्लोज़",
+      "newWorkflow": "नया वर्कफ़्लो",
+      "addWorkflow": "वर्कफ़्लो जोड़ें",
+      "noWorkflows": "अभी तक कोई वर्कफ़्लो नहीं।",
+      "description": "विवरण",
+      "instructions": "निर्देश",
+      "attachedFiles": "संलग्न फ़ाइलें",
+      "attachFiles": "+ फ़ाइलें संलग्न करें",
+      "picking": "चयन किया जा रहा है…",
+      "parallel": "समानांतर",
+      "addProvider": "+ प्रदाता जोड़ें",
+      "continuousState": "निरंतर स्थिति",
+      "historyCarried": "वार्तालापों के बीच इतिहास ले जाया जाता है",
+      "freshEachMessage": "प्रत्येक संदेश ताज़ा शुरू होता है",
+      "systemPromptPlaceholder": "प्रत्येक संदेश से पहले मौन में जोड़ा जाता है…",
+      "descriptionPlaceholder": "संक्षिप्त विवरण",
+      "enableWorkflow": "वर्कफ़्लो सक्षम करें",
+      "disableWorkflow": "वर्कफ़्लो अक्षम करें"
+    },
+    "about": {
+      "title": "ManyAI के बारे में",
+      "version": "संस्करण"
+    }
+  },
+  "rightPanel": {
+    "newTab": "नया टैब",
+    "chooseWorkflow": "एक वर्कफ़्लो प्रकार चुनें।",
+    "newWorkflow": "+ नया वर्कफ़्लो",
+    "cancel": "रद्द करें",
+    "noKey": "कोई कुंजी नहीं",
+    "addProvider": "+ प्रदाता जोड़ें"
+  },
+  "saved": {
+    "title": "सहेजी गई प्रतिक्रियाएँ",
+    "empty": "अभी तक कोई सहेजी गई प्रतिक्रिया नहीं।",
+    "delete": "हटाएं",
+    "copy": "कॉपी करें"
+  },
+  "language": {
+    "title": "भाषा",
+    "select": "भाषा चुनें"
+  }
+}

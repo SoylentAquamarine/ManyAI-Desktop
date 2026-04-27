@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "تم الحفظ",
+    "settings": "الإعدادات",
+    "language": "اللغة"
+  },
+  "common": {
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "close": "إغلاق",
+    "apply": "تطبيق",
+    "add": "إضافة",
+    "remove": "إزالة",
+    "loading": "جار التحميل…",
+    "error": "خطأ",
+    "ok": "موافق",
+    "yes": "نعم",
+    "no": "لا",
+    "browse": "استعراض",
+    "clear": "مسح",
+    "test": "اختبار",
+    "testAll": "اختبار الكل",
+    "export": "تصدير",
+    "import": "استيراد",
+    "noKey": "لا يوجد مفتاح"
+  },
+  "chat": {
+    "placeholder": "اكتب رسالة…",
+    "send": "إرسال",
+    "saved": "تم الحفظ!",
+    "saveResponse": "حفظ الاستجابة",
+    "copyCode": "نسخ الكود",
+    "openFile": "فتح ملف",
+    "updateFile": "تحديث الملف",
+    "attachFile": "إرفاق ملف",
+    "attached": "مرفق:",
+    "detach": "إزالة الإرفاق",
+    "noProviders": "لم يتم تكوين أي مقدمي خدمات. أضف مفاتيح API في الإعدادات → مقدمو الخدمات.",
+    "generating": "جار التوليد…",
+    "imageSaved": "تم حفظ الصورة",
+    "downloadImage": "تنزيل",
+    "imageError": "فشل توليد الصورة"
+  },
+  "settings": {
+    "tabs": {
+      "general": "عام",
+      "providers": "مقدمو الخدمات",
+      "workflows": "مسارات العمل",
+      "importExport": "استيراد / تصدير",
+      "about": "حول"
+    },
+    "general": {
+      "title": "عام",
+      "appearance": "المظهر",
+      "theme": "السمة",
+      "font": "الخط",
+      "zoom": "التكبير",
+      "zoomIn": "تكبير",
+      "zoomOut": "تصغير",
+      "resetData": "إعادة تعيين البيانات",
+      "clearConversations": "مسح جميع المحادثات",
+      "clearConversationsConfirm": "سيتم حذف جميع المحادثات المحفوظة. هل تريد المتابعة؟",
+      "resetSettings": "إعادة تعيين جميع الإعدادات",
+      "resetSettingsConfirm": "سيتم إعادة تعيين جميع الإعدادات إلى الوضع الافتراضي. هل تريد المتابعة؟"
+    },
+    "importExport": {
+      "title": "استيراد / تصدير",
+      "workingDir": {
+        "title": "دليل العمل",
+        "description": "يتم حفظ الصور والملفات هنا.",
+        "current": "الحالي:",
+        "notSet": "غير محدد",
+        "pick": "اختيار مجلد",
+        "clear": "مسح"
+      },
+      "apiKeys": {
+        "title": "مفاتيح API",
+        "exportBtn": "تصدير مفاتيح API",
+        "importBtn": "استيراد مفاتيح API"
+      },
+      "providers": {
+        "title": "مقدمو الخدمات",
+        "exportBtn": "تصدير مقدمي الخدمات",
+        "importBtn": "استيراد مقدمي الخدمات"
+      },
+      "workflows": {
+        "title": "مسارات العمل",
+        "exportBtn": "تصدير مسارات العمل",
+        "importBtn": "استيراد مسارات العمل"
+      },
+      "conflict": {
+        "title": "استيراد — اختر كيفية التعامل مع التعارضات",
+        "keepExisting": "الحفاظ على الموجود (إضافة المفقود فقط)",
+        "override": "استبدال بالقيم المستوردة",
+        "applyImport": "تطبيق الاستيراد"
+      }
+    },
+    "providers": {
+      "title": "مقدمو الخدمات",
+      "apiKey": "مفتاح API",
+      "keyPlaceholder": "أدخل مفتاح API…",
+      "keySaved": "تم حفظ المفتاح",
+      "keyRemoved": "تم إزالة المفتاح",
+      "testModel": "اختبار",
+      "testAllModels": "اختبار الكل",
+      "testPassed": "نجح الاختبار",
+      "testFailed": "فشل الاختبار",
+      "testing": "جار الاختبار…",
+      "noModels": "لا توجد نماذج"
+    },
+    "workflows": {
+      "title": "مسارات العمل",
+      "newWorkflow": "مسار عمل جديد",
+      "addWorkflow": "إضافة مسار عمل",
+      "noWorkflows": "لا توجد مسارات عمل بعد.",
+      "description": "الوصف",
+      "instructions": "التعليمات",
+      "attachedFiles": "الملفات المرفقة",
+      "attachFiles": "+ إرفاق ملفات",
+      "picking": "جار الاختيار…",
+      "parallel": "متوازي",
+      "addProvider": "+ إضافة مقدم خدمة",
+      "continuousState": "الحالة المستمرة",
+      "historyCarried": "يتم نقل التاريخ بين الرسائل",
+      "freshEachMessage": "تبدأ كل رسالة من جديد",
+      "systemPromptPlaceholder": "يتم إضافته بشكل صامت قبل كل رسالة…",
+      "descriptionPlaceholder": "وصف قصير",
+      "enableWorkflow": "تمكين المسار",
+      "disableWorkflow": "تعطيل المسار"
+    },
+    "about": {
+      "title": "حول ManyAI",
+      "version": "الإصدار"
+    }
+  },
+  "rightPanel": {
+    "newTab": "تبويب جديد",
+    "chooseWorkflow": "اختر نوع مسار عمل.",
+    "newWorkflow": "+ مسار عمل جديد",
+    "cancel": "إلغاء",
+    "noKey": "لا يوجد مفتاح",
+    "addProvider": "+ إضافة مقدم خدمة"
+  },
+  "saved": {
+    "title": "الاستجابات المحفوظة",
+    "empty": "لا توجد استجابات محفوظة بعد.",
+    "delete": "حذف",
+    "copy": "نسخ"
+  },
+  "language": {
+    "title": "اللغة",
+    "select": "اختر اللغة"
+  }
+}
