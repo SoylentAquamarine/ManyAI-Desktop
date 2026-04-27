@@ -1,11 +1,4 @@
-/**
- * AboutScreen.tsx — About tab for ManyAI Desktop.
- *
- * Mirrors the structure of the About screen in the ManyAI Android app:
- * photo of Steve, description text, donate buttons, and GitHub link.
- */
-
-import stevePhoto from '../../assets/steve.png'
+import vtxLogo from '../../assets/vtx-logo.png'
 
 const DONATE_LINKS = [
   {
@@ -31,20 +24,21 @@ export default function AboutScreen() {
   return (
     <div style={{ padding: '24px 28px', maxWidth: 600 }}>
 
-      {/* Photo + name */}
+      {/* Logo + company name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 24 }}>
         <img
-          src={stevePhoto}
-          alt="Steve Pleasants"
+          src={vtxLogo}
+          alt="VTX Consulting Group LLC"
           style={{
-            width: 72, height: 72, borderRadius: '50%',
-            border: '2px solid var(--accent)', objectFit: 'cover', flexShrink: 0,
+            width: 72, height: 72, borderRadius: 8,
+            border: '2px solid var(--accent)', objectFit: 'contain', flexShrink: 0,
+            background: 'var(--bg2)',
           }}
         />
         <div>
-          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Steve Pleasants</div>
+          <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>VTX Consulting Group LLC</div>
           <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 3 }}>Designer &amp; product owner</div>
-          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 1 }}>All code by Claude (Anthropic), under the direction of Steve</div>
+          <div style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 1 }}>All code by Claude (Anthropic), under the direction of VTX Consulting Group LLC</div>
         </div>
       </div>
 
@@ -96,7 +90,7 @@ export default function AboutScreen() {
 
       {/* Copyright */}
       <div style={{ fontSize: 11, color: 'var(--text-dim)', textAlign: 'center' }}>
-        © 2026 Steve Pleasants. All rights reserved.
+        © 2026 VTX Consulting Group LLC. All rights reserved.
       </div>
     </div>
   )
