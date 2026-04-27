@@ -334,7 +334,7 @@ function buildState(providers: Record<string, Provider>, order: string[]): Recor
       const p = providers[pk]
       return [pk, {
         apiKey: loadKey(pk) ?? '',
-        collapsed: false,
+        collapsed: true,
         models: Object.fromEntries(
           p.models.map(m => [`${pk}:${m.id}`, {
             enabled: enabledModels[`${pk}:${m.id}`] !== false,
@@ -547,12 +547,17 @@ export default function ApiScreen() {
         {currentOrder.map(pk => {
           const p = currentProviders[pk]
           if (!p) return null
-          const s = state[pk] ?? { apiKey: '', collapsed: false, models: {} }
+          const s = state[pk] ?? { apiKey: '', collapsed: true, models: {} }
           const isConfirming = deleteConfirm === pk
 
           return (
             <div key={`${pk}-${revision}`} className="api-card" style={{ borderLeftColor: p.color }}>
-              <div className="api-card-header">
+              <div
+                className="api-card-header"
+                onClick={() => updateProvider(pk, { collapsed: !s.collapsed })}
+                style={{ cursor: 'pointer', userSelect: 'none' }}
+              >
+                <span style={{ fontSize: 10, color: 'var(--text-dim)', marginRight: 2, transition: 'transform 0.15s', display: 'inline-block', transform: s.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
                 <div className="provider-dot" style={{ background: p.color }} />
                 <span className="provider-name">{p.name}</span>
                 <span className={`provider-badge ${p.paidOnly ? '' : 'free'}`}>{p.paidOnly ? 'Paid' : 'Free'}</span>
@@ -561,24 +566,24 @@ export default function ApiScreen() {
                   <button
                     className="btn-ghost"
                     style={{ fontSize: 11, padding: '2px 8px' }}
-                    onClick={() => handleEdit(p)}
+                    onClick={e => { e.stopPropagation(); handleEdit(p) }}
                   >Edit</button>
                   <button
                     className="btn-ghost"
                     style={{ fontSize: 11, padding: '2px 8px', color: isConfirming ? '#e55' : undefined, borderColor: isConfirming ? '#e55' : undefined }}
-                    onClick={() => handleDelete(pk)}
+                    onClick={e => { e.stopPropagation(); handleDelete(pk) }}
                   >{isConfirming ? 'Confirm Delete' : 'Delete'}</button>
                   {isConfirming && (
                     <button
                       className="btn-ghost"
                       style={{ fontSize: 11, padding: '2px 8px' }}
-                      onClick={() => setDeleteConfirm(null)}
+                      onClick={e => { e.stopPropagation(); setDeleteConfirm(null) }}
                     >Cancel</button>
                   )}
                 </div>
               </div>
 
-              <div className="api-card-body">
+              {!s.collapsed && <div className="api-card-body">
                 {p.needsKey && (
                   <div className="key-row" style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input
@@ -723,7 +728,7 @@ export default function ApiScreen() {
                     {p.goodAt && <>{' · '}{p.goodAt}</>}
                   </div>
                 )}
-              </div>
+              </div>}
             </div>
           )
         })}
