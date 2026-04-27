@@ -12,6 +12,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { ircStore } from '../../lib/ircStore'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -249,6 +250,22 @@ export default function IrcScreen() {
     window.electron.ipcRenderer.on('irc-event', handler)
     return () => { window.electron.ipcRenderer.removeListener('irc-event', handler) }
   }, [activeChannel, currentNick, addMessage, addSystem, addError, ensureChannel])
+
+  // ── Sync to ircStore so RightPanel can show the user list ───────────────────
+
+  useEffect(() => {
+    const ch = activeChannel
+    const chState = ch ? channels.get(ch) : undefined
+    const rawNames = chState?.names ?? []
+    // Sort: ops (@) first, then alphabetical within each group
+    const sorted = [...rawNames].sort((a, b) => {
+      const aOp = a.startsWith('@') ? 0 : 1
+      const bOp = b.startsWith('@') ? 0 : 1
+      if (aOp !== bOp) return aOp - bOp
+      return a.toLowerCase().localeCompare(b.toLowerCase())
+    })
+    ircStore.setState({ connected, currentNick, activeChannel: ch, users: sorted })
+  }, [connected, currentNick, activeChannel, channels])
 
   // ── Auto-scroll ─────────────────────────────────────────────────────────────
 

@@ -250,6 +250,7 @@ export default function App() {
           onSelectWorkflow={addTab}
           onCancelPicker={() => setShowPicker(false)}
           onNewWorkflow={handleNewWorkflow}
+          activeWorkflowType={tabs.find(t => t.id === activeTabId)?.workflowType ?? ''}
           activeWorkflow={(() => {
             const t = tabs.find(t => t.id === activeTabId)
             if (!t) return null

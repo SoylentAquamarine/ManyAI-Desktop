@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { ircStore, type IrcPanelState } from '../lib/ircStore'
 import {
   enabledWorkflows, loadWorkflows, saveWorkflows,
   loadRemovedBuiltins, saveRemovedBuiltins,
@@ -103,6 +104,8 @@ interface Props {
   continuousState: boolean
   onToggleContinuous: () => void
   onWorkflowSaved: () => void
+  /** Workflow type of the currently active tab — used to switch panel content */
+  activeWorkflowType?: string
 }
 
 const MAX_CHAIN = 255
@@ -111,8 +114,15 @@ export default function RightPanel({
   activePanel, onTogglePanel,
   showPicker, onSelectWorkflow, onCancelPicker, onNewWorkflow,
   activeWorkflow, continuousState, onToggleContinuous,
-  onWorkflowSaved,
+  onWorkflowSaved, activeWorkflowType,
 }: Props) {
+  const [ircState, setIrcState] = useState<IrcPanelState>(ircStore.getState)
+
+  useEffect(() => {
+    if (activeWorkflowType !== 'irc') return
+    return ircStore.subscribe(setIrcState)
+  }, [activeWorkflowType])
+
   const workflows = enabledWorkflows()
   const [prefs, setPrefs] = useState<RoutingPrefs>(() => loadRoutingPrefs())
 
@@ -180,7 +190,36 @@ export default function RightPanel({
     <div className="right-panel">
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 8px' }}>
 
-        {showPicker ? (
+        {activeWorkflowType === 'irc' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-dim)', textTransform: 'uppercase', letterSpacing: '0.5px', padding: '0 4px' }}>
+              {ircState.activeChannel ? ircState.activeChannel : 'Not in a channel'}
+            </div>
+            {ircState.connected && ircState.users.length > 0 && (
+              <div style={{ fontSize: 10, color: 'var(--text-dim)', padding: '0 4px', marginBottom: 2 }}>
+                {ircState.users.length} user{ircState.users.length !== 1 ? 's' : ''}
+              </div>
+            )}
+            {!ircState.connected && (
+              <div style={{ fontSize: 11, color: 'var(--text-dim)', padding: '0 4px' }}>Not connected</div>
+            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {ircState.users.map(nick => {
+                const isOp = nick.startsWith('@')
+                return (
+                  <div key={nick} style={{
+                    fontSize: 11, padding: '2px 8px', borderRadius: 4,
+                    color: isOp ? 'var(--accent)' : 'var(--text)',
+                    fontWeight: isOp ? 600 : 400,
+                  }}>
+                    {nick}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+        ) : showPicker ? (
           <div>
             <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3, padding: '0 4px' }}>New Tab</div>
             <div style={{ color: 'var(--text-dim)', fontSize: 11, marginBottom: 10, padding: '0 4px' }}>
@@ -239,6 +278,7 @@ export default function RightPanel({
             onWorkflowSaved={onWorkflowSaved}
           />
         ) : null}
+
 
       </div>
 
