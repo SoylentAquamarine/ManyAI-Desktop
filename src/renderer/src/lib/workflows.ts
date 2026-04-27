@@ -22,6 +22,10 @@ export interface WorkflowDef {
   systemPrompt?: string
   /** Files read from disk and silently injected into every message */
   contextFiles?: ContextFile[]
+  /** When set, the first successful response is automatically piped into this workflow type */
+  feedsInto?: string
+  /** Use the smart router instead of the manual parallel chain */
+  smartRouting?: boolean
 }
 
 const ENABLED_KEY  = 'manyai_workflows_config'

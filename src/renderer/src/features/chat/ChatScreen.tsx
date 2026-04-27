@@ -5,6 +5,9 @@ import { loadAllKeys } from '../../lib/keyStore'
 import { loadEnabledProviders } from '../../lib/providerPrefs'
 import { resolveAllProviders, loadRoutingPrefs, TASK_META } from '../../lib/routing'
 import { getWorkflow } from '../../lib/workflows'
+import { smartRouter } from '../../lib/smartRouter'
+import { workflowBus } from '../../lib/workflowBus'
+import { WORKFLOW_REGISTRY } from '../../workflows'
 import { callImageProvider, isImageGenModel } from '../../lib/callImageProvider'
 import { logger } from '../../lib/logger'
 import { getImagesDir, getWorkingDir } from '../../lib/workingDir'
@@ -312,8 +315,15 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
         return
       }
 
-      // ── Text generation (parallel) ────────────────────────────────────────
-      const routes = activeRoutes
+      // ── Text generation ───────────────────────────────────────────────────
+      const isSmartRouting = !!wfDef?.smartRouting
+      const srConfig = isSmartRouting ? smartRouter.loadConfig() : null
+      const wfTypes = WORKFLOW_REGISTRY.find(w => w.type === workflowType)?.workflowType ?? ['chat']
+
+      const routes = isSmartRouting
+        ? smartRouter.selectProviders(workflowType, wfTypes as import('../../lib/workflowTypes').WorkflowType[])
+        : activeRoutes
+
       if (routes.length === 0) {
         setMessages(prev => [...prev, {
           role: 'assistant',
@@ -332,11 +342,9 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
           .filter(m => {
             if (m.imageUrl) return false
             if (m.role === 'user') {
-              // No recipients = pre-GUID message, include for all providers
               return !m.recipients || m.recipients.includes(id)
             }
             if (m.parallelId) {
-              // Match by instanceId when present; fall back to provider::model for pre-GUID messages
               return m.instanceId ? m.instanceId === id : m.provider === route.provider && m.model === route.model
             }
             return true
@@ -345,43 +353,34 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
           .map(m => ({ role: m.role, content: m.content }))
       }
 
-      await Promise.all(routes.map(async route => {
+      const callOne = async (route: typeof routes[number]) => {
         const instanceId = route.instanceId ?? `${route.provider}::${route.model}`
         const p = { ...allProviders[route.provider], model: route.model }
+        const t0 = Date.now()
         let result: Awaited<ReturnType<typeof callProvider>>
         try {
           result = await callProvider(p, aiPrompt, keys[route.provider], undefined, undefined, buildHistory(route))
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e)
+          if (isSmartRouting) smartRouter.recordOutcome(workflowType, route.provider, route.model, false, Date.now() - t0)
           setMessages(prev => [...prev, {
             role: 'assistant' as const,
             content: `Error: ${msg}`,
-            provider: route.provider,
-            model: route.model,
-            instanceId,
-            error: true,
-            parallelId,
+            provider: route.provider, model: route.model, instanceId, error: true, parallelId,
           }])
-          return
+          return false
         }
-        // Pin provider/model to route values — APIs may echo back a different string
-        // (e.g. OpenAI returns "gpt-4o-2024-11-20", OpenRouter returns "openai/gpt-4o")
-        // which would break the tab key match in visibleMessages.
+        const latencyMs = result.latencyMs ?? (Date.now() - t0)
         logger.providerCall(route.provider, route.model, aiPrompt, result)
+        if (isSmartRouting) smartRouter.recordOutcome(workflowType, route.provider, route.model, !result.error, latencyMs)
 
         const msg = {
           role: 'assistant' as const,
           content: result.error ? `Error: ${result.error}` : result.content,
-          provider: route.provider,
-          model: route.model,
-          instanceId,
-          latencyMs: result.latencyMs,
-          error: !!result.error,
-          parallelId,
+          provider: route.provider, model: route.model, instanceId, latencyMs, error: !!result.error, parallelId,
         }
         setMessages(prev => [...prev, msg])
 
-        // Auto-save code when there's a single provider and a code block
         if (routes.length === 1 && attachedFile && !result.error && hasCodeBlock(result.content)) {
           const code = extractCode(result.content)
           updateTmpFile(attachedFile, code).then(r => {
@@ -392,7 +391,37 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
             }
           })
         }
-      }))
+
+        // feedsInto: pipe first successful response into the target workflow
+        if (!result.error && wfDef?.feedsInto) {
+          workflowBus.publish({
+            targetTabId: 'active',
+            targetWorkflowType: wfDef.feedsInto,
+            payload: {
+              source: `workflow:${workflowType}`,
+              timestamp: new Date().toISOString(),
+              contentType: 'text',
+              content: result.content,
+              title: `Output from ${wfDef.label ?? workflowType}`,
+            },
+          })
+        }
+
+        return !result.error
+      }
+
+      // Dispatch according to mode
+      if (!isSmartRouting || srConfig?.mode === 'parallel') {
+        // Fire all simultaneously
+        await Promise.all(routes.map(callOne))
+      } else {
+        // best-first / serial: try in scored order, stop on first success
+        for (const route of routes) {
+          const ok = await callOne(route)
+          if (ok) break
+          if (!srConfig?.fallbackEnabled) break
+        }
+      }
     } finally {
       setLoading(false)
       textareaRef.current?.focus()

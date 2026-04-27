@@ -13,13 +13,14 @@ import { useState } from 'react'
 import ApiScreen from './ApiScreen'
 import WorkflowsScreen from './WorkflowsScreen'
 import AboutScreen from './AboutScreen'
+import SmartRoutingScreen from './SmartRoutingScreen'
 import { THEMES, loadTheme, saveTheme, type ThemeId } from '../../lib/theme'
 import { getWorkingDir, setWorkingDir, getBackupsDir } from '../../lib/workingDir'
 import { encryptText, decryptText } from '../../lib/crypto'
 import { loadZoom, increaseZoom, decreaseZoom, ZOOM_MIN, ZOOM_MAX } from '../../lib/zoom'
 import { FONTS, loadFont, saveFont } from '../../lib/font'
 
-type SettingsTab = 'general' | 'api' | 'workflows' | 'backup' | 'about'
+type SettingsTab = 'general' | 'api' | 'workflows' | 'smartrouting' | 'backup' | 'about'
 
 interface SettingsScreenProps {
   /** Which tab to open on mount. */
@@ -61,11 +62,12 @@ export default function SettingsScreen({
         borderBottom: '1px solid var(--border)', flexShrink: 0,
         background: 'var(--bg)', flexWrap: 'wrap',
       }}>
-        {tabBtn('general',   'General')}
-        {tabBtn('api',       'Providers')}
-        {tabBtn('workflows', 'Workflows')}
-        {tabBtn('backup',    'Import / Export')}
-        {tabBtn('about',     'About')}
+        {tabBtn('general',      'General')}
+        {tabBtn('api',          'Providers')}
+        {tabBtn('workflows',    'Workflows')}
+        {tabBtn('smartrouting', 'Smart Routing')}
+        {tabBtn('backup',       'Import / Export')}
+        {tabBtn('about',        'About')}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -77,6 +79,7 @@ export default function SettingsScreen({
             onAutoOpenAddConsumed={onTriggerAddConsumed}
           />
         )}
+        {tab === 'smartrouting' && <SmartRoutingScreen />}
         {tab === 'backup' && <BackupConfig />}
         {tab === 'about'  && <AboutScreen />}
       </div>

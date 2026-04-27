@@ -4,6 +4,7 @@ import {
   loadRemovedBuiltins, saveRemovedBuiltins,
   type WorkflowDef, type ContextFile,
 } from '../lib/workflows'
+import { smartRouter } from '../lib/smartRouter'
 import { getAllProviders, getAllProviderOrder } from '../lib/providers'
 import {
   loadRoutingPrefs, saveRoutingPrefs, DEFAULT_ROUTES,
@@ -310,6 +311,11 @@ function WorkflowDetail({
     contextFiles: workflow.contextFiles ?? [] as ContextFile[],
   })
   const [addingFile, setAddingFile] = useState(false)
+  const [smartRouting, setSmartRouting] = useState(!!workflow.smartRouting)
+  const [feedsIntoEnabled, setFeedsIntoEnabled] = useState(!!workflow.feedsInto)
+  const [feedsIntoTarget, setFeedsIntoTarget] = useState(workflow.feedsInto ?? '')
+  const allWorkflowDefs = loadWorkflows()
+  const feedableWorkflows = allWorkflowDefs.filter(w => w.type !== workflow.type && w.type !== 'irc' && w.type !== 'rss' && w.type !== 'terminal')
 
   // Reset form when switching to a different workflow tab
   useEffect(() => {
@@ -356,6 +362,28 @@ function WorkflowDetail({
     setForm(f => ({ ...f, contextFiles: f.contextFiles.filter(x => x.path !== path) }))
   }
 
+  // Persist smart routing and feedsInto immediately (no edit mode needed)
+  const saveSmartRouting = (enabled: boolean) => {
+    setSmartRouting(enabled)
+    const all = loadWorkflows()
+    const wf = all.find(w => w.type === workflow.type)
+    if (!wf) return
+    const updated = { ...wf, smartRouting: enabled }
+    saveWorkflows([...all.filter(w => w.type !== workflow.type), updated])
+    onWorkflowSaved()
+  }
+
+  const saveFeedsInto = (enabled: boolean, target: string) => {
+    setFeedsIntoEnabled(enabled)
+    setFeedsIntoTarget(target)
+    const all = loadWorkflows()
+    const wf = all.find(w => w.type === workflow.type)
+    if (!wf) return
+    const updated = { ...wf, feedsInto: enabled && target ? target : undefined }
+    saveWorkflows([...all.filter(w => w.type !== workflow.type), updated])
+    onWorkflowSaved()
+  }
+
   const saveEdit = () => {
     const updated: WorkflowDef = {
       type: workflow.type,
@@ -366,6 +394,8 @@ function WorkflowDetail({
       builtIn: false,
       systemPrompt: form.systemPrompt.trim() || undefined,
       contextFiles: form.contextFiles.length ? form.contextFiles : undefined,
+      smartRouting: workflow.smartRouting,
+      feedsInto: workflow.feedsInto,
     }
 
     const allWorkflows = loadWorkflows()
@@ -506,8 +536,39 @@ function WorkflowDetail({
         </div>
       )}
 
-      {/* Parallel */}
+      {/* Smart Routing toggle */}
       <div>
+        {sectionLabel('Smart Routing')}
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={smartRouting}
+            onChange={e => saveSmartRouting(e.target.checked)}
+            style={{ marginTop: 2, flexShrink: 0 }}
+          />
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600 }}>Use smart router</div>
+            <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
+              {smartRouting
+                ? `Auto-selects best provider (configure in Settings → Smart Routing)`
+                : 'Use the manual parallel chain below'}
+            </div>
+          </div>
+        </label>
+        {smartRouting && (
+          <div style={{ fontSize: 10, color: 'var(--accent)', marginTop: 6, padding: '4px 8px', background: 'rgba(var(--accent-rgb,0,180,180),0.08)', borderRadius: 4 }}>
+            Smart score: {Object.fromEntries(
+              (loadWorkflows().find(w => w.type === task) ? [task] : []).map(t => [t,
+                Math.round(smartRouter.scoreProvider(task, 'any') * 100)
+              ])
+            ) && null /* just show label */}
+            Provider scores visible in Settings → Smart Routing
+          </div>
+        )}
+      </div>
+
+      {/* Parallel — hidden when smart routing is active */}
+      {!smartRouting && <div>
         {sectionLabel('Parallel')}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
           {chain.map((entry, idx) => {
@@ -577,7 +638,7 @@ function WorkflowDetail({
             >+ Add provider</button>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* Continuous state */}
       <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer' }}>
@@ -594,6 +655,45 @@ function WorkflowDetail({
           </div>
         </div>
       </label>
+
+      {/* Feeds Into */}
+      <div>
+        {sectionLabel('Feeds Into')}
+        <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', marginBottom: 6 }}>
+          <input
+            type="checkbox"
+            checked={feedsIntoEnabled}
+            onChange={e => {
+              const enabled = e.target.checked
+              const target = feedsIntoTarget || feedableWorkflows[0]?.type || ''
+              saveFeedsInto(enabled, target)
+            }}
+            style={{ marginTop: 2, flexShrink: 0 }}
+          />
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 600 }}>Auto-forward responses</div>
+            <div style={{ fontSize: 10, color: 'var(--text-dim)', marginTop: 2 }}>
+              Pipe this workflow's output into another workflow tab
+            </div>
+          </div>
+        </label>
+        {feedsIntoEnabled && feedableWorkflows.length > 0 && (
+          <select
+            value={feedsIntoTarget}
+            onChange={e => saveFeedsInto(true, e.target.value)}
+            style={{ width: '100%', fontSize: 11 }}
+          >
+            {feedableWorkflows.map(w => (
+              <option key={w.type} value={w.type}>
+                {w.icon} {w.label}
+              </option>
+            ))}
+          </select>
+        )}
+        {feedsIntoEnabled && feedableWorkflows.length === 0 && (
+          <div style={{ fontSize: 10, color: 'var(--text-dim)' }}>No other workflows available.</div>
+        )}
+      </div>
 
     </div>
   )

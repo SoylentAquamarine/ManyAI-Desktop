@@ -68,15 +68,23 @@ export default function App() {
 
   // ── Workflow bus — route published payloads into their target tab ────────────
   useEffect(() => {
-    return workflowBus.subscribe(({ targetTabId, payload }) => {
-      const tid = targetTabId === 'active' ? activeTabId : targetTabId
+    return workflowBus.subscribe(({ targetTabId, targetWorkflowType, payload }) => {
+      let tid: string
+      if (targetWorkflowType) {
+        // Route to first open tab with matching workflow type
+        const target = tabs.find(t => t.workflowType === targetWorkflowType)
+        if (!target) return
+        tid = target.id
+      } else {
+        tid = targetTabId === 'active' ? activeTabId : targetTabId
+      }
       const inject = injectFns.current[tid]
       if (inject) {
         inject(payload.content)
         switchToChat(tid)
       }
     })
-  }, [activeTabId])
+  }, [activeTabId, tabs])
 
   const injectFns = useRef<Record<string, (p: string) => void>>({})
   const [rightWidth, setRightWidth] = useState(() => {

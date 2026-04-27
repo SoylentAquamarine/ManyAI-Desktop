@@ -49,6 +49,12 @@ export interface WorkflowPayload {
 export interface WorkflowBusEvent {
   /** Tab ID to receive this payload, or 'active' for whichever tab is currently visible */
   targetTabId: string
+  /**
+   * Route by workflow type instead of a specific tab ID.
+   * App.tsx finds the first open tab with this workflowType and injects there.
+   * When set, targetTabId is ignored.
+   */
+  targetWorkflowType?: string
   payload: WorkflowPayload
 }
 
