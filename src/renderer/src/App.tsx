@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import ChatScreen from './features/chat/ChatScreen'
 import SettingsScreen from './features/settings/SettingsScreen'
-import SavedScreen from './features/editor/SavedScreen'
 import RightPanel from './components/RightPanel'
 import { TASK_META } from './lib/routing'
 import { loadWorkflows, getWorkflow } from './lib/workflows'
@@ -10,7 +9,7 @@ import { loadZoom, applyZoom } from './lib/zoom'
 import { loadFont, applyFont } from './lib/font'
 import type { TaskType } from './lib/providers'
 
-export type PanelType = 'saved' | 'settings'
+export type PanelType = 'settings'
 
 interface ChatTab {
   id: string
@@ -207,7 +206,6 @@ export default function App() {
             </div>
           ))}
 
-          {panel === 'saved'    && <SavedScreen />}
           {panel === 'settings' && (
             <SettingsScreen
               initialTab={settingsInitialTab}

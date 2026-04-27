@@ -3,12 +3,11 @@ import { getAllProviders } from '../../lib/providers'
 import { callProvider, HistoryMessage } from '../../lib/callProvider'
 import { loadAllKeys } from '../../lib/keyStore'
 import { loadEnabledProviders } from '../../lib/providerPrefs'
-import { saveResponse } from '../../lib/savedResponses'
 import { resolveAllProviders, loadRoutingPrefs, TASK_META } from '../../lib/routing'
 import { getWorkflow } from '../../lib/workflows'
 import { callImageProvider, isImageGenModel } from '../../lib/callImageProvider'
 import { logger } from '../../lib/logger'
-import { getImagesDir } from '../../lib/workingDir'
+import { getImagesDir, getWorkingDir } from '../../lib/workingDir'
 import type { TaskType } from '../../lib/providers'
 import {
   type AttachedFile,
@@ -426,19 +425,20 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
     }
   }
 
-  const handleSave = (msg: Message) => {
-    const pos = messages.indexOf(msg)
-    const userMsg = messages.slice(0, pos >= 0 ? pos : messages.length).reverse().find(m => m.role === 'user')
-    saveResponse(
-      userMsg?.content ?? '',
-      msg.imageUrl ? '' : msg.content,
-      msg.provider ?? 'unknown',
-      'General',
-      undefined,
-      msg.imageUrl,
-    )
-    setSavedMsg('Saved!')
-    setTimeout(() => setSavedMsg(null), 2000)
+  const handleSave = async (msg: Message) => {
+    const slug = msg.content.trim().slice(0, 40).toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'response'
+    const filename = `${slug}_${Date.now()}.md`
+    const workingDir = getWorkingDir() || undefined
+    const result = await window.api.saveFile(filename, msg.content, workingDir)
+    if ('error' in result) {
+      if (result.error !== 'Cancelled') {
+        setSavedMsg(`Save failed: ${result.error}`)
+        setTimeout(() => setSavedMsg(null), 3000)
+      }
+    } else {
+      setSavedMsg('Saved!')
+      setTimeout(() => setSavedMsg(null), 2000)
+    }
   }
 
   const meta = TASK_META[activeType] ?? getWorkflow(activeType) ?? { label: activeType, icon: '🔧', description: '' }

@@ -18,7 +18,6 @@ import type { PanelType } from '../App'
 import type { TaskType } from '../lib/providers'
 
 const NAV: { key: PanelType; icon: string; label: string }[] = [
-  { key: 'saved',    icon: '📂', label: 'Saved' },
   { key: 'settings', icon: '⚙',  label: 'Settings' },
 ]
 
