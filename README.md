@@ -35,6 +35,34 @@ $ npm run build:linux
 
 ## Changelog
 
+### 2026-04-27 — IRC user list pane, Terminal tab (SSH/Telnet/SFTP/FTP/FTPS), workflow bus
+
+**IRC client**
+- User list moved from the right panel into a resizable side pane inside the IRC tab itself (drag handle between message area and user list; width persists to localStorage)
+- Ops (`@`) shown in accent color, sorted first then alphabetical
+- Right panel restored to normal workflow config for IRC tabs
+
+**Terminal tab** (`🖥 Terminal`)
+- New workflow tab type supporting SSH, Telnet, SFTP, FTP, and FTPS
+- SSH / Telnet: full xterm.js terminal emulator (256-color, scrollback, ANSI codes); port auto-fills when switching protocol
+- SFTP / FTP / FTPS: file browser UI — directory listing with icons, size, date; double-click to navigate; toolbar buttons for Upload (OS open dialog), Download (OS save dialog), Create Dir, Delete
+- **→ Workflow** button in SSH/Telnet toolbar captures last N configurable lines and publishes to `workflowBus`, landing in the active workflow tab
+- Connection details (host/port/user/protocol) saved to localStorage; password never persisted
+
+**Workflow bus**
+- `workflowBus.ts` singleton — typed pub/sub for cross-tab data routing
+- RSS and Terminal tabs both publish `WorkflowPayload` events; App.tsx injects content into the target tab's input via `injectFns`
+- `targetTabId: 'active'` special value routes to whichever tab is currently focused
+
+**API provider cards**
+- All cards collapsed by default on page load; each can be expanded independently; state resets on navigation
+
+**Branding**
+- About screen rebranded to VTX Consulting Group LLC with the VTX logo
+
+**Save to filesystem**
+- Saved Items panel removed; replaced with a Save button on individual chat responses that opens a native Save dialog defaulting to the configured working directory
+
 ### 2026-04-26 — Interface updates, i18n, and UX polish
 
 - **Settings & Import/Export**
