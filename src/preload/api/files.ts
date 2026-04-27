@@ -46,4 +46,11 @@ export const filesApi = {
   /** Show a directory picker. Returns the chosen absolute path. */
   selectDirectory: (defaultPath?: string): Promise<{ path: string } | { error: string }> =>
     ipcRenderer.invoke('select-directory', defaultPath),
+
+  /**
+   * Fetch a remote URL through the main process (bypasses renderer CORS restrictions).
+   * Returns the raw text body on success. Used by RSS and future workflow data sources.
+   */
+  fetchUrl: (url: string): Promise<{ content: string } | { error: string }> =>
+    ipcRenderer.invoke('fetch-url', url),
 }

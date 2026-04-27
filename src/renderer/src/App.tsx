@@ -1,8 +1,10 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
 import ChatScreen from './features/chat/ChatScreen'
 import IrcScreen from './features/irc/IrcScreen'
+import RssScreen from './features/rss/RssScreen'
 import SettingsScreen from './features/settings/SettingsScreen'
 import RightPanel from './components/RightPanel'
+import { workflowBus } from './lib/workflowBus'
 import { TASK_META } from './lib/routing'
 import { loadWorkflows, getWorkflow } from './lib/workflows'
 import { loadTheme, applyTheme } from './lib/theme'
@@ -62,6 +64,18 @@ export default function App() {
   const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'api' | 'workflows' | 'backup'>('general')
 
   useEffect(() => { applyTheme(loadTheme()); applyZoom(loadZoom()); applyFont(loadFont()) }, [])
+
+  // ── Workflow bus — route published payloads into their target tab ────────────
+  useEffect(() => {
+    return workflowBus.subscribe(({ targetTabId, payload }) => {
+      const tid = targetTabId === 'active' ? activeTabId : targetTabId
+      const inject = injectFns.current[tid]
+      if (inject) {
+        inject(payload.content)
+        switchToChat(tid)
+      }
+    })
+  }, [activeTabId])
 
   const injectFns = useRef<Record<string, (p: string) => void>>({})
   const [rightWidth, setRightWidth] = useState(() => {
@@ -199,6 +213,12 @@ export default function App() {
             >
               {t.workflowType === 'irc' ? (
                 <IrcScreen />
+              ) : t.workflowType === 'rss' ? (
+                <RssScreen
+                  availableTabs={tabs
+                    .filter(x => x.workflowType !== 'rss' && x.workflowType !== 'irc')
+                    .map(x => ({ id: x.id, label: x.label, workflowType: x.workflowType }))}
+                />
               ) : (
                 <ChatScreen
                   tabId={t.id}

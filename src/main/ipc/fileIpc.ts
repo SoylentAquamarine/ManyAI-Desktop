@@ -155,4 +155,20 @@ export function registerFileIpc(): void {
     if (result.canceled || !result.filePaths[0]) return { error: 'Cancelled' }
     return { path: result.filePaths[0] }
   })
+
+  // ── fetch-url ──────────────────────────────────────────────────────────────
+  // Fetches a URL through the main process to bypass renderer CORS restrictions.
+  // Used by the RSS reader and any future workflow that needs to pull remote data.
+  ipcMain.handle('fetch-url', async (_event, url: string) => {
+    try {
+      const response = await fetch(url, {
+        headers: { 'User-Agent': 'ManyAI-Desktop/1.0 (RSS reader)' },
+      })
+      if (!response.ok) return { error: `HTTP ${response.status}: ${response.statusText}` }
+      const content = await response.text()
+      return { content }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
 }

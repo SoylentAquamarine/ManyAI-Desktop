@@ -39,6 +39,9 @@ declare global {
       /** Show a directory-picker dialog. */
       selectDirectory: (defaultPath?: string) => Promise<{ path: string } | { error: string }>
 
+      /** Fetch a URL through the main process, bypassing renderer CORS. Returns raw text. */
+      fetchUrl: (url: string) => Promise<{ content: string } | { error: string }>
+
       /** Open a TCP connection to an IRC server. Listen for 'irc-event' connected to confirm. */
       ircConnect: (args: { server: string; port: number; nick: string; username: string; realname: string; password?: string }) => Promise<{ ok: true } | { error: string }>
 
