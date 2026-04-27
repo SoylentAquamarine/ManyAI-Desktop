@@ -65,4 +65,8 @@ export const filesApi = {
    */
   fetchUrl: (url: string): Promise<{ content: string } | { error: string }> =>
     ipcRenderer.invoke('fetch-url', url),
+
+  /** Open a file or directory in the OS default application (e.g. log file in Notepad). */
+  openPath: (filePath: string): Promise<{ ok: true } | { error: string }> =>
+    ipcRenderer.invoke('open-path', filePath),
 }

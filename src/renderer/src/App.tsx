@@ -6,6 +6,7 @@ import TerminalScreen from './features/terminal/TerminalScreen'
 import SettingsScreen from './features/settings/SettingsScreen'
 import RightPanel from './components/RightPanel'
 import { workflowBus } from './lib/workflowBus'
+import { healthCheck } from './lib/healthCheck'
 import { TASK_META } from './lib/routing'
 import { loadWorkflows, getWorkflow } from './lib/workflows'
 import { loadTheme, applyTheme } from './lib/theme'
@@ -66,6 +67,25 @@ export default function App() {
   const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'api' | 'workflows' | 'backup'>('general')
 
   useEffect(() => { applyTheme(loadTheme()); applyZoom(loadZoom()); applyFont(loadFont()); initProviders() }, [])
+
+  // ── Continuous health monitoring ─────────────────────────────────────────────
+  useEffect(() => {
+    const run = () => {
+      const cfg = healthCheck.loadConfig()
+      if (cfg.continuousEnabled) healthCheck.checkAll()
+    }
+    const getIntervalMs = () => healthCheck.loadConfig().intervalMinutes * 60 * 1000
+
+    // Run once on startup if enabled, then on the configured interval.
+    // Re-reads config each tick so interval changes take effect without restart.
+    let timeoutId: ReturnType<typeof setTimeout>
+    const schedule = () => {
+      timeoutId = setTimeout(() => { run(); schedule() }, getIntervalMs())
+    }
+    run()
+    schedule()
+    return () => clearTimeout(timeoutId)
+  }, [])
 
   // ── Workflow bus — route published payloads into their target tab ────────────
   useEffect(() => {
