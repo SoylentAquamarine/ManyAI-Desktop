@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "บันทึกแล้ว",
+    "settings": "การตั้งค่า",
+    "language": "ภาษา"
+  },
+  "common": {
+    "cancel": "ยกเลิก",
+    "save": "บันทึก",
+    "edit": "แก้ไข",
+    "delete": "ลบ",
+    "close": "ปิด",
+    "apply": "นำไปใช้",
+    "add": "เพิ่ม",
+    "remove": "นำออก",
+    "loading": "กำลังโหลด…",
+    "error": "เกิดข้อผิดพลาด",
+    "ok": "ตกลง",
+    "yes": "ใช่",
+    "no": "ไม่ใช่",
+    "browse": "เลือก",
+    "clear": "ล้าง",
+    "test": "ทดสอบ",
+    "testAll": "ทดสอบทั้งหมด",
+    "export": "ส่งออก",
+    "import": "นำเข้า",
+    "noKey": "ไม่มีคีย์"
+  },
+  "chat": {
+    "placeholder": "พิมพ์ข้อความ…",
+    "send": "ส่ง",
+    "saved": "บันทึกแล้ว!",
+    "saveResponse": "บันทึกการตอบกลับ",
+    "copyCode": "คัดลอกโค้ด",
+    "openFile": "เปิดไฟล์",
+    "updateFile": "อัปเดตไฟล์",
+    "attachFile": "แนบไฟล์",
+    "attached": "แนบแล้ว:",
+    "detach": "ยกเลิกการแนบ",
+    "noProviders": "ไม่มีผู้ให้บริการที่ตั้งค่าไว้ กรุณาเพิ่มคีย์ API ใน การตั้งค่า → ผู้ให้บริการ",
+    "generating": "กำลังสร้าง…",
+    "imageSaved": "บันทึกรูปภาพแล้ว",
+    "downloadImage": "ดาวน์โหลด",
+    "imageError": "การสร้างรูปภาพล้มเหลว"
+  },
+  "settings": {
+    "tabs": {
+      "general": "ทั่วไป",
+      "providers": "ผู้ให้บริการ",
+      "workflows": "เวิร์กโฟลว์",
+      "importExport": "นำเข้า/ส่งออก",
+      "about": "เกี่ยวกับ"
+    },
+    "general": {
+      "title": "ทั่วไป",
+      "appearance": "รูปลักษณ์",
+      "theme": "ธีม",
+      "font": "แบบอักษร",
+      "zoom": "ซูม",
+      "zoomIn": "ซูมเข้า",
+      "zoomOut": "ซูมออก",
+      "resetData": "รีเซ็ตข้อมูล",
+      "clearConversations": "ล้างบทสนทนาทั้งหมด",
+      "clearConversationsConfirm": "สิ่งนี้จะลบบทสนทนาที่บันทึกไว้ทั้งหมด คุณต้องการดำเนินการต่อหรือไม่?",
+      "resetSettings": "รีเซ็ตการตั้งค่าทั้งหมด",
+      "resetSettingsConfirm": "สิ่งนี้จะรีเซ็ตการตั้งค่าทั้งหมดเป็นค่าเริ่มต้น คุณต้องการดำเนินการต่อหรือไม่?"
+    },
+    "importExport": {
+      "title": "นำเข้า/ส่งออก",
+      "workingDir": {
+        "title": "ไดเรกทอรีทำงาน",
+        "description": "รูปภาพและไฟล์จะถูกบันทึกไว้ที่นี่",
+        "current": "ปัจจุบัน:",
+        "notSet": "ไม่ได้ตั้งค่า",
+        "pick": "เลือกโฟลเดอร์",
+        "clear": "ล้าง"
+      },
+      "apiKeys": {
+        "title": "คีย์ API",
+        "exportBtn": "ส่งออกคีย์ API",
+        "importBtn": "นำเข้าคีย์ API"
+      },
+      "providers": {
+        "title": "ผู้ให้บริการ",
+        "exportBtn": "ส่งออกผู้ให้บริการ",
+        "importBtn": "นำเข้าผู้ให้บริการ"
+      },
+      "workflows": {
+        "title": "เวิร์กโฟลว์",
+        "exportBtn": "ส่งออกเวิร์กโฟลว์",
+        "importBtn": "นำเข้าเวิร์กโฟลว์"
+      },
+      "conflict": {
+        "title": "นำเข้า — เลือกวิธีจัดการความขัดแย้ง",
+        "keepExisting": "เก็บของเดิม (เพิ่มเฉพาะสิ่งที่ขาด)",
+        "override": "แทนที่ด้วยค่าที่นำเข้า",
+        "applyImport": "นำไปใช้การนำเข้า"
+      }
+    },
+    "providers": {
+      "title": "ผู้ให้บริการ",
+      "apiKey": "คีย์ API",
+      "keyPlaceholder": "ป้อนคีย์ API…",
+      "keySaved": "บันทึกคีย์แล้ว",
+      "keyRemoved": "นำคีย์ออกแล้ว",
+      "testModel": "ทดสอบ",
+      "testAllModels": "ทดสอบทั้งหมด",
+      "testPassed": "ผ่าน",
+      "testFailed": "ล้มเหลว",
+      "testing": "กำลังทดสอบ…",
+      "noModels": "ไม่มีโมเดล"
+    },
+    "workflows": {
+      "title": "เวิร์กโฟลว์",
+      "newWorkflow": "เวิร์กโฟลว์ใหม่",
+      "addWorkflow": "เพิ่มเวิร์กโฟลว์",
+      "noWorkflows": "ยังไม่มีเวิร์กโฟลว์",
+      "description": "คำอธิบาย",
+      "instructions": "คำแนะนำ",
+      "attachedFiles": "ไฟล์แนบ",
+      "attachFiles": "+ แนบไฟล์",
+      "picking": "กำลังเลือก…",
+      "parallel": "ขนาน",
+      "addProvider": "+ เพิ่มผู้ให้บริการ",
+      "continuousState": "สถานะต่อเนื่อง",
+      "historyCarried": "ประวัติถูกนำไปใช้ระหว่างข้อความ",
+      "freshEachMessage": "ข้อความแต่ละข้อความเริ่มต้นใหม่",
+      "systemPromptPlaceholder": "ถูกเพิ่มโดยอัตโนมัติก่อนข้อความทุกข้อความ…",
+      "descriptionPlaceholder": "คำอธิบายสั้นๆ",
+      "enableWorkflow": "เปิดใช้งานเวิร์กโฟลว์",
+      "disableWorkflow": "ปิดใช้งานเวิร์กโฟลว์"
+    },
+    "about": {
+      "title": "เกี่ยวกับ ManyAI",
+      "version": "เวอร์ชัน"
+    }
+  },
+  "rightPanel": {
+    "newTab": "แท็บใหม่",
+    "chooseWorkflow": "เลือกประเภทเวิร์กโฟลว์",
+    "newWorkflow": "+ เวิร์กโฟลว์ใหม่",
+    "cancel": "ยกเลิก",
+    "noKey": "ไม่มีคีย์",
+    "addProvider": "+ เพิ่มผู้ให้บริการ"
+  },
+  "saved": {
+    "title": "การตอบกลับที่บันทึกไว้",
+    "empty": "ยังไม่มีการตอบกลับที่บันทึกไว้",
+    "delete": "ลบ",
+    "copy": "คัดลอก"
+  },
+  "language": {
+    "title": "ภาษา",
+    "select": "เลือกภาษา"
+  }
+}

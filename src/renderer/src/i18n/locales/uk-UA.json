@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Збережено",
+    "settings": "Налаштування",
+    "language": "Мова"
+  },
+  "common": {
+    "cancel": "Скасувати",
+    "save": "Зберегти",
+    "edit": "Редагувати",
+    "delete": "Видалити",
+    "close": "Закрити",
+    "apply": "Застосувати",
+    "add": "Додати",
+    "remove": "Вилучити",
+    "loading": "Завантаження…",
+    "error": "Помилка",
+    "ok": "Гаразд",
+    "yes": "Так",
+    "no": "Ні",
+    "browse": "Огляд",
+    "clear": "Очистити",
+    "test": "Тестувати",
+    "testAll": "Тестувати все",
+    "export": "Експорт",
+    "import": "Імпорт",
+    "noKey": "немає ключа"
+  },
+  "chat": {
+    "placeholder": "Введіть повідомлення…",
+    "send": "Надіслати",
+    "saved": "Збережено!",
+    "saveResponse": "Зберегти відповідь",
+    "copyCode": "Копіювати код",
+    "openFile": "Відкрити файл",
+    "updateFile": "Оновити файл",
+    "attachFile": "Додати файл",
+    "attached": "Додано:",
+    "detach": "Вилучити",
+    "noProviders": "Не налаштовано жодного постачальника. Додайте API-ключі в Налаштування → Постачальники.",
+    "generating": "Генерується…",
+    "imageSaved": "Зображення збережено",
+    "downloadImage": "Завантажити",
+    "imageError": "Не вдалося згенерувати зображення"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Загальні",
+      "providers": "Постачальники",
+      "workflows": " Роботи",
+      "importExport": "Імпорт / Експорт",
+      "about": "Про ManyAI"
+    },
+    "general": {
+      "title": "Загальні",
+      "appearance": "Вигляд",
+      "theme": "Тема",
+      "font": "Шрифт",
+      "zoom": "Масштаб",
+      "zoomIn": "Збільшити",
+      "zoomOut": "Зменшити",
+      "resetData": "Скинути дані",
+      "clearConversations": "Очистити всі розмови",
+      "clearConversationsConfirm": "Це видалить усі збережені розмови. Продовжити?",
+      "resetSettings": "Скинути всі налаштування",
+      "resetSettingsConfirm": "Це скине всі налаштування до початкових. Продовжити?"
+    },
+    "importExport": {
+      "title": "Імпорт / Експорт",
+      "workingDir": {
+        "title": "Робоча папка",
+        "description": "Тут зберігаються зображення та файли.",
+        "current": "Поточна:",
+        "notSet": "Не встановлено",
+        "pick": "Обрати папку",
+        "clear": "Очистити"
+      },
+      "apiKeys": {
+        "title": "API-ключі",
+        "exportBtn": "Експортувати API-ключі",
+        "importBtn": "Імпортувати API-ключі"
+      },
+      "providers": {
+        "title": "Постачальники",
+        "exportBtn": "Експортувати постачальників",
+        "importBtn": "Імпортувати постачальників"
+      },
+      "workflows": {
+        "title": "Роботи",
+        "exportBtn": "Експортувати роботи",
+        "importBtn": "Імпортувати роботи"
+      },
+      "conflict": {
+        "title": "Імпорт — виберіть, як обробляти конфлікти",
+        "keepExisting": "Залишити існуючі (додати лише відсутні)",
+        "override": "Замінити імпортованими значеннями",
+        "applyImport": "Застосувати імпорт"
+      }
+    },
+    "providers": {
+      "title": "Постачальники",
+      "apiKey": "API-ключ",
+      "keyPlaceholder": "Введіть API-ключ…",
+      "keySaved": "Ключ збережено",
+      "keyRemoved": "Ключ видалено",
+      "testModel": "Тестувати",
+      "testAllModels": "Тестувати все",
+      "testPassed": "Успішно",
+      "testFailed": "Помилка",
+      "testing": "Тестування…",
+      "noModels": "Моделей немає"
+    },
+    "workflows": {
+      "title": "Роботи",
+      "newWorkflow": "Новий робот",
+      "addWorkflow": "Додати робота",
+      "noWorkflows": "Роботів ще немає.",
+      "description": "Опис",
+      "instructions": "Інструкції",
+      "attachedFiles": "Додані файли",
+      "attachFiles": "+ Додати файли",
+      "picking": "Обираю…",
+      "parallel": "Паралельно",
+      "addProvider": "+ Додати постачальника",
+      "continuousState": "Безперервний стан",
+      "historyCarried": "Історія передається між повідомленнями",
+      "freshEachMessage": "Кожне повідомлення починається заново",
+      "systemPromptPlaceholder": "Тихо додається перед кожним повідомленням…",
+      "descriptionPlaceholder": "Короткий опис",
+      "enableWorkflow": "Увімкнути робота",
+      "disableWorkflow": "Вимкнути робота"
+    },
+    "about": {
+      "title": "Про ManyAI",
+      "version": "Версія"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Нова вкладка",
+    "chooseWorkflow": "Оберіть тип робота.",
+    "newWorkflow": "+ Новий робот",
+    "cancel": "Скасувати",
+    "noKey": "немає ключа",
+    "addProvider": "+ Додати постачальника"
+  },
+  "saved": {
+    "title": "Збережені відповіді",
+    "empty": "Ще немає збережених відповідей.",
+    "delete": "Видалити",
+    "copy": "Копіювати"
+  },
+  "language": {
+    "title": "Мова",
+    "select": "Оберіть мову"
+  }
+}

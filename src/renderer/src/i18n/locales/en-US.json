@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Saved",
+    "settings": "Settings",
+    "language": "Language"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "apply": "Apply",
+    "add": "Add",
+    "remove": "Remove",
+    "loading": "Loading…",
+    "error": "Error",
+    "ok": "OK",
+    "yes": "Yes",
+    "no": "No",
+    "browse": "Browse",
+    "clear": "Clear",
+    "test": "Test",
+    "testAll": "Test All",
+    "export": "Export",
+    "import": "Import",
+    "noKey": "no key"
+  },
+  "chat": {
+    "placeholder": "Type a message…",
+    "send": "Send",
+    "saved": "Saved!",
+    "saveResponse": "Save response",
+    "copyCode": "Copy code",
+    "openFile": "Open file",
+    "updateFile": "Update file",
+    "attachFile": "Attach file",
+    "attached": "Attached:",
+    "detach": "Detach",
+    "noProviders": "No providers configured. Add API keys in Settings → Providers.",
+    "generating": "Generating…",
+    "imageSaved": "Image saved",
+    "downloadImage": "Download",
+    "imageError": "Image generation failed"
+  },
+  "settings": {
+    "tabs": {
+      "general": "General",
+      "providers": "Providers",
+      "workflows": "Workflows",
+      "importExport": "Import / Export",
+      "about": "About"
+    },
+    "general": {
+      "title": "General",
+      "appearance": "Appearance",
+      "theme": "Theme",
+      "font": "Font",
+      "zoom": "Zoom",
+      "zoomIn": "Zoom In",
+      "zoomOut": "Zoom Out",
+      "resetData": "Reset Data",
+      "clearConversations": "Clear all conversations",
+      "clearConversationsConfirm": "This will delete all saved conversations. Continue?",
+      "resetSettings": "Reset all settings",
+      "resetSettingsConfirm": "This will reset all settings to defaults. Continue?"
+    },
+    "importExport": {
+      "title": "Import / Export",
+      "workingDir": {
+        "title": "Working Directory",
+        "description": "Images and files are saved here.",
+        "current": "Current:",
+        "notSet": "Not set",
+        "pick": "Choose folder",
+        "clear": "Clear"
+      },
+      "apiKeys": {
+        "title": "API Keys",
+        "exportBtn": "Export API Keys",
+        "importBtn": "Import API Keys"
+      },
+      "providers": {
+        "title": "Providers",
+        "exportBtn": "Export Providers",
+        "importBtn": "Import Providers"
+      },
+      "workflows": {
+        "title": "Workflows",
+        "exportBtn": "Export Workflows",
+        "importBtn": "Import Workflows"
+      },
+      "conflict": {
+        "title": "Import — choose how to handle conflicts",
+        "keepExisting": "Keep existing (only add missing)",
+        "override": "Override with imported values",
+        "applyImport": "Apply Import"
+      }
+    },
+    "providers": {
+      "title": "Providers",
+      "apiKey": "API Key",
+      "keyPlaceholder": "Enter API key…",
+      "keySaved": "Key saved",
+      "keyRemoved": "Key removed",
+      "testModel": "Test",
+      "testAllModels": "Test All",
+      "testPassed": "Passed",
+      "testFailed": "Failed",
+      "testing": "Testing…",
+      "noModels": "No models"
+    },
+    "workflows": {
+      "title": "Workflows",
+      "newWorkflow": "New Workflow",
+      "addWorkflow": "Add Workflow",
+      "noWorkflows": "No workflows yet.",
+      "description": "Description",
+      "instructions": "Instructions",
+      "attachedFiles": "Attached Files",
+      "attachFiles": "+ Attach Files",
+      "picking": "Picking…",
+      "parallel": "Parallel",
+      "addProvider": "+ Add provider",
+      "continuousState": "Continuous state",
+      "historyCarried": "History carried between messages",
+      "freshEachMessage": "Each message starts fresh",
+      "systemPromptPlaceholder": "Silently prepended before every message…",
+      "descriptionPlaceholder": "Short description",
+      "enableWorkflow": "Enable workflow",
+      "disableWorkflow": "Disable workflow"
+    },
+    "about": {
+      "title": "About ManyAI",
+      "version": "Version"
+    }
+  },
+  "rightPanel": {
+    "newTab": "New Tab",
+    "chooseWorkflow": "Choose a workflow type.",
+    "newWorkflow": "+ New Workflow",
+    "cancel": "Cancel",
+    "noKey": "no key",
+    "addProvider": "+ Add provider"
+  },
+  "saved": {
+    "title": "Saved Responses",
+    "empty": "No saved responses yet.",
+    "delete": "Delete",
+    "copy": "Copy"
+  },
+  "language": {
+    "title": "Language",
+    "select": "Select language"
+  }
+}

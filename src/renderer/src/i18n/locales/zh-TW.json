@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "已儲存",
+    "settings": "設定",
+    "language": "語言"
+  },
+  "common": {
+    "cancel": "取消",
+    "save": "儲存",
+    "edit": "編輯",
+    "delete": "刪除",
+    "close": "關閉",
+    "apply": "套用",
+    "add": "新增",
+    "remove": "移除",
+    "loading": "載入中…",
+    "error": "錯誤",
+    "ok": "確定",
+    "yes": "是",
+    "no": "否",
+    "browse": "瀏覽",
+    "clear": "清除",
+    "test": "測試",
+    "testAll": "全部測試",
+    "export": "匯出",
+    "import": "匯入",
+    "noKey": "無金鑰"
+  },
+  "chat": {
+    "placeholder": "輸入訊息…",
+    "send": "傳送",
+    "saved": "已儲存！",
+    "saveResponse": "儲存回應",
+    "copyCode": "複製程式碼",
+    "openFile": "開啟檔案",
+    "updateFile": "更新檔案",
+    "attachFile": "附加檔案",
+    "attached": "已附加：",
+    "detach": "移除附件",
+    "noProviders": "未設定任何提供者。請在設定 → 提供者中新增 API 金鑰。",
+    "generating": "產生中…",
+    "imageSaved": "圖片已儲存",
+    "downloadImage": "下載",
+    "imageError": "圖片產生失敗"
+  },
+  "settings": {
+    "tabs": {
+      "general": "一般",
+      "providers": "提供者",
+      "workflows": "工作流程",
+      "importExport": "匯入/匯出",
+      "about": "關於"
+    },
+    "general": {
+      "title": "一般",
+      "appearance": "外觀",
+      "theme": "主題",
+      "font": "字型",
+      "zoom": "縮放",
+      "zoomIn": "放大",
+      "zoomOut": "縮小",
+      "resetData": "重設資料",
+      "clearConversations": "清除所有對話",
+      "clearConversationsConfirm": "這將刪除所有已儲存的對話。是否繼續？",
+      "resetSettings": "重設所有設定",
+      "resetSettingsConfirm": "這將重設所有設定為預設值。是否繼續？"
+    },
+    "importExport": {
+      "title": "匯入/匯出",
+      "workingDir": {
+        "title": "工作目錄",
+        "description": "圖片與檔案將儲存於此。",
+        "current": "目前：",
+        "notSet": "未設定",
+        "pick": "選擇資料夾",
+        "clear": "清除"
+      },
+      "apiKeys": {
+        "title": "API 金鑰",
+        "exportBtn": "匯出 API 金鑰",
+        "importBtn": "匯入 API 金鑰"
+      },
+      "providers": {
+        "title": "提供者",
+        "exportBtn": "匯出提供者",
+        "importBtn": "匯入提供者"
+      },
+      "workflows": {
+        "title": "工作流程",
+        "exportBtn": "匯出工作流程",
+        "importBtn": "匯入工作流程"
+      },
+      "conflict": {
+        "title": "匯入 — 處理衝突方式",
+        "keepExisting": "保留現有（僅新增缺少項目）",
+        "override": "覆寫為匯入值",
+        "applyImport": "套用匯入"
+      }
+    },
+    "providers": {
+      "title": "提供者",
+      "apiKey": "API 金鑰",
+      "keyPlaceholder": "輸入 API 金鑰…",
+      "keySaved": "金鑰已儲存",
+      "keyRemoved": "金鑰已移除",
+      "testModel": "測試",
+      "testAllModels": "全部測試",
+      "testPassed": "通過",
+      "testFailed": "失敗",
+      "testing": "測試中…",
+      "noModels": "無模型"
+    },
+    "workflows": {
+      "title": "工作流程",
+      "newWorkflow": "新增工作流程",
+      "addWorkflow": "新增工作流程",
+      "noWorkflows": "尚無工作流程。",
+      "description": "描述",
+      "instructions": "指令",
+      "attachedFiles": "附加檔案",
+      "attachFiles": "+ 附加檔案",
+      "picking": "選取中…",
+      "parallel": "平行",
+      "addProvider": "+ 新增提供者",
+      "continuousState": "持續狀態",
+      "historyCarried": "歷史訊息會帶入下一訊息",
+      "freshEachMessage": "每則訊息重新開始",
+      "systemPromptPlaceholder": "靜默於每則訊息前方附加…",
+      "descriptionPlaceholder": "簡短描述",
+      "enableWorkflow": "啟用工作流程",
+      "disableWorkflow": "停用工作流程"
+    },
+    "about": {
+      "title": "關於 ManyAI",
+      "version": "版本"
+    }
+  },
+  "rightPanel": {
+    "newTab": "新分頁",
+    "chooseWorkflow": "選擇工作流程類型。",
+    "newWorkflow": "+ 新增工作流程",
+    "cancel": "取消",
+    "noKey": "無金鑰",
+    "addProvider": "+ 新增提供者"
+  },
+  "saved": {
+    "title": "已儲存回應",
+    "empty": "尚無已儲存回應。",
+    "delete": "刪除",
+    "copy": "複製"
+  },
+  "language": {
+    "title": "語言",
+    "select": "選擇語言"
+  }
+}

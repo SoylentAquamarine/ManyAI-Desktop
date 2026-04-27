@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Gemte",
+    "settings": "Indstillinger",
+    "language": "Sprog"
+  },
+  "common": {
+    "cancel": "Annuller",
+    "save": "Gem",
+    "edit": "Rediger",
+    "delete": "Slet",
+    "close": "Luk",
+    "apply": "Anvend",
+    "add": "Tilføj",
+    "remove": "Fjern",
+    "loading": "Indlæser…",
+    "error": "Fejl",
+    "ok": "OK",
+    "yes": "Ja",
+    "no": "Nej",
+    "browse": "Gennemse",
+    "clear": "Ryd",
+    "test": "Test",
+    "testAll": "Test alle",
+    "export": "Eksportér",
+    "import": "Importér",
+    "noKey": "ingen nøgle"
+  },
+  "chat": {
+    "placeholder": "Skriv en besked…",
+    "send": "Send",
+    "saved": "Gemt!",
+    "saveResponse": "Gem respons",
+    "copyCode": "Kopier kode",
+    "openFile": "Åbn fil",
+    "updateFile": "Opdater fil",
+    "attachFile": "Vedhæft fil",
+    "attached": "Vedhæftet:",
+    "detach": "Frakobl",
+    "noProviders": "Ingen udbydere konfigureret. Tilføj API-nøgler under Indstillinger → Udbydere.",
+    "generating": "Genererer…",
+    "imageSaved": "Billede gemt",
+    "downloadImage": "Download",
+    "imageError": "Billedegenerering mislykkedes"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Generelt",
+      "providers": "Udbydere",
+      "workflows": "Arbejdsgange",
+      "importExport": "Import/Eksport",
+      "about": "Om"
+    },
+    "general": {
+      "title": "Generelt",
+      "appearance": "Udseende",
+      "theme": "Tema",
+      "font": "Skrifttype",
+      "zoom": "Zoom",
+      "zoomIn": "Zoom ind",
+      "zoomOut": "Zoom ud",
+      "resetData": "Nulstil data",
+      "clearConversations": "Ryd alle samtaler",
+      "clearConversationsConfirm": "Dette vil slette alle gemte samtaler. Fortsæt?",
+      "resetSettings": "Nulstil alle indstillinger",
+      "resetSettingsConfirm": "Dette vil nulstille alle indstillinger til standard. Fortsæt?"
+    },
+    "importExport": {
+      "title": "Import/Eksport",
+      "workingDir": {
+        "title": "Arbejdsmappe",
+        "description": "Billeder og filer gemmes her.",
+        "current": "Aktuel:",
+        "notSet": "Ikke valgt",
+        "pick": "Vælg mappe",
+        "clear": "Ryd"
+      },
+      "apiKeys": {
+        "title": "API-nøgler",
+        "exportBtn": "Eksportér API-nøgler",
+        "importBtn": "Importér API-nøgler"
+      },
+      "providers": {
+        "title": "Udbydere",
+        "exportBtn": "Eksportér udbydere",
+        "importBtn": "Importér udbydere"
+      },
+      "workflows": {
+        "title": "Arbejdsgange",
+        "exportBtn": "Eksportér arbejdsgange",
+        "importBtn": "Importér arbejdsgange"
+      },
+      "conflict": {
+        "title": "Import — vælg hvordan konflikter håndteres",
+        "keepExisting": "Behold eksisterende (tilføj kun manglende)",
+        "override": "Overskriv med importerede værdier",
+        "applyImport": "Anvend import"
+      }
+    },
+    "providers": {
+      "title": "Udbydere",
+      "apiKey": "API-nøgle",
+      "keyPlaceholder": "Indtast API-nøgle…",
+      "keySaved": "Nøgle gemt",
+      "keyRemoved": "Nøgle fjernet",
+      "testModel": "Test",
+      "testAllModels": "Test alle",
+      "testPassed": "Bestået",
+      "testFailed": "Mislykkedes",
+      "testing": "Tester…",
+      "noModels": "Ingen modeller"
+    },
+    "workflows": {
+      "title": "Arbejdsgange",
+      "newWorkflow": "Ny arbejdsgang",
+      "addWorkflow": "Tilføj arbejdsgang",
+      "noWorkflows": "Ingen arbejdsgange endnu.",
+      "description": "Beskrivelse",
+      "instructions": "Instruktioner",
+      "attachedFiles": "Vedhæftede filer",
+      "attachFiles": "+ Vedhæft filer",
+      "picking": "Vælger…",
+      "parallel": "Parallel",
+      "addProvider": "+ Tilføj udbyder",
+      "continuousState": "Kontinuerlig tilstand",
+      "historyCarried": "Historik føres med mellem beskeder",
+      "freshEachMessage": "Hver besked starter frisk",
+      "systemPromptPlaceholder": "Tilføjes tavst før hver besked…",
+      "descriptionPlaceholder": "Kort beskrivelse",
+      "enableWorkflow": "Aktivér arbejdsgang",
+      "disableWorkflow": "Deaktivér arbejdsgang"
+    },
+    "about": {
+      "title": "Om ManyAI",
+      "version": "Version"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Ny fane",
+    "chooseWorkflow": "Vælg en arbejdsgangstype.",
+    "newWorkflow": "+ Ny arbejdsgang",
+    "cancel": "Annuller",
+    "noKey": "ingen nøgle",
+    "addProvider": "+ Tilføj udbyder"
+  },
+  "saved": {
+    "title": "Gemte respons",
+    "empty": "Ingen gemte respons endnu.",
+    "delete": "Slet",
+    "copy": "Kopier"
+  },
+  "language": {
+    "title": "Sprog",
+    "select": "Vælg sprog"
+  }
+}

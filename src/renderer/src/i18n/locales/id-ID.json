@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Disimpan",
+    "settings": "Pengaturan",
+    "language": "Bahasa"
+  },
+  "common": {
+    "cancel": "Batal",
+    "save": "Simpan",
+    "edit": "Ubah",
+    "delete": "Hapus",
+    "close": "Tutup",
+    "apply": "Terapkan",
+    "add": "Tambah",
+    "remove": "Hapus",
+    "loading": "Memuat…",
+    "error": "Galat",
+    "ok": "OK",
+    "yes": "Ya",
+    "no": "Tidak",
+    "browse": "Jelajahi",
+    "clear": "Bersihkan",
+    "test": "Uji",
+    "testAll": "Uji Semua",
+    "export": "Ekspor",
+    "import": "Impor",
+    "noKey": "tidak ada kunci"
+  },
+  "chat": {
+    "placeholder": "Ketik pesan…",
+    "send": "Kirim",
+    "saved": "Tersimpan!",
+    "saveResponse": "Simpan respons",
+    "copyCode": "Salin kode",
+    "openFile": "Buka berkas",
+    "updateFile": "Perbarui berkas",
+    "attachFile": "Lampirkan berkas",
+    "attached": "Terlampir:",
+    "detach": "Lepas",
+    "noProviders": "Tidak ada penyedia yang dikonfigurasi. Tambahkan kunci API di Pengaturan → Penyedia.",
+    "generating": "Menghasilkan…",
+    "imageSaved": "Gambar tersimpan",
+    "downloadImage": "Unduh",
+    "imageError": "Gagal menghasilkan gambar"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Umum",
+      "providers": "Penyedia",
+      "workflows": "Alur Kerja",
+      "importExport": "Impor / Ekspor",
+      "about": "Tentang"
+    },
+    "general": {
+      "title": "Umum",
+      "appearance": "Tampilan",
+      "theme": "Tema",
+      "font": "Huruf",
+      "zoom": "Perbesar/Kecilkan",
+      "zoomIn": "Perbesar",
+      "zoomOut": "Perkecil",
+      "resetData": "Atur Ulang Data",
+      "clearConversations": "Hapus semua percakapan",
+      "clearConversationsConfirm": "Ini akan menghapus semua percakapan yang disimpan. Lanjutkan?",
+      "resetSettings": "Atur Ulang Semua Pengaturan",
+      "resetSettingsConfirm": "Ini akan mengatur ulang semua pengaturan ke default. Lanjutkan?"
+    },
+    "importExport": {
+      "title": "Impor / Ekspor",
+      "workingDir": {
+        "title": "Direktori Kerja",
+        "description": "Gambar dan berkas disimpan di sini.",
+        "current": "Saat ini:",
+        "notSet": "Tidak disetel",
+        "pick": "Pilih folder",
+        "clear": "Bersihkan"
+      },
+      "apiKeys": {
+        "title": "Kunci API",
+        "exportBtn": "Ekspor Kunci API",
+        "importBtn": "Impor Kunci API"
+      },
+      "providers": {
+        "title": "Penyedia",
+        "exportBtn": "Ekspor Penyedia",
+        "importBtn": "Impor Penyedia"
+      },
+      "workflows": {
+        "title": "Alur Kerja",
+        "exportBtn": "Ekspor Alur Kerja",
+        "importBtn": "Impor Alur Kerja"
+      },
+      "conflict": {
+        "title": "Impor — pilih cara menangani konflik",
+        "keepExisting": "Pertahankan yang ada (hanya tambahkan yang hilang)",
+        "override": "Timpa dengan nilai impor",
+        "applyImport": "Terapkan Impor"
+      }
+    },
+    "providers": {
+      "title": "Penyedia",
+      "apiKey": "Kunci API",
+      "keyPlaceholder": "Masukkan kunci API…",
+      "keySaved": "Kunci disimpan",
+      "keyRemoved": "Kunci dihapus",
+      "testModel": "Uji",
+      "testAllModels": "Uji Semua",
+      "testPassed": "Lulus",
+      "testFailed": "Gagal",
+      "testing": "Menguji…",
+      "noModels": "Tidak ada model"
+    },
+    "workflows": {
+      "title": "Alur Kerja",
+      "newWorkflow": "Alur Kerja Baru",
+      "addWorkflow": "Tambah Alur Kerja",
+      "noWorkflows": "Belum ada alur kerja.",
+      "description": "Deskripsi",
+      "instructions": "Petunjuk",
+      "attachedFiles": "Berkas Terlampir",
+      "attachFiles": "+ Lampirkan Berkas",
+      "picking": "Memilih…",
+      "parallel": "Paralel",
+      "addProvider": "+ Tambah penyedia",
+      "continuousState": "Status berkelanjutan",
+      "historyCarried": "Riwayat dibawa antar pesan",
+      "freshEachMessage": "Setiap pesan dimulai dari awal",
+      "systemPromptPlaceholder": "Ditambahkan diam-diam sebelum setiap pesan…",
+      "descriptionPlaceholder": "Deskripsi singkat",
+      "enableWorkflow": "Aktifkan alur kerja",
+      "disableWorkflow": "Nonaktifkan alur kerja"
+    },
+    "about": {
+      "title": "Tentang ManyAI",
+      "version": "Versi"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Tab Baru",
+    "chooseWorkflow": "Pilih jenis alur kerja.",
+    "newWorkflow": "+ Alur Kerja Baru",
+    "cancel": "Batal",
+    "noKey": "tidak ada kunci",
+    "addProvider": "+ Tambah penyedia"
+  },
+  "saved": {
+    "title": "Respons Tersimpan",
+    "empty": "Belum ada respons yang disimpan.",
+    "delete": "Hapus",
+    "copy": "Salin"
+  },
+  "language": {
+    "title": "Bahasa",
+    "select": "Pilih bahasa"
+  }
+}

@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Lagret",
+    "settings": "Innstillinger",
+    "language": "Språk"
+  },
+  "common": {
+    "cancel": "Avbryt",
+    "save": "Lagre",
+    "edit": "Rediger",
+    "delete": "Slett",
+    "close": "Lukk",
+    "apply": "Gjennomfør",
+    "add": "Legg til",
+    "remove": "Fjern",
+    "loading": "Laster…",
+    "error": "Feil",
+    "ok": "OK",
+    "yes": "Ja",
+    "no": "Nei",
+    "browse": "Surf",
+    "clear": "Ryd",
+    "test": "Test",
+    "testAll": "Test alle",
+    "export": "Eksporter",
+    "import": "Importér",
+    "noKey": "ingen nøkkel"
+  },
+  "chat": {
+    "placeholder": "Skriv en melding…",
+    "send": "Send",
+    "saved": "Lagret!",
+    "saveResponse": "Lagre svar",
+    "copyCode": "Kopier kode",
+    "openFile": "Åpne fil",
+    "updateFile": "Oppdater fil",
+    "attachFile": "Legg til fil",
+    "attached": "Ført til:",
+    "detach": "Fjern",
+    "noProviders": "Ingen provider har blitt konfigurerd. Legg til API-nytter under  Innstillinger  → Provder.",
+    "generating": "Genererer…",
+    "imageSaved": "Bilde lagret",
+    "downloadImage": "Last ned",
+    "imageError": "Bildegenerering feilet"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Generelt",
+      "providers": "Provder",
+      "workflows": "Workflows",
+      "importExport": "Importér/Eksporter",
+      "about": "Om"
+    },
+    "general": {
+      "title": "Generelt",
+      "appearance": "Utseende",
+      "theme": "Tema",
+      "font": "Skrifttype",
+      "zoom": "Zoom",
+      "zoomIn": "Zoom inn",
+      "zoomOut": "Zoom ut",
+      "resetData": "Gjennomfør ny start",
+      "clearConversations": "Ryd alle samtaler",
+      "clearConversationsConfirm": "Dette vil slette alle lagrede samtaler. Fortsett?",
+      "resetSettings": "Gjennomfør gjennomstart",
+      "resetSettingsConfirm": "Dette vil gjenopprette alle innstillinger til standardverdier. Fortsett?"
+    },
+    "importExport": {
+      "title": "Importér/Eksporter",
+      "workingDir": {
+        "title": "Arbeidskatalog",
+        "description": "Bilder og filer lages her.",
+        "current": "Brukt:",
+        "notSet": "Ikke valgt",
+        "pick": "Velg mapper",
+        "clear": "Ryd"
+      },
+      "apiKeys": {
+        "title": "API-nytter",
+        "exportBtn": "Eksporter API-nytter",
+        "importBtn": "Importér API-nytter"
+      },
+      "providers": {
+        "title": "Provder",
+        "exportBtn": "Eksporter Provder",
+        "importBtn": "Importér Provder"
+      },
+      "workflows": {
+        "title": "Workflows",
+        "exportBtn": "Eksporter Workflows",
+        "importBtn": "Importér Workflows"
+      },
+      "conflict": {
+        "title": "Import - velg hvordan man håndterer konflikter",
+        "keepExisting": "Behold eksisterende (bare legg til manglende)",
+        "override": "Gjennomstykke",
+        "applyImport": "Bruk Import"
+      }
+    },
+    "providers": {
+      "title": "Provder",
+      "apiKey": "API-nykllede",
+      "keyPlaceholder": "Skriv inn API-nykllede…",
+      "keySaved": "Nykllede spart",
+      "keyRemoved": "Nykllede fjernet",
+      "testModel": "Test",
+      "testAllModels": "Test alle",
+      "testPassed": "Passert",
+      "testFailed": "Feilet",
+      "testing": "Tester…",
+      "noModels": "Ingen modeller"
+    },
+    "workflows": {
+      "title": "Workflows",
+      "newWorkflow": "Ny Workflows",
+      "addWorkflow": "Legg til Workflows",
+      "noWorkflows": "Ingen Workflows enda.",
+      "description": "Beskrivelse",
+      "instructions": "Instrukser",
+      "attachedFiles": "Filer som er festet",
+      "attachFiles": "+ Fest til filer",
+      "picking": "Vælg …",
+      "parallel": "Sequenser",
+      "addProvider": "+ Legg til Provder",
+      "continuousState": "Sequensmessig status",
+      "historyCarried": "Historisken vedrørende samtalen er påvirket",
+      "freshEachMessage": "Hvert svar starter fra null",
+      "systemPromptPlaceholder": "Silent foran hver melding… ",
+      "descriptionPlaceholder": "Kort beskrivelse",
+      "enableWorkflow": "Aktiver Workflows",
+      "disableWorkflow": "Deaktiver Workflows"
+    },
+    "about": {
+      "title": "Om ManyAI",
+      "version": "Versjon"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Ny fane",
+    "chooseWorkflow": "Velg Workflows-type.",
+    "newWorkflow": "+ Ny Workflows",
+    "cancel": "Avbryt",
+    "noKey": "ingen nøkkel",
+    "addProvider": "+ Legg til Provder"
+  },
+  "saved": {
+    "title": "Lagrede svar",
+    "empty": "Ingen lagrede svar ennå.",
+    "delete": "Slett",
+    "copy": "Kopier"
+  },
+  "language": {
+    "title": "Språk",
+    "select": "Velg språk"
+  }
+}

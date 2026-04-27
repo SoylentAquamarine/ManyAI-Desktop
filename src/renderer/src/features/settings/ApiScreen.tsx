@@ -8,6 +8,7 @@ import { WORKFLOW_TYPES, WORKFLOW_TYPE_LABELS, type WorkflowType } from '../../l
 import { saveKey, loadKey, deleteKey } from '../../lib/keyStore'
 import { loadEnabledModels, saveEnabledModels } from '../../lib/providerPrefs'
 import { callProvider } from '../../lib/callProvider'
+import { callImageProvider } from '../../lib/callImageProvider'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ function HelpModal({ onClose }: { onClose: () => void }) {
       <div style={{
         background: 'var(--bg)', border: '1px solid var(--border)',
         borderRadius: 10, padding: 24, maxWidth: 480, width: '90%',
-        maxHeight: '80vh', overflowY: 'auto',
+        maxHeight: '80%', overflowY: 'auto',
       }} onClick={e => e.stopPropagation()}>
         <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 12 }}>Adding a New API Provider</div>
 
@@ -153,7 +154,7 @@ function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
       <div style={{
         background: 'var(--bg)', border: '1px solid var(--border)',
         borderRadius: 10, padding: 24, maxWidth: 740, width: '98%',
-        maxHeight: '92vh', overflowY: 'auto',
+        maxHeight: '92%', overflowY: 'auto',
       }}>
         <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
           {isNew ? 'Add New Provider' : `Edit — ${initial.name}`}
@@ -401,6 +402,27 @@ export default function ApiScreen() {
     })
   }
 
+  /** True when the model only supports image generation (not chat). */
+  const isImageOnly = (pk: string, modelId: string) => {
+    const caps = getAllProviders()[pk]?.models.find(m => m.id === modelId)?.capabilities
+    return caps != null && caps.includes('image') && !caps.includes('chat')
+  }
+
+  /** Run a single model test, using image generation for image-only models. */
+  const runTest = async (pk: string, modelId: string, apiKey: string | undefined): Promise<string> => {
+    if (isImageOnly(pk, modelId)) {
+      try {
+        await callImageProvider('a small red square', pk, modelId, apiKey)
+        return 'ok'
+      } catch (e) {
+        return e instanceof Error ? e.message : String(e)
+      }
+    }
+    const p = getAllProviders()[pk]
+    const result = await callProvider({ ...p, model: modelId }, 'Hi', apiKey)
+    return result.error ?? 'ok'
+  }
+
   /** Run Test on every enabled model across all providers, one after another. */
   const handleTestAll = async () => {
     setTestingAll(true)
@@ -423,10 +445,9 @@ export default function ApiScreen() {
       const mk = `${pk}:${modelId}`
       setTestAllProgress(`Testing ${providers[pk]?.name ?? pk} / ${modelId} (${++done}/${jobs.length})`)
       setTestResults(prev => ({ ...prev, [mk]: 'testing' }))
-      const p = providers[pk]
       const apiKey = state[pk]?.apiKey || loadKey(pk) || undefined
-      const result = await callProvider({ ...p, model: modelId }, 'Hi', apiKey)
-      setTestResults(prev => ({ ...prev, [mk]: result.error ? result.error : 'ok' }))
+      const result = await runTest(pk, modelId, apiKey)
+      setTestResults(prev => ({ ...prev, [mk]: result }))
     }
     setTestingAll(false)
     setTestAllProgress('')
@@ -479,10 +500,9 @@ export default function ApiScreen() {
   const handleTest = async (pk: string, modelId: string) => {
     const mk = `${pk}:${modelId}`
     setTestResults(prev => ({ ...prev, [mk]: 'testing' }))
-    const p = getAllProviders()[pk]
     const apiKey = state[pk]?.apiKey || loadKey(pk) || undefined
-    const result = await callProvider({ ...p, model: modelId }, 'Hi', apiKey)
-    setTestResults(prev => ({ ...prev, [mk]: result.error ? result.error : 'ok' }))
+    const result = await runTest(pk, modelId, apiKey)
+    setTestResults(prev => ({ ...prev, [mk]: result }))
   }
 
   const currentProviders = getAllProviders()
@@ -591,14 +611,6 @@ export default function ApiScreen() {
                     return (
                       <div key={mk}>
                         <div className="model-row">
-                          <label className="toggle" title="Enable/disable this model">
-                            <input
-                              type="checkbox"
-                              checked={ms.enabled}
-                              onChange={e => toggleModel(pk, mk, e.target.checked)}
-                            />
-                            <span className="toggle-slider" />
-                          </label>
                           <span className="model-name">{m.name}</span>
                           <span className="model-id">{m.id}</span>
                           <button

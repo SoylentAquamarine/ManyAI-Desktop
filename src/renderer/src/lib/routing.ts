@@ -73,7 +73,28 @@ export function loadRoutingPrefs(): RoutingPrefs {
       const id = stored.imageProvider === 'openai-dalle' ? 'openai' : stored.imageProvider;
       routes['image'] = [{ provider: id, model: id === 'openai' ? 'dall-e-3' : 'flux', enabled: true }];
     }
-    return { routes: { ...DEFAULT_ROUTES, ...routes } };
+    // Migrate: assign stable instanceIds to any entries that don't have one,
+    // then persist so the GUIDs are stable across reloads.
+    let needsSave = false
+    for (const t of Object.keys(routes)) {
+      routes[t] = routes[t].map(e => {
+        if (e.instanceId) return e
+        needsSave = true
+        return { ...e, instanceId: crypto.randomUUID() }
+      })
+    }
+    const merged = { ...DEFAULT_ROUTES, ...routes }
+    // Cover any workflow types only in DEFAULT_ROUTES (not yet in stored prefs)
+    for (const t of Object.keys(DEFAULT_ROUTES)) {
+      if (!routes[t]) {
+        merged[t] = DEFAULT_ROUTES[t].map(e => ({ ...e, instanceId: crypto.randomUUID() }))
+        needsSave = true
+      }
+    }
+    if (needsSave) {
+      localStorage.setItem(ROUTING_KEY, JSON.stringify({ routes: merged }))
+    }
+    return { routes: merged };
   } catch {
     return { routes: { ...DEFAULT_ROUTES } };
   }

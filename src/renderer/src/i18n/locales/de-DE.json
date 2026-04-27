@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Gespeichert",
+    "settings": "Einstellungen",
+    "language": "Sprache"
+  },
+  "common": {
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "edit": "Bearbeiten",
+    "delete": "Löschen",
+    "close": "Schließen",
+    "apply": "Übernehmen",
+    "add": "Hinzufügen",
+    "remove": "Entfernen",
+    "loading": "Wird geladen…",
+    "error": "Fehler",
+    "ok": "OK",
+    "yes": "Ja",
+    "no": "Nein",
+    "browse": "Durchsuchen",
+    "clear": "Löschen",
+    "test": "Testen",
+    "testAll": "Alle testen",
+    "export": "Exportieren",
+    "import": "Importieren",
+    "noKey": "kein Schlüssel"
+  },
+  "chat": {
+    "placeholder": "Nachricht eingeben…",
+    "send": "Senden",
+    "saved": "Gespeichert!",
+    "saveResponse": "Antwort speichern",
+    "copyCode": "Code kopieren",
+    "openFile": "Datei öffnen",
+    "updateFile": "Datei aktualisieren",
+    "attachFile": "Datei anhängen",
+    "attached": "Anhang:",
+    "detach": "Anhang entfernen",
+    "noProviders": "Keine Anbieter konfiguriert. Füge API-Schlüssel in Einstellungen → Anbieter hinzu.",
+    "generating": "Wird generiert…",
+    "imageSaved": "Bild gespeichert",
+    "downloadImage": "Herunterladen",
+    "imageError": "Bilderzeugung fehlgeschlagen"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Allgemein",
+      "providers": "Anbieter",
+      "workflows": "Workflows",
+      "importExport": "Import / Export",
+      "about": "Über"
+    },
+    "general": {
+      "title": "Allgemein",
+      "appearance": "Erscheinungsbild",
+      "theme": "Design",
+      "font": "Schriftart",
+      "zoom": "Zoom",
+      "zoomIn": "Vergrößern",
+      "zoomOut": "Verkleinern",
+      "resetData": "Daten zurücksetzen",
+      "clearConversations": "Alle Gespräche löschen",
+      "clearConversationsConfirm": "Hierdurch werden alle gespeicherten Gespräche gelöscht. Fortfahren?",
+      "resetSettings": "Alle Einstellungen zurücksetzen",
+      "resetSettingsConfirm": "Hierdurch werden alle Einstellungen auf Standardwerte zurückgesetzt. Fortfahren?"
+    },
+    "importExport": {
+      "title": "Import / Export",
+      "workingDir": {
+        "title": "Arbeitsverzeichnis",
+        "description": "Bilder und Dateien werden hier gespeichert.",
+        "current": "Aktuell:",
+        "notSet": "Nicht festgelegt",
+        "pick": "Ordner auswählen",
+        "clear": "Löschen"
+      },
+      "apiKeys": {
+        "title": "API-Schlüssel",
+        "exportBtn": "API-Schlüssel exportieren",
+        "importBtn": "API-Schlüssel importieren"
+      },
+      "providers": {
+        "title": "Anbieter",
+        "exportBtn": "Anbieter exportieren",
+        "importBtn": "Anbieter importieren"
+      },
+      "workflows": {
+        "title": "Workflows",
+        "exportBtn": "Workflows exportieren",
+        "importBtn": "Workflows importieren"
+      },
+      "conflict": {
+        "title": "Import — wähle Umgang mit Konflikten",
+        "keepExisting": "Bestehende behalten (nur fehlende hinzufügen)",
+        "override": "Bestehende mit importierten überschreiben",
+        "applyImport": "Import anwenden"
+      }
+    },
+    "providers": {
+      "title": "Anbieter",
+      "apiKey": "API-Schlüssel",
+      "keyPlaceholder": "API-Schlüssel eingeben…",
+      "keySaved": "Schlüssel gespeichert",
+      "keyRemoved": "Schlüssel entfernt",
+      "testModel": "Testen",
+      "testAllModels": "Alle testen",
+      "testPassed": "Bestanden",
+      "testFailed": "Fehlgeschlagen",
+      "testing": "Wird getestet…",
+      "noModels": "Keine Modelle"
+    },
+    "workflows": {
+      "title": "Workflows",
+      "newWorkflow": "Neuer Workflow",
+      "addWorkflow": "Workflow hinzufügen",
+      "noWorkflows": "Noch keine Workflows.",
+      "description": "Beschreibung",
+      "instructions": "Anweisungen",
+      "attachedFiles": "Anhang-Dateien",
+      "attachFiles": "+ Dateien anhängen",
+      "picking": "Wird ausgewählt…",
+      "parallel": "Parallel",
+      "addProvider": "+ Anbieter hinzufügen",
+      "continuousState": "Fortlaufender Zustand",
+      "historyCarried": "Verlauf wird zwischen Nachrichten mitgeführt",
+      "freshEachMessage": "Jede Nachricht startet neu",
+      "systemPromptPlaceholder": "Wird vor jeder Nachricht stumm vorangestellt…",
+      "descriptionPlaceholder": "Kurze Beschreibung",
+      "enableWorkflow": "Workflow aktivieren",
+      "disableWorkflow": "Workflow deaktivieren"
+    },
+    "about": {
+      "title": "Über ManyAI",
+      "version": "Version"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Neuer Tab",
+    "chooseWorkflow": "Wähle einen Workflow-Typ.",
+    "newWorkflow": "+ Neuer Workflow",
+    "cancel": "Abbrechen",
+    "noKey": "kein Schlüssel",
+    "addProvider": "+ Anbieter hinzufügen"
+  },
+  "saved": {
+    "title": "Gespeicherte Antworten",
+    "empty": "Noch keine gespeicherten Antworten.",
+    "delete": "Löschen",
+    "copy": "Kopieren"
+  },
+  "language": {
+    "title": "Sprache",
+    "select": "Sprache auswählen"
+  }
+}

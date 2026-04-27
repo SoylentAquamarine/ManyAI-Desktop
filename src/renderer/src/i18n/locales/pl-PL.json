@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Zapisane",
+    "settings": "Ustawienia",
+    "language": "Język"
+  },
+  "common": {
+    "cancel": "Anuluj",
+    "save": "Zapisz",
+    "edit": "Edytuj",
+    "delete": "Usuń",
+    "close": "Zamknij",
+    "apply": "Zastosuj",
+    "add": "Dodaj",
+    "remove": "Usuń",
+    "loading": "Ładowanie…",
+    "error": "Błąd",
+    "ok": "OK",
+    "yes": "Tak",
+    "no": "Nie",
+    "browse": "Przeglądaj",
+    "clear": "Wyczyść",
+    "test": "Test",
+    "testAll": "Testuj wszystko",
+    "export": "Eksportuj",
+    "import": "Importuj",
+    "noKey": "brak klucza"
+  },
+  "chat": {
+    "placeholder": "Wpisz wiadomość…",
+    "send": "Wyślij",
+    "saved": "Zapisano!",
+    "saveResponse": "Zapisz odpowiedź",
+    "copyCode": "Kopiuj kod",
+    "openFile": "Otwórz plik",
+    "updateFile": "Zaktualizuj plik",
+    "attachFile": "Dołącz plik",
+    "attached": "Załączono:",
+    "detach": "Odłącz",
+    "noProviders": "Brak skonfigurowanych dostawców. Dodaj klucze API w Ustawienia → Dostawcy.",
+    "generating": "Generowanie…",
+    "imageSaved": "Obraz zapisany",
+    "downloadImage": "Pobierz",
+    "imageError": "Generowanie obrazu nie powiodło się"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Ogólne",
+      "providers": "Dostawcy",
+      "workflows": "Przepływy pracy",
+      "importExport": "Import / Eksport",
+      "about": "O aplikacji"
+    },
+    "general": {
+      "title": "Ogólne",
+      "appearance": "Wygląd",
+      "theme": "Motyw",
+      "font": "Czcionka",
+      "zoom": "Powiększenie",
+      "zoomIn": "Powiększ",
+      "zoomOut": "Zmniejsz",
+      "resetData": "Resetuj dane",
+      "clearConversations": "Wyczyść wszystkie rozmowy",
+      "clearConversationsConfirm": "Spowoduje to usunięcie wszystkich zapisanych rozmów. Kontynuować?",
+      "resetSettings": "Resetuj wszystkie ustawienia",
+      "resetSettingsConfirm": "Spowoduje to zresetowanie wszystkich ustawień do wartości domyślnych. Kontynuować?"
+    },
+    "importExport": {
+      "title": "Import / Eksport",
+      "workingDir": {
+        "title": "Katalog roboczy",
+        "description": "Obrazy i pliki są tutaj zapisywane.",
+        "current": "Aktualny:",
+        "notSet": "Nie ustawiono",
+        "pick": "Wybierz folder",
+        "clear": "Wyczyść"
+      },
+      "apiKeys": {
+        "title": "Klucze API",
+        "exportBtn": "Eksportuj klucze API",
+        "importBtn": "Importuj klucze API"
+      },
+      "providers": {
+        "title": "Dostawcy",
+        "exportBtn": "Eksportuj dostawców",
+        "importBtn": "Importuj dostawców"
+      },
+      "workflows": {
+        "title": "Przepływy pracy",
+        "exportBtn": "Eksportuj przepływy pracy",
+        "importBtn": "Importuj przepływy pracy"
+      },
+      "conflict": {
+        "title": "Importuj — wybierz sposób obsługi konfliktów",
+        "keepExisting": "Zachowaj istniejące (dodaj tylko brakujące)",
+        "override": "Nadpisz zaimportowanymi wartościami",
+        "applyImport": "Zastosuj import"
+      }
+    },
+    "providers": {
+      "title": "Dostawcy",
+      "apiKey": "Klucz API",
+      "keyPlaceholder": "Wpisz klucz API…",
+      "keySaved": "Klucz zapisany",
+      "keyRemoved": "Klucz usunięty",
+      "testModel": "Test",
+      "testAllModels": "Testuj wszystko",
+      "testPassed": "Zaliczono",
+      "testFailed": "Niepowodzenie",
+      "testing": "Testowanie…",
+      "noModels": "Brak modeli"
+    },
+    "workflows": {
+      "title": "Przepływy pracy",
+      "newWorkflow": "Nowy przepływ pracy",
+      "addWorkflow": "Dodaj przepływ pracy",
+      "noWorkflows": "Brak przepływów pracy.",
+      "description": "Opis",
+      "instructions": "Instrukcje",
+      "attachedFiles": "Załączone pliki",
+      "attachFiles": "+ Dołącz pliki",
+      "picking": "Wybieranie…",
+      "parallel": "Równolegle",
+      "addProvider": "+ Dodaj dostawcę",
+      "continuousState": "Ciągły stan",
+      "historyCarried": "Historia przenoszona między wiadomościami",
+      "freshEachMessage": "Każda wiadomość zaczyna się od nowa",
+      "systemPromptPlaceholder": "Cicho dodawane przed każdą wiadomością…",
+      "descriptionPlaceholder": "Krótki opis",
+      "enableWorkflow": "Włącz przepływ pracy",
+      "disableWorkflow": "Wyłącz przepływ pracy"
+    },
+    "about": {
+      "title": "O ManyAI",
+      "version": "Wersja"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Nowa karta",
+    "chooseWorkflow": "Wybierz typ przepływu pracy.",
+    "newWorkflow": "+ Nowy przepływ pracy",
+    "cancel": "Anuluj",
+    "noKey": "brak klucza",
+    "addProvider": "+ Dodaj dostawcę"
+  },
+  "saved": {
+    "title": "Zapisane odpowiedzi",
+    "empty": "Brak zapisanych odpowiedzi.",
+    "delete": "Usuń",
+    "copy": "Kopiuj"
+  },
+  "language": {
+    "title": "Język",
+    "select": "Wybierz język"
+  }
+}

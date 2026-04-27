@@ -46,6 +46,7 @@ function createWindow(): void {
     show: false,
     autoHideMenuBar: true,
     title: 'ManyAI',
+    backgroundColor: '#1a1a2e', // matches midnight (default) theme — prevents white flash
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -54,8 +55,10 @@ function createWindow(): void {
     }
   })
 
+  // Maximize before the page loads so the window is already full-size when shown.
+  if (state.isMaximized) mainWindow.maximize()
+
   mainWindow.on('ready-to-show', () => {
-    if (state.isMaximized) mainWindow.maximize()
     mainWindow.show()
   })
 

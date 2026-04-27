@@ -1,0 +1,156 @@
+{
+  "nav": {
+    "saved": "Opgeslagen",
+    "settings": "Instellingen",
+    "language": "Taal"
+  },
+  "common": {
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "edit": "Bewerken",
+    "delete": "Verwijderen",
+    "close": "Sluiten",
+    "apply": "Toepassen",
+    "add": "Toevoegen",
+    "remove": "Verwijderen",
+    "loading": "Laden…",
+    "error": "Fout",
+    "ok": "OK",
+    "yes": "Ja",
+    "no": "Nee",
+    "browse": "Bladeren",
+    "clear": "Wissen",
+    "test": "Testen",
+    "testAll": "Alles testen",
+    "export": "Exporteren",
+    "import": "Importeren",
+    "noKey": "geen sleutel"
+  },
+  "chat": {
+    "placeholder": "Typ een bericht…",
+    "send": "Versturen",
+    "saved": "Opgeslagen!",
+    "saveResponse": "Antwoord opslaan",
+    "copyCode": "Code kopiëren",
+    "openFile": "Bestand openen",
+    "updateFile": "Bestand bijwerken",
+    "attachFile": "Bestand bijvoegen",
+    "attached": "Bijgevoegd:",
+    "detach": "Loskoppelen",
+    "noProviders": "Geen providers ingesteld. Voeg API-sleutels toe in Instellingen → Providers.",
+    "generating": "Genereren…",
+    "imageSaved": "Afbeelding opgeslagen",
+    "downloadImage": "Downloaden",
+    "imageError": "Afbeelding genereren mislukt"
+  },
+  "settings": {
+    "tabs": {
+      "general": "Algemeen",
+      "providers": "Providers",
+      "workflows": "Workflows",
+      "importExport": "Importeren / Exporteren",
+      "about": "Over"
+    },
+    "general": {
+      "title": "Algemeen",
+      "appearance": "Uiterlijk",
+      "theme": "Thema",
+      "font": "Lettertype",
+      "zoom": "Zoom",
+      "zoomIn": "Inzoomen",
+      "zoomOut": "Uitzoomen",
+      "resetData": "Gegevens resetten",
+      "clearConversations": "Alle gesprekken wissen",
+      "clearConversationsConfirm": "Hiermee worden alle opgeslagen gesprekken verwijderd. Doorgaan?",
+      "resetSettings": "Alle instellingen resetten",
+      "resetSettingsConfirm": "Hiermee worden alle instellingen teruggezet naar de standaardwaarden. Doorgaan?"
+    },
+    "importExport": {
+      "title": "Importeren / Exporteren",
+      "workingDir": {
+        "title": "Werkmap",
+        "description": "Afbeeldingen en bestanden worden hier opgeslagen.",
+        "current": "Huidig:",
+        "notSet": "Niet ingesteld",
+        "pick": "Map kiezen",
+        "clear": "Wissen"
+      },
+      "apiKeys": {
+        "title": "API-sleutels",
+        "exportBtn": "API-sleutels exporteren",
+        "importBtn": "API-sleutels importeren"
+      },
+      "providers": {
+        "title": "Providers",
+        "exportBtn": "Providers exporteren",
+        "importBtn": "Providers importeren"
+      },
+      "workflows": {
+        "title": "Workflows",
+        "exportBtn": "Workflows exporteren",
+        "importBtn": "Workflows importeren"
+      },
+      "conflict": {
+        "title": "Importeren — kies hoe om te gaan met conflicten",
+        "keepExisting": "Bestaande behouden (alleen ontbrekende toevoegen)",
+        "override": "Importeren overschrijven",
+        "applyImport": "Importeren toepassen"
+      }
+    },
+    "providers": {
+      "title": "Providers",
+      "apiKey": "API-sleutel",
+      "keyPlaceholder": "Voer API-sleutel in…",
+      "keySaved": "Sleutel opgeslagen",
+      "keyRemoved": "Sleutel verwijderd",
+      "testModel": "Testen",
+      "testAllModels": "Alles testen",
+      "testPassed": "Geslaagd",
+      "testFailed": "Mislukt",
+      "testing": "Testen…",
+      "noModels": "Geen modellen"
+    },
+    "workflows": {
+      "title": "Workflows",
+      "newWorkflow": "Nieuwe workflow",
+      "addWorkflow": "Workflow toevoegen",
+      "noWorkflows": "Nog geen workflows.",
+      "description": "Omschrijving",
+      "instructions": "Instructies",
+      "attachedFiles": "Bijgevoegde bestanden",
+      "attachFiles": "+ Bestanden bijvoegen",
+      "picking": "Kiezen…",
+      "parallel": "Parallel",
+      "addProvider": "+ Provider toevoegen",
+      "continuousState": "Doorlopende status",
+      "historyCarried": "Geschiedenis meegenomen tussen berichten",
+      "freshEachMessage": "Elk bericht begint opnieuw",
+      "systemPromptPlaceholder": "Stilletjes voorafgeplaatst voor elk bericht…",
+      "descriptionPlaceholder": "Korte omschrijving",
+      "enableWorkflow": "Workflow inschakelen",
+      "disableWorkflow": "Workflow uitschakelen"
+    },
+    "about": {
+      "title": "Over ManyAI",
+      "version": "Versie"
+    }
+  },
+  "rightPanel": {
+    "newTab": "Nieuw tabblad",
+    "chooseWorkflow": "Kies een workflowtype.",
+    "newWorkflow": "+ Nieuwe workflow",
+    "cancel": "Annuleren",
+    "noKey": "geen sleutel",
+    "addProvider": "+ Provider toevoegen"
+  },
+  "saved": {
+    "title": "Opgeslagen antwoorden",
+    "empty": "Nog geen opgeslagen antwoorden.",
+    "delete": "Verwijderen",
+    "copy": "Kopiëren"
+  },
+  "language": {
+    "title": "Taal",
+    "select": "Taal selecteren"
+  }
+}
