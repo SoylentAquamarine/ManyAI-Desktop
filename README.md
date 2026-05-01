@@ -35,6 +35,44 @@ $ npm run build:linux
 
 ## Changelog
 
+### 2026-05-01 — Modular provider/workflow files, working directory enforcement, LAN provider support
+
+**Provider plugin system**
+- All provider definitions moved out of hardcoded TypeScript into individual JSON files in `{workingDir}/providers/` — one file per provider
+- Providers load at startup via IPC; add, remove, or edit a provider by editing its JSON file — no code changes needed
+- `initProviders()` async loader; `upsertProvider()` / `removeProvider()` update memory immediately and write files in background
+- 14 built-in provider JSON files included: Cerebras, Groq, Gemini, Mistral, SambaNova, OpenRouter, Cloudflare, HuggingFace, Cohere, Fireworks, OpenAI, Anthropic, Pollinations, Laptop (Ollama)
+- `apiFormat` and `imageApiFormat` fields replace all hardcoded provider-key checks in `callProvider.ts` and `callImageProvider.ts`
+- `keyOptional: true` — provider is always available (no key required) but shows a key input field (used by Pollinations)
+- `getKeylessProviderKeys()` replaces all hardcoded `'pollinations'` references throughout routing, chat, and panel logic
+
+**Custom workflow files**
+- Custom (non-builtin) workflows stored as individual JSON files in `{workingDir}/workflows/`
+- `initWorkflows()` async loader with automatic localStorage migration on first run
+- Builtin workflows (chat, coding, image, IRC, RSS, terminal, etc.) remain in code; only user-created workflows go to files
+
+**Working directory enforcement**
+- App now requires a working directory to load providers and workflows
+- On startup with no working dir: modal prompts user — **OK** to proceed without (limited), **NEW** to pick a folder
+- Picking NEW auto-creates `providers/`, `workflows/`, `images/`, and `backups/` sub-folders and re-initialises all data
+
+**LAN / local provider support (Ollama)**
+- New `proxyMode: 'direct' | 'proxied'` field on Provider
+- `proxied` routes all API calls through Electron's main process (Node.js fetch, no CORS restrictions) — required for local/LAN providers like Ollama
+- `proxy-request` IPC handler added to `fileIpc.ts`
+- **Connection Mode** dropdown added to the Add/Edit Provider form
+- Laptop (Ollama) provider pre-configured with `proxyMode: proxied`
+- Ollama models added: Qwen 2.5 7B (default, best for coding), Llama 3.1, Llama 3.2, Mistral, Phi-3, Nomic Embed Text
+
+**Provider form — full field coverage**
+- Add/Edit provider form now exposes every JSON field: API Format, Image API Format, Connection Mode, Sort Order, Key settings (required / optional / paid), Vision support, Key hint, Good at / Not great at, Best for, Instructions URL, Color picker, Extra headers (key-value editor), per-model capabilities / max tokens / image size / random seed
+
+**Health tab + Smart Routing (restored)**
+- Provider health monitoring tab with continuous background checks, latency tracking, and success rate history
+- Capability testing and model discovery (Test / Discover per model and globally)
+- `modelTester.ts` — chat, vision, image, audio testers; `testModel()` / `discoverModel()`
+- Health penalties feed into smart router scoring
+
 ### 2026-04-27 — IRC user list pane, Terminal tab (SSH/Telnet/SFTP/FTP/FTPS), workflow bus
 
 **IRC client**
