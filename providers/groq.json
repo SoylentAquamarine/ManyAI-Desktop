@@ -1,0 +1,19 @@
+{
+  "key": "groq",
+  "name": "Groq",
+  "model": "llama-3.1-8b-instant",
+  "models": [
+    { "id": "llama-3.1-8b-instant",    "name": "Llama 3.1 8B (fast)", "capabilities": ["chat"] },
+    { "id": "llama-3.3-70b-versatile", "name": "Llama 3.3 70B",       "capabilities": ["chat"] }
+  ],
+  "baseUrl": "https://api.groq.com/openai/v1",
+  "needsKey": true,
+  "paidOnly": false,
+  "color": "#4ECDC4",
+  "bestFor": ["general", "summarization"],
+  "goodAt": "Fast, reliable general Q&A and summarisation",
+  "notGreatAt": "Complex coding or nuanced creative writing",
+  "supportsVision": false,
+  "instructionsUrl": "console.groq.com",
+  "sortOrder": 2
+}

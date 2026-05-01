@@ -56,8 +56,10 @@ export async function callProvider(
 
   try {
 
+    const apiFormat = provider.apiFormat ?? 'openai-compat'
+
     // ── Pollinations — keyless GET ────────────────────────────────────────────
-    if (provider.key === 'pollinations') {
+    if (apiFormat === 'pollinations') {
       const recentHistory = history.slice(-MAX_HISTORY);
       const contextPrefix = recentHistory.length > 0
         ? recentHistory.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n') + '\nUser: '
@@ -70,7 +72,7 @@ export async function callProvider(
     }
 
     // ── Gemini — Google generateContent format ────────────────────────────────
-    if (provider.key === 'gemini') {
+    if (apiFormat === 'gemini') {
       const url = `${provider.baseUrl}/models/${provider.model}:generateContent?key=${apiKey}`;
       const recentHistory = history.slice(-MAX_HISTORY);
       const contents: { role: string; parts: GeminiPart[] }[] = recentHistory.map(m => ({
@@ -100,7 +102,7 @@ export async function callProvider(
     }
 
     // ── Anthropic Claude — Messages API ───────────────────────────────────────
-    if (provider.key === 'anthropic') {
+    if (apiFormat === 'anthropic') {
       const recentHistory = history.slice(-MAX_HISTORY);
       const messages: { role: string; content: any }[] = recentHistory.map(m => ({
         role: m.role,
@@ -144,7 +146,7 @@ export async function callProvider(
     }
 
     // ── Cloudflare Workers AI — account ID embedded in URL ────────────────────
-    if (provider.key === 'cloudflare') {
+    if (apiFormat === 'cloudflare') {
       // Key format: "accountId:apiToken"
       const [accountId, apiToken] = (apiKey ?? ':').split(':');
       const url = `${provider.baseUrl}/${accountId}/ai/v1/chat/completions`;
@@ -194,7 +196,7 @@ export async function callProvider(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}),
         ...(provider.extraHeaders ?? {}),
       },
       body: JSON.stringify({

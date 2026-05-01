@@ -22,10 +22,8 @@ export function loadAllKeys(): Record<string, string> {
     const k = localStorage.key(i);
     if (k?.startsWith(PREFIX)) {
       const providerKey = k.slice(PREFIX.length);
-      if (providerKey !== 'pollinations') {
-        const val = localStorage.getItem(k);
-        if (val) result[providerKey] = val;
-      }
+      const val = localStorage.getItem(k);
+      if (val) result[providerKey] = val;
     }
   }
   return result;

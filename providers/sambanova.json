@@ -1,0 +1,18 @@
+{
+  "key": "sambanova",
+  "name": "SambaNova",
+  "model": "Meta-Llama-3.3-70B-Instruct",
+  "models": [
+    { "id": "Meta-Llama-3.3-70B-Instruct", "name": "Llama 3.3 70B", "capabilities": ["chat"] }
+  ],
+  "baseUrl": "https://api.sambanova.ai/v1",
+  "needsKey": true,
+  "paidOnly": false,
+  "color": "#FFEAA7",
+  "bestFor": ["reasoning"],
+  "goodAt": "Deep reasoning and nuanced answers",
+  "notGreatAt": "Speed — larger model means slower responses",
+  "supportsVision": false,
+  "instructionsUrl": "cloud.sambanova.ai",
+  "sortOrder": 5
+}

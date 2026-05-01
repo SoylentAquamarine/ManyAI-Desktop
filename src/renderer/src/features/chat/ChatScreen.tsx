@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { getAllProviders } from '../../lib/providers'
+import { getAllProviders, getKeylessProviderKeys } from '../../lib/providers'
 import { callProvider, HistoryMessage } from '../../lib/callProvider'
 import { loadAllKeys } from '../../lib/keyStore'
 import { loadEnabledProviders } from '../../lib/providerPrefs'
@@ -231,7 +231,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
     const prefs = loadRoutingPrefs()
     const allProviders = getAllProviders()
     const availableKeys = new Set(Object.keys(keys))
-    availableKeys.add('pollinations')
+    getKeylessProviderKeys().forEach(k => availableKeys.add(k))
     const taskType = workflowType
     const activeRoutes = resolveAllProviders(taskType, prefs, availableKeys, enabled)
     const recipients = activeRoutes.map(r => r.instanceId ?? r.provider)
@@ -460,7 +460,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
     const keys = loadAllKeys()
     const enabled = loadEnabledProviders()
     const availableKeys = new Set(Object.keys(keys))
-    availableKeys.add('pollinations')
+    getKeylessProviderKeys().forEach(k => availableKeys.add(k))
     return {
       parallelProviders: resolveAllProviders(workflowType, prefs, availableKeys, enabled),
       fullChain: prefs.routes[workflowType] ?? [],

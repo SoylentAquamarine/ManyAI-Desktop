@@ -1,0 +1,19 @@
+{
+  "key": "cerebras",
+  "name": "Cerebras",
+  "model": "llama3.1-8b",
+  "models": [
+    { "id": "llama3.1-8b",  "name": "Llama 3.1 8B (fastest)", "capabilities": ["chat"] },
+    { "id": "gpt-oss-120b", "name": "GPT-OSS 120B (smarter)",  "capabilities": ["chat"] }
+  ],
+  "baseUrl": "https://api.cerebras.ai/v1",
+  "needsKey": true,
+  "paidOnly": false,
+  "color": "#FF6B6B",
+  "bestFor": ["general"],
+  "goodAt": "Fastest responses of any provider",
+  "notGreatAt": "Deep reasoning or long-form writing",
+  "supportsVision": false,
+  "instructionsUrl": "cloud.cerebras.ai",
+  "sortOrder": 1
+}

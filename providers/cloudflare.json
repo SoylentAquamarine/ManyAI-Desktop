@@ -1,0 +1,21 @@
+{
+  "key": "cloudflare",
+  "name": "Cloudflare AI",
+  "model": "@cf/meta/llama-3.1-8b-instruct",
+  "models": [
+    { "id": "@cf/meta/llama-3.1-8b-instruct",           "name": "Llama 3.1 8B",         "capabilities": ["chat"] },
+    { "id": "@cf/meta/llama-3.3-70b-instruct-fp8-fast", "name": "Llama 3.3 70B (fast)", "capabilities": ["chat"] }
+  ],
+  "baseUrl": "https://api.cloudflare.com/client/v4/accounts",
+  "needsKey": true,
+  "paidOnly": false,
+  "color": "#F0A500",
+  "bestFor": ["general"],
+  "goodAt": "Runs on Cloudflare edge — fast and free tier available",
+  "notGreatAt": "Smaller model selection than other providers",
+  "supportsVision": false,
+  "instructionsUrl": "dash.cloudflare.com",
+  "keyHint": "Enter as accountID:apiToken",
+  "sortOrder": 7,
+  "apiFormat": "cloudflare"
+}

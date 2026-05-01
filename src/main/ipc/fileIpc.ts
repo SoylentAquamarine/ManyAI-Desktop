@@ -2,6 +2,7 @@
  * fileIpc.ts — Main-process IPC handlers for all filesystem and dialog operations.
  *
  * Channels exposed:
+ *   read-providers     — read all JSON files from <appPath>/providers/, returns Provider[]
  *   open-file          — single-file picker, returns {path, name, content}
  *   open-files         — multi-file picker, returns {files: [{path, name}]}
  *   read-file-by-path  — read arbitrary path, returns {content}
@@ -12,11 +13,50 @@
  *   select-directory   — directory picker, returns {path}
  */
 
-import { ipcMain, dialog, BrowserWindow } from 'electron'
+import { ipcMain, dialog, BrowserWindow, app } from 'electron'
 import fs from 'fs'
 import path from 'path'
 
 export function registerFileIpc(): void {
+
+  // ── read-providers ─────────────────────────────────────────────────────────
+  ipcMain.handle('read-providers', () => {
+    const dir = path.join(app.getAppPath(), 'providers')
+    try {
+      const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'))
+      const providers = files.map(f => {
+        const raw = fs.readFileSync(path.join(dir, f), 'utf-8')
+        return JSON.parse(raw)
+      })
+      providers.sort((a, b) => (a.sortOrder ?? 99) - (b.sortOrder ?? 99))
+      return { providers }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
+  // ── write-provider ─────────────────────────────────────────────────────────
+  ipcMain.handle('write-provider', (_event, key: string, data: unknown) => {
+    const dir = path.join(app.getAppPath(), 'providers')
+    try {
+      fs.mkdirSync(dir, { recursive: true })
+      fs.writeFileSync(path.join(dir, `${key}.json`), JSON.stringify(data, null, 2), 'utf-8')
+      return { ok: true }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
+  // ── delete-provider ────────────────────────────────────────────────────────
+  ipcMain.handle('delete-provider', (_event, key: string) => {
+    const filePath = path.join(app.getAppPath(), 'providers', `${key}.json`)
+    try {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+      return { ok: true }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
 
   // ── open-file ──────────────────────────────────────────────────────────────
   ipcMain.handle('open-file', async (_event, defaultDir?: string) => {

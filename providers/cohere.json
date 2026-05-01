@@ -1,0 +1,20 @@
+{
+  "key": "cohere",
+  "name": "Cohere",
+  "model": "command-r-08-2024",
+  "models": [
+    { "id": "command-r-08-2024",      "name": "Command R (2024)",   "capabilities": ["chat"] },
+    { "id": "command-r-plus-08-2024", "name": "Command R+ (2024)",  "capabilities": ["chat"] },
+    { "id": "command-a-03-2025",      "name": "Command A (newest)", "capabilities": ["chat"] }
+  ],
+  "baseUrl": "https://api.cohere.com/compatibility/v1",
+  "needsKey": true,
+  "paidOnly": false,
+  "color": "#55EFC4",
+  "bestFor": ["summarization", "reasoning"],
+  "goodAt": "Strong at summarization, retrieval, and business tasks",
+  "notGreatAt": "Less well-known — smaller community than OpenAI/Meta models",
+  "supportsVision": false,
+  "instructionsUrl": "dashboard.cohere.com",
+  "sortOrder": 9
+}

@@ -4,7 +4,7 @@
  * Provider selection is capability-based: model.capabilities must include the workflow's workflowType.
  */
 
-import { TaskType, getAllProviders } from './providers';
+import { TaskType, getAllProviders, getKeylessProviderKeys } from './providers';
 import { WORKFLOW_REGISTRY } from '../workflows';
 export type { RouteEntry } from '../workflows';
 
@@ -64,7 +64,7 @@ export function loadRoutingPrefs(): RoutingPrefs {
           return { provider, model, enabled: true };
         }
         const entry = p as Record<string, unknown>;
-        const id = String(entry.id ?? entry.provider ?? 'pollinations');
+        const id = String(entry.id ?? entry.provider ?? '');
         const provider = id === 'openai-dalle' ? 'openai' : id;
         const model = String(entry.model ?? (provider === 'openai' ? 'dall-e-3' : 'flux'));
         return { provider, model, enabled: entry.enabled !== false };
@@ -110,8 +110,9 @@ export function resolveAllProviders(
   availableKeys: Set<string>,
   enabledProviders: Partial<Record<string, boolean>>,
 ): import('../workflows').RouteEntry[] {
+  const keylessKeys = new Set(getKeylessProviderKeys())
   const isUsable = (pk: string) =>
-    (pk === 'pollinations' || availableKeys.has(pk)) && enabledProviders[pk] !== false;
+    (keylessKeys.has(pk) || availableKeys.has(pk)) && enabledProviders[pk] !== false;
 
   const workflowTypes = WORKFLOW_REGISTRY.find(w => w.type === taskType)?.workflowType ?? ['chat'];
   const allProviders = getAllProviders();
@@ -133,8 +134,9 @@ export function resolveProvider(
   availableKeys: Set<string>,
   enabledProviders: Partial<Record<string, boolean>>,
 ): import('../workflows').RouteEntry | null {
+  const keylessKeys = new Set(getKeylessProviderKeys())
   const isUsable = (pk: string) =>
-    (pk === 'pollinations' || availableKeys.has(pk)) && enabledProviders[pk] !== false;
+    (keylessKeys.has(pk) || availableKeys.has(pk)) && enabledProviders[pk] !== false;
 
   const workflowTypes = WORKFLOW_REGISTRY.find(w => w.type === taskType)?.workflowType ?? ['chat'];
   const allProviders = getAllProviders();
@@ -152,11 +154,12 @@ export function resolveProvider(
     }
   }
 
-  // No configured route — fall back to a capable pollinations model
-  const pollinations = allProviders['pollinations'];
-  if (pollinations && isUsable('pollinations')) {
-    const fallbackModel = pollinations.models.find(m => modelCapable(m.capabilities));
-    if (fallbackModel) return { provider: 'pollinations', model: fallbackModel.id };
+  // No configured route — fall back to any capable keyless provider
+  for (const pk of getKeylessProviderKeys()) {
+    const p = allProviders[pk]
+    if (!p || isUsable(pk) === false) continue
+    const fallbackModel = p.models.find(m => modelCapable(m.capabilities))
+    if (fallbackModel) return { provider: pk, model: fallbackModel.id }
   }
 
   return null;

@@ -49,6 +49,15 @@ declare global {
       /** Fetch a URL through the main process, bypassing renderer CORS. Returns raw text. */
       fetchUrl: (url: string) => Promise<{ content: string } | { error: string }>
 
+      /** Read all provider JSON files from the providers/ folder. */
+      readProviders: () => Promise<{ providers: unknown[] } | { error: string }>
+
+      /** Write a single provider JSON file. */
+      writeProvider: (key: string, data: unknown) => Promise<{ ok: boolean } | { error: string }>
+
+      /** Delete a provider JSON file. */
+      deleteProvider: (key: string) => Promise<{ ok: boolean } | { error: string }>
+
       /** Open a TCP connection to an IRC server. Listen for 'irc-event' connected to confirm. */
       ircConnect: (args: { server: string; port: number; nick: string; username: string; realname: string; password?: string }) => Promise<{ ok: true } | { error: string }>
 

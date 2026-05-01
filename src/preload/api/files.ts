@@ -6,6 +6,18 @@
 import { ipcRenderer } from 'electron'
 
 export const filesApi = {
+  /** Read all provider JSON files from the providers/ folder. */
+  readProviders: (): Promise<{ providers: unknown[] } | { error: string }> =>
+    ipcRenderer.invoke('read-providers'),
+
+  /** Write a single provider JSON file. */
+  writeProvider: (key: string, data: unknown): Promise<{ ok: boolean } | { error: string }> =>
+    ipcRenderer.invoke('write-provider', key, data),
+
+  /** Delete a provider JSON file. */
+  deleteProvider: (key: string): Promise<{ ok: boolean } | { error: string }> =>
+    ipcRenderer.invoke('delete-provider', key),
+
   /** Open a single file via OS picker. Returns file path, name and content. */
   openFile: (defaultDir?: string): Promise<{ path: string; name: string; content: string } | { error: string }> =>
     ipcRenderer.invoke('open-file', defaultDir),

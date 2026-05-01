@@ -12,6 +12,7 @@ import { loadTheme, applyTheme } from './lib/theme'
 import { loadZoom, applyZoom } from './lib/zoom'
 import { loadFont, applyFont } from './lib/font'
 import type { TaskType } from './lib/providers'
+import { initProviders } from './lib/providers'
 
 export type PanelType = 'settings'
 
@@ -64,7 +65,7 @@ export default function App() {
   const [settingsTriggerAdd, setSettingsTriggerAdd] = useState(false)
   const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'api' | 'workflows' | 'backup'>('general')
 
-  useEffect(() => { applyTheme(loadTheme()); applyZoom(loadZoom()); applyFont(loadFont()) }, [])
+  useEffect(() => { applyTheme(loadTheme()); applyZoom(loadZoom()); applyFont(loadFont()); initProviders() }, [])
 
   // ── Workflow bus — route published payloads into their target tab ────────────
   useEffect(() => {

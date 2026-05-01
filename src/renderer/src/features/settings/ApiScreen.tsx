@@ -31,6 +31,7 @@ const BLANK_PROVIDER: Provider = {
   models: [{ id: '', name: '' }],
   baseUrl: '',
   needsKey: true,
+  keyOptional: false,
   paidOnly: false,
   color: '#888888',
   bestFor: ['general'],
@@ -39,6 +40,10 @@ const BLANK_PROVIDER: Provider = {
   supportsVision: false,
   instructionsUrl: '',
   keyHint: '',
+  apiFormat: 'openai-compat',
+  imageApiFormat: '',
+  sortOrder: undefined,
+  extraHeaders: {},
 }
 
 const PRESET_COLORS = [
@@ -115,31 +120,60 @@ interface ProviderFormProps {
   onCancel: () => void
 }
 
+// Extra headers editor state: array of {k, v} pairs
+interface HeaderRow { k: string; v: string }
+
+function headersToRows(h: Record<string, string> | undefined): HeaderRow[] {
+  if (!h) return []
+  return Object.entries(h).map(([k, v]) => ({ k, v }))
+}
+
+function rowsToHeaders(rows: HeaderRow[]): Record<string, string> | undefined {
+  const filled = rows.filter(r => r.k.trim())
+  if (!filled.length) return undefined
+  return Object.fromEntries(filled.map(r => [r.k.trim(), r.v]))
+}
+
+const API_FORMATS = ['openai-compat', 'gemini', 'anthropic', 'cloudflare', 'pollinations']
+const IMAGE_API_FORMATS = ['', 'openai-image', 'pollinations-image', 'openai-compat-image']
+
 function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
-  const [form, setForm] = useState<Provider>({ ...initial })
+  const [form, setForm] = useState<Provider>({ ...BLANK_PROVIDER, ...initial })
+  const [headerRows, setHeaderRows] = useState<HeaderRow[]>(() => headersToRows(initial.extraHeaders))
   const [error, setError] = useState('')
 
   const set = (patch: Partial<Provider>) => setForm(f => ({ ...f, ...patch }))
 
-  const addModel = () =>
-    set({ models: [...form.models, { id: '', name: '' }] })
-
+  const addModel = () => set({ models: [...form.models, { id: '', name: '' }] })
   const updateModel = (idx: number, patch: Partial<ProviderModel>) =>
     set({ models: form.models.map((m, i) => i === idx ? { ...m, ...patch } : m) })
-
   const removeModel = (idx: number) =>
     set({ models: form.models.filter((_, i) => i !== idx) })
 
+  const addHeader = () => setHeaderRows(r => [...r, { k: '', v: '' }])
+  const updateHeader = (idx: number, patch: Partial<HeaderRow>) =>
+    setHeaderRows(r => r.map((h, i) => i === idx ? { ...h, ...patch } : h))
+  const removeHeader = (idx: number) =>
+    setHeaderRows(r => r.filter((_, i) => i !== idx))
+
   const handleSave = () => {
-    if (!form.name.trim())      return setError('Name is required')
-    if (!form.key.trim())       return setError('Provider ID is required')
+    if (!form.name.trim()) return setError('Name is required')
+    if (!form.key.trim()) return setError('Provider ID is required')
     if (!/^[a-z0-9_-]+$/.test(form.key)) return setError('Provider ID must be lowercase letters, numbers, hyphens, underscores')
-    if (!form.baseUrl.trim())   return setError('Base URL is required')
+    if (!form.baseUrl.trim()) return setError('Base URL is required')
     if (form.models.length === 0) return setError('At least one model is required')
     if (form.models.some(m => !m.id.trim())) return setError('All model IDs are required')
 
     const defaultModel = form.models.find(m => m.id === form.model) ? form.model : form.models[0].id
-    onSave({ ...form, key: form.key.trim(), model: defaultModel })
+    const extraHeaders = rowsToHeaders(headerRows)
+    onSave({
+      ...form,
+      key: form.key.trim(),
+      model: defaultModel,
+      extraHeaders,
+      imageApiFormat: form.imageApiFormat || undefined,
+      keyHint: form.keyHint || undefined,
+    })
   }
 
   const label = (text: string) => (
@@ -160,6 +194,7 @@ function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
           {isNew ? 'Add New Provider' : `Edit — ${initial.name}`}
         </div>
 
+        {/* ── Identity ── */}
         {label('Name')}
         <input value={form.name} onChange={e => set({ name: e.target.value })} placeholder="e.g. My Provider" style={{ width: '100%' }} />
 
@@ -176,40 +211,41 @@ function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
         {label('Base URL')}
         <input value={form.baseUrl} onChange={e => set({ baseUrl: e.target.value })} placeholder="https://api.example.com/v1" style={{ width: '100%' }} />
 
-        {label('Instructions URL (for getting an API key)')}
-        <input value={form.instructionsUrl} onChange={e => set({ instructionsUrl: e.target.value })} placeholder="example.com/api-keys" style={{ width: '100%' }} />
-
-        {label('Good at (short description)')}
-        <input value={form.goodAt} onChange={e => set({ goodAt: e.target.value })} placeholder="e.g. Fast general Q&A" style={{ width: '100%' }} />
-
-        {label('Key hint (placeholder text in key input)')}
-        <input value={form.keyHint ?? ''} onChange={e => set({ keyHint: e.target.value })} placeholder="e.g. sk-..." style={{ width: '100%' }} />
-
-        {label('Color')}
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
-          {PRESET_COLORS.map(c => (
-            <div
-              key={c}
-              onClick={() => set({ color: c })}
-              style={{
-                width: 22, height: 22, borderRadius: 4, background: c, cursor: 'pointer',
-                border: form.color === c ? '2px solid var(--text)' : '2px solid transparent',
-              }}
+        {/* ── API format ── */}
+        <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+          <div style={{ flex: 1 }}>
+            {label('API Format')}
+            <select value={form.apiFormat ?? 'openai-compat'} onChange={e => set({ apiFormat: e.target.value })} style={{ width: '100%' }}>
+              {API_FORMATS.map(f => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            {label('Image API Format')}
+            <select value={form.imageApiFormat ?? ''} onChange={e => set({ imageApiFormat: e.target.value || undefined })} style={{ width: '100%' }}>
+              {IMAGE_API_FORMATS.map(f => <option key={f} value={f}>{f || '(none)'}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            {label('Sort Order')}
+            <input
+              type="number"
+              value={form.sortOrder ?? ''}
+              onChange={e => set({ sortOrder: e.target.value === '' ? undefined : parseInt(e.target.value, 10) })}
+              placeholder="e.g. 5"
+              style={{ width: '100%' }}
             />
-          ))}
-          <input
-            type="color"
-            value={form.color}
-            onChange={e => set({ color: e.target.value })}
-            style={{ width: 22, height: 22, padding: 0, border: 'none', cursor: 'pointer', borderRadius: 4 }}
-            title="Custom color"
-          />
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
+        {/* ── Key settings ── */}
+        <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
-            <input type="checkbox" checked={form.needsKey} onChange={e => set({ needsKey: e.target.checked })} />
+            <input type="checkbox" checked={form.needsKey} onChange={e => set({ needsKey: e.target.checked, keyOptional: e.target.checked ? false : form.keyOptional })} />
             Requires API key
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
+            <input type="checkbox" checked={form.keyOptional ?? false} onChange={e => set({ keyOptional: e.target.checked, needsKey: e.target.checked ? false : form.needsKey })} />
+            Optional API key (works without key, but accepts one)
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
             <input type="checkbox" checked={form.paidOnly} onChange={e => set({ paidOnly: e.target.checked })} />
@@ -221,37 +257,67 @@ function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
           </label>
         </div>
 
+        {label('Key hint (placeholder text in key input)')}
+        <input value={form.keyHint ?? ''} onChange={e => set({ keyHint: e.target.value })} placeholder="e.g. sk-..." style={{ width: '100%' }} />
+
+        {/* ── Description ── */}
+        {label('Good at')}
+        <input value={form.goodAt} onChange={e => set({ goodAt: e.target.value })} placeholder="e.g. Fast general Q&A" style={{ width: '100%' }} />
+
+        {label('Not great at')}
+        <input value={form.notGreatAt} onChange={e => set({ notGreatAt: e.target.value })} placeholder="e.g. Complex reasoning" style={{ width: '100%' }} />
+
+        {label('Best for (comma-separated: general, coding, reasoning, …)')}
+        <input
+          value={(form.bestFor ?? []).join(', ')}
+          onChange={e => set({ bestFor: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+          placeholder="general, coding"
+          style={{ width: '100%' }}
+        />
+
+        {label('Instructions URL (for getting an API key)')}
+        <input value={form.instructionsUrl} onChange={e => set({ instructionsUrl: e.target.value })} placeholder="example.com/api-keys" style={{ width: '100%' }} />
+
+        {/* ── Color ── */}
+        {label('Color')}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+          {PRESET_COLORS.map(c => (
+            <div key={c} onClick={() => set({ color: c })} style={{
+              width: 22, height: 22, borderRadius: 4, background: c, cursor: 'pointer',
+              border: form.color === c ? '2px solid var(--text)' : '2px solid transparent',
+            }} />
+          ))}
+          <input type="color" value={form.color} onChange={e => set({ color: e.target.value })}
+            style={{ width: 22, height: 22, padding: 0, border: 'none', cursor: 'pointer', borderRadius: 4 }} title="Custom color" />
+        </div>
+
+        {/* ── Extra headers ── */}
+        {label('Extra headers')}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {headerRows.map((row, idx) => (
+            <div key={idx} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              <input value={row.k} onChange={e => updateHeader(idx, { k: e.target.value })} placeholder="Header-Name" style={{ flex: 1, fontSize: 12 }} />
+              <input value={row.v} onChange={e => updateHeader(idx, { v: e.target.value })} placeholder="value" style={{ flex: 2, fontSize: 12 }} />
+              <button onClick={() => removeHeader(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 14, padding: '0 4px' }}>✕</button>
+            </div>
+          ))}
+          <button className="btn-ghost" onClick={addHeader} style={{ fontSize: 11, alignSelf: 'flex-start', padding: '3px 10px', marginTop: 2 }}>+ Add header</button>
+        </div>
+
+        {/* ── Models ── */}
         {label('Models')}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {form.models.map((m, idx) => (
             <div key={idx} style={{ border: '1px solid var(--border)', borderRadius: 6, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <input
-                  value={m.id}
-                  onChange={e => updateModel(idx, { id: e.target.value })}
-                  placeholder="model-id"
-                  style={{ flex: 1, fontSize: 12 }}
-                />
-                <input
-                  value={m.name}
-                  onChange={e => updateModel(idx, { name: e.target.value })}
-                  placeholder="Display name"
-                  style={{ flex: 1, fontSize: 12 }}
-                />
+                <input value={m.id} onChange={e => updateModel(idx, { id: e.target.value })} placeholder="model-id" style={{ flex: 1, fontSize: 12 }} />
+                <input value={m.name} onChange={e => updateModel(idx, { name: e.target.value })} placeholder="Display name" style={{ flex: 1, fontSize: 12 }} />
                 <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, whiteSpace: 'nowrap', cursor: 'pointer' }}>
-                  <input
-                    type="radio"
-                    name="defaultModel"
-                    checked={form.model === m.id || (form.model === '' && idx === 0)}
-                    onChange={() => set({ model: m.id })}
-                  />
+                  <input type="radio" name="defaultModel" checked={form.model === m.id || (form.model === '' && idx === 0)} onChange={() => set({ model: m.id })} />
                   Default
                 </label>
                 {form.models.length > 1 && (
-                  <button
-                    onClick={() => removeModel(idx)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 14, padding: '0 4px' }}
-                  >✕</button>
+                  <button onClick={() => removeModel(idx)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-dim)', fontSize: 14, padding: '0 4px' }}>✕</button>
                 )}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 14px' }}>
@@ -263,53 +329,35 @@ function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
                       checked={m.capabilities?.includes(wt) ?? false}
                       onChange={e => {
                         const current: WorkflowType[] = m.capabilities ?? []
-                        updateModel(idx, {
-                          capabilities: e.target.checked
-                            ? [...current.filter(c => c !== wt), wt]
-                            : current.filter(c => c !== wt)
-                        })
+                        updateModel(idx, { capabilities: e.target.checked ? [...current.filter(c => c !== wt), wt] : current.filter(c => c !== wt) })
                       }}
                     />
                     {WORKFLOW_TYPE_LABELS[wt]}
                   </label>
                 ))}
-                <div style={{ width: '100%', display: 'flex', gap: 16, marginTop: 4, alignItems: 'center' }}>
+                <div style={{ width: '100%', display: 'flex', gap: 16, marginTop: 4, alignItems: 'center', flexWrap: 'wrap' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, whiteSpace: 'nowrap' }}>
                     Max tokens
-                    <input
-                      type="number"
-                      min={1}
-                      step={256}
-                      placeholder="1024"
-                      value={m.maxTokens ?? ''}
+                    <input type="number" min={1} step={256} placeholder="1024" value={m.maxTokens ?? ''}
                       onChange={e => updateModel(idx, { maxTokens: e.target.value === '' ? undefined : parseInt(e.target.value, 10) })}
-                      style={{ width: 80, fontSize: 11 }}
-                    />
+                      style={{ width: 80, fontSize: 11 }} />
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, whiteSpace: 'nowrap' }}>
                     Image size
-                    <input
-                      placeholder="1024x1024"
-                      value={m.imageSize ?? ''}
+                    <input placeholder="1024x1024" value={m.imageSize ?? ''}
                       onChange={e => updateModel(idx, { imageSize: e.target.value.trim() || undefined })}
-                      style={{ width: 100, fontSize: 11 }}
-                    />
+                      style={{ width: 100, fontSize: 11 }} />
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-                    <input
-                      type="checkbox"
-                      checked={m.randomSeed ?? false}
-                      onChange={e => updateModel(idx, { randomSeed: e.target.checked || undefined })}
-                    />
-                    Random seed (bypass cache)
+                    <input type="checkbox" checked={m.randomSeed ?? false}
+                      onChange={e => updateModel(idx, { randomSeed: e.target.checked || undefined })} />
+                    Random seed
                   </label>
                 </div>
               </div>
             </div>
           ))}
-          <button className="btn-ghost" onClick={addModel} style={{ fontSize: 11, alignSelf: 'flex-start', padding: '3px 10px' }}>
-            + Add model
-          </button>
+          <button className="btn-ghost" onClick={addModel} style={{ fontSize: 11, alignSelf: 'flex-start', padding: '3px 10px' }}>+ Add model</button>
         </div>
 
         {error && <div style={{ color: '#e55', fontSize: 12, marginTop: 10 }}>{error}</div>}
@@ -584,11 +632,11 @@ export default function ApiScreen() {
               </div>
 
               {!s.collapsed && <div className="api-card-body">
-                {p.needsKey && (
+                {(p.needsKey || p.keyOptional) && (
                   <div className="key-row" style={{ marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <input
                       type="password"
-                      placeholder={p.keyHint ?? `${p.name} API key`}
+                      placeholder={p.keyHint ?? `${p.name} API key${p.keyOptional ? ' (optional)' : ''}`}
                       value={s.apiKey}
                       onChange={e => updateProvider(pk, { apiKey: e.target.value })}
                       onBlur={() => saveKeyForProvider(pk)}

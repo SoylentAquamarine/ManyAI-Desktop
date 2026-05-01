@@ -1,0 +1,21 @@
+{
+  "key": "anthropic",
+  "name": "Claude (Anthropic)",
+  "model": "claude-3-5-haiku-20241022",
+  "models": [
+    { "id": "claude-3-5-haiku-20241022",  "name": "Claude 3.5 Haiku (fast)",     "capabilities": ["chat", "vision"] },
+    { "id": "claude-3-5-sonnet-20241022", "name": "Claude 3.5 Sonnet (best)",     "capabilities": ["chat", "vision"] },
+    { "id": "claude-3-opus-20240229",     "name": "Claude 3 Opus (most capable)", "capabilities": ["chat", "vision"] }
+  ],
+  "baseUrl": "https://api.anthropic.com/v1",
+  "needsKey": true,
+  "paidOnly": true,
+  "color": "#FD79A8",
+  "bestFor": ["coding", "reasoning", "creative"],
+  "goodAt": "Exceptional reasoning, coding, and long-form writing",
+  "notGreatAt": "Costs money; no free tier",
+  "supportsVision": true,
+  "instructionsUrl": "console.anthropic.com",
+  "sortOrder": 12,
+  "apiFormat": "anthropic"
+}

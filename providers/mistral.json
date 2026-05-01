@@ -1,0 +1,19 @@
+{
+  "key": "mistral",
+  "name": "Mistral",
+  "model": "mistral-small-latest",
+  "models": [
+    { "id": "mistral-small-latest", "name": "Mistral Small",                "capabilities": ["chat"] },
+    { "id": "mistral-large-latest", "name": "Mistral Large (best quality)", "capabilities": ["chat"] }
+  ],
+  "baseUrl": "https://api.mistral.ai/v1",
+  "needsKey": true,
+  "paidOnly": false,
+  "color": "#96CEB4",
+  "bestFor": ["coding", "creative"],
+  "goodAt": "Code generation, creative writing, detailed instructions",
+  "notGreatAt": "Slightly slower than Groq for simple questions",
+  "supportsVision": false,
+  "instructionsUrl": "console.mistral.ai",
+  "sortOrder": 4
+}

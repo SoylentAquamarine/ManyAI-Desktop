@@ -1,0 +1,19 @@
+{
+  "key": "fireworks",
+  "name": "Fireworks",
+  "model": "accounts/fireworks/models/deepseek-v3p1",
+  "models": [
+    { "id": "accounts/fireworks/models/deepseek-v3p1",           "name": "DeepSeek V3",   "capabilities": ["chat"] },
+    { "id": "accounts/fireworks/models/llama-v3p3-70b-instruct", "name": "Llama 3.3 70B", "capabilities": ["chat"] }
+  ],
+  "baseUrl": "https://api.fireworks.ai/inference/v1",
+  "needsKey": true,
+  "paidOnly": false,
+  "color": "#DDA0DD",
+  "bestFor": ["coding", "general"],
+  "goodAt": "Strong coding with DeepSeek V3",
+  "notGreatAt": "Requires credit card; can return verbose responses",
+  "supportsVision": false,
+  "instructionsUrl": "fireworks.ai",
+  "sortOrder": 10
+}

@@ -4,7 +4,7 @@ import {
   loadRemovedBuiltins, saveRemovedBuiltins,
   type WorkflowDef, type ContextFile,
 } from '../lib/workflows'
-import { getAllProviders, getAllProviderOrder } from '../lib/providers'
+import { getAllProviders, getAllProviderOrder, getKeylessProviderKeys } from '../lib/providers'
 import {
   loadRoutingPrefs, saveRoutingPrefs, DEFAULT_ROUTES,
   type RoutingPrefs, type RouteEntry,
@@ -121,10 +121,10 @@ export default function RightPanel({
   const allProviders = getAllProviders()
   const allProviderOrder = getAllProviderOrder()
   const availableKeys = new Set(Object.keys(loadAllKeys()))
-  availableKeys.add('pollinations')
+  getKeylessProviderKeys().forEach(k => availableKeys.add(k))
   const enabledMap = loadEnabledProviders()
   const availableProviders = allProviderOrder.filter(k =>
-    (k === 'pollinations' || availableKeys.has(k)) && enabledMap[k] !== false
+    availableKeys.has(k) && enabledMap[k] !== false
   )
 
   const updatePrefs = (next: RoutingPrefs) => {
@@ -167,7 +167,8 @@ export default function RightPanel({
     const wts = WORKFLOW_REGISTRY.find(w => w.type === task)?.workflowType ?? ['chat']
     const capableModelsFor = (pk: string) =>
       (allProviders[pk]?.models ?? []).filter(m => wts.every(wt => (m.capabilities ?? ['chat']).includes(wt)))
-    const next = allProviderOrder.find(k => !used.has(k) && capableModelsFor(k).length > 0) ?? 'pollinations'
+    const next = allProviderOrder.find(k => !used.has(k) && capableModelsFor(k).length > 0) ?? getKeylessProviderKeys().find(k => capableModelsFor(k).length > 0) ?? ''
+    if (!next) return
     const model = capableModelsFor(next)[0]?.id ?? allProviders[next]?.model ?? ''
     setChain(task, [...chain, { provider: next, model, instanceId: crypto.randomUUID() }])
   }

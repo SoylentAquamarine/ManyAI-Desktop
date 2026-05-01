@@ -1,0 +1,29 @@
+{
+  "key": "pollinations",
+  "name": "Pollinations",
+  "model": "openai",
+  "models": [
+    { "id": "openai",       "name": "OpenAI (via Pollinations)",  "capabilities": ["chat"] },
+    { "id": "mistral",      "name": "Mistral (via Pollinations)", "capabilities": ["chat"] },
+    { "id": "llama",        "name": "Llama (via Pollinations)",   "capabilities": ["chat"] },
+    { "id": "flux",         "name": "Flux",                       "capabilities": ["image"], "randomSeed": true },
+    { "id": "flux-realism", "name": "Flux Realism",               "capabilities": ["image"], "randomSeed": true },
+    { "id": "flux-anime",   "name": "Flux Anime",                 "capabilities": ["image"], "randomSeed": true },
+    { "id": "flux-3d",      "name": "Flux 3D",                    "capabilities": ["image"], "randomSeed": true },
+    { "id": "turbo",        "name": "Turbo",                      "capabilities": ["image"], "randomSeed": true },
+    { "id": "gptimage",     "name": "GPT Image",                  "capabilities": ["image"], "randomSeed": true }
+  ],
+  "baseUrl": "https://text.pollinations.ai",
+  "needsKey": false,
+  "paidOnly": false,
+  "color": "#FD79A8",
+  "bestFor": ["general", "creative"],
+  "goodAt": "No API key needed — always available as a fallback",
+  "notGreatAt": "Less reliable, variable quality",
+  "supportsVision": false,
+  "instructionsUrl": "pollinations.ai",
+  "sortOrder": 13,
+  "apiFormat": "pollinations",
+  "imageApiFormat": "pollinations-image",
+  "keyOptional": true
+}

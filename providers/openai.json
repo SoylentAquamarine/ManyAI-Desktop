@@ -1,0 +1,22 @@
+{
+  "key": "openai",
+  "name": "OpenAI",
+  "model": "gpt-4o-mini",
+  "models": [
+    { "id": "gpt-4o-mini", "name": "GPT-4o Mini (fast)",    "capabilities": ["chat"] },
+    { "id": "gpt-4o",      "name": "GPT-4o (best quality)", "capabilities": ["chat", "vision"] },
+    { "id": "dall-e-3",    "name": "DALL·E 3",              "capabilities": ["image"] },
+    { "id": "dall-e-2",    "name": "DALL·E 2",              "capabilities": ["image"] }
+  ],
+  "baseUrl": "https://api.openai.com/v1",
+  "needsKey": true,
+  "paidOnly": false,
+  "color": "#74B9FF",
+  "bestFor": ["coding", "reasoning", "general"],
+  "goodAt": "Well-rounded — coding, vision, instruction following",
+  "notGreatAt": "Costs money; rate limits on lower tiers",
+  "supportsVision": true,
+  "instructionsUrl": "platform.openai.com",
+  "sortOrder": 11,
+  "imageApiFormat": "openai-image"
+}

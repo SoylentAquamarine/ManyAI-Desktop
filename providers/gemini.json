@@ -1,0 +1,20 @@
+{
+  "key": "gemini",
+  "name": "Gemini",
+  "model": "gemini-2.5-flash-lite",
+  "models": [
+    { "id": "gemini-2.5-flash-lite", "name": "Gemini 2.5 Flash Lite (fast)",    "capabilities": ["chat", "vision"] },
+    { "id": "gemini-2.5-flash",      "name": "Gemini 2.5 Flash (best quality)", "capabilities": ["chat", "vision"] }
+  ],
+  "baseUrl": "https://generativelanguage.googleapis.com/v1beta",
+  "needsKey": true,
+  "paidOnly": false,
+  "color": "#45B7D1",
+  "bestFor": ["summarization", "translation"],
+  "goodAt": "Long documents, translation, and image understanding (vision)",
+  "notGreatAt": "Can be slower than Groq/Cerebras for simple questions",
+  "supportsVision": true,
+  "instructionsUrl": "aistudio.google.com",
+  "sortOrder": 3,
+  "apiFormat": "gemini"
+}

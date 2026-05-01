@@ -37,8 +37,11 @@ export async function callImageProvider(
   model: string,
   apiKey?: string,
 ): Promise<ImageResult> {
-  if (providerKey === 'pollinations') {
-    const modelConfig = getAllProviders()[providerKey]?.models.find(m => m.id === model)
+  const provider = getAllProviders()[providerKey]
+  const imageApiFormat = provider?.imageApiFormat ?? 'openai-compat-image'
+
+  if (imageApiFormat === 'pollinations-image') {
+    const modelConfig = provider?.models.find(m => m.id === model)
     const [pw, ph] = (modelConfig?.imageSize ?? '768x768').split('x')
     const seedParam = modelConfig?.randomSeed ? `&seed=${Math.floor(Math.random() * 2147483647)}` : ''
     const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=${pw}&height=${ph}&nologo=true&model=${encodeURIComponent(model)}${seedParam}`
@@ -46,13 +49,13 @@ export async function callImageProvider(
     return { imageUrl: `data:${mime};base64,${base64}`, provider: providerKey, model }
   }
 
-  if (providerKey === 'openai') {
-    if (!apiKey) throw new Error('OpenAI API key required for DALL-E')
-    const openaiModelConfig = getAllProviders()[providerKey]?.models.find(m => m.id === model)
-    const res = await fetch('https://api.openai.com/v1/images/generations', {
+  if (imageApiFormat === 'openai-image') {
+    if (!apiKey) throw new Error(`${provider?.name ?? providerKey} API key required`)
+    const modelConfig = provider?.models.find(m => m.id === model)
+    const res = await fetch(`${provider?.baseUrl ?? 'https://api.openai.com/v1'}/images/generations`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify({ model, prompt, n: 1, size: openaiModelConfig?.imageSize ?? '1024x1024', response_format: 'url' }),
+      body: JSON.stringify({ model, prompt, n: 1, size: modelConfig?.imageSize ?? '1024x1024', response_format: 'url' }),
     })
     if (!res.ok) {
       const e = await res.json().catch(() => ({}))
@@ -65,8 +68,7 @@ export async function callImageProvider(
     return { imageUrl: `data:${mime};base64,${base64}`, provider: providerKey, model }
   }
 
-  // Generic OpenAI-compatible /images/generations for custom providers
-  const provider = getAllProviders()[providerKey]
+  // openai-compat-image — generic /images/generations
   if (!provider) throw new Error(`Unknown provider: ${providerKey}`)
   if (!apiKey) throw new Error(`API key required for ${provider.name}`)
   const genericModelConfig = provider.models.find(m => m.id === model)

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getAllProviders, getAllProviderOrder } from '../../lib/providers'
+import { getAllProviders, getAllProviderOrder, getKeylessProviderKeys } from '../../lib/providers'
 import {
   TASK_META, DEFAULT_ROUTES,
   loadRoutingPrefs, saveRoutingPrefs, RouteEntry, RoutingPrefs,
@@ -18,10 +18,10 @@ export default function RoutingScreen() {
   const allProviders = getAllProviders()
   const allProviderOrder = getAllProviderOrder()
   const availableKeys = new Set(Object.keys(loadAllKeys()))
-  availableKeys.add('pollinations')
+  getKeylessProviderKeys().forEach(k => availableKeys.add(k))
   const enabledMap = loadEnabledProviders()
   const availableProviders = allProviderOrder.filter(k =>
-    (k === 'pollinations' || availableKeys.has(k)) && enabledMap[k] !== false
+    availableKeys.has(k) && enabledMap[k] !== false
   )
 
   const allWorkflows = loadWorkflows()
@@ -69,7 +69,8 @@ export default function RoutingScreen() {
     if (chain.length >= MAX_CHAIN) return
     const used = new Set(chain.map(e => e.provider))
     const candidates = getCapableProviders(task)
-    const next = candidates.find(k => !used.has(k)) ?? candidates[0] ?? 'pollinations'
+    const next = candidates.find(k => !used.has(k)) ?? candidates[0] ?? getKeylessProviderKeys()[0] ?? ''
+    if (!next) return
     const models = getCapableModels(task, next)
     const model = models[0]?.id ?? allProviders[next]?.model ?? ''
     setChain(task, [...chain, { provider: next, model }])

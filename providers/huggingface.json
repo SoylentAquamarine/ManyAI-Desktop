@@ -1,0 +1,20 @@
+{
+  "key": "huggingface",
+  "name": "Hugging Face",
+  "model": "Qwen/Qwen2.5-72B-Instruct",
+  "models": [
+    { "id": "Qwen/Qwen2.5-72B-Instruct",        "name": "Qwen 2.5 72B", "capabilities": ["chat"] },
+    { "id": "meta-llama/Llama-3.1-8B-Instruct", "name": "Llama 3.1 8B", "capabilities": ["chat"] },
+    { "id": "HuggingFaceH4/zephyr-7b-beta",     "name": "Zephyr 7B",    "capabilities": ["chat"] }
+  ],
+  "baseUrl": "https://router.huggingface.co/v1",
+  "needsKey": true,
+  "paidOnly": false,
+  "color": "#FFD93D",
+  "bestFor": ["general", "coding"],
+  "goodAt": "Massive model selection — thousands of open models available",
+  "notGreatAt": "Free tier is rate limited; cold starts can be slow",
+  "supportsVision": false,
+  "instructionsUrl": "huggingface.co/settings/tokens",
+  "sortOrder": 8
+}
