@@ -70,12 +70,20 @@ export default function App() {
 
   useEffect(() => {
     applyTheme(loadTheme()); applyZoom(loadZoom()); applyFont(loadFont())
-    if (!getWorkingDir()) {
-      setNoWorkDirModal(true)
-    } else {
-      initProviders()
-      initWorkflows()
-    }
+    // Read durable config file first — syncs workingDir to localStorage if
+    // localStorage was cleared (e.g. origin change between dev/prod).
+    window.api.getConfig().then(({ config }) => {
+      const saved = config.workingDir as string | undefined
+      if (saved && !getWorkingDir()) {
+        setWorkingDir(saved)
+      }
+      if (!getWorkingDir()) {
+        setNoWorkDirModal(true)
+      } else {
+        initProviders()
+        initWorkflows()
+      }
+    })
   }, [])
 
   // ── Continuous health monitoring ─────────────────────────────────────────────

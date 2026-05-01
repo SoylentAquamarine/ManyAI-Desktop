@@ -16,13 +16,16 @@ export function getWorkingDir(): string {
   return localStorage.getItem(LS_KEY) ?? ''
 }
 
-/** Persist a new working directory path. */
+/** Persist a new working directory path to both localStorage and the durable config file. */
 export function setWorkingDir(dir: string): void {
   if (dir) {
     localStorage.setItem(LS_KEY, dir)
   } else {
     localStorage.removeItem(LS_KEY)
   }
+  // Also write to {userData}/manyai-config.json so it survives localStorage resets.
+  // The installer can pre-populate this file to set the working dir on first launch.
+  window.api.setConfig({ workingDir: dir || null }).catch(console.error)
 }
 
 /** Return the images sub-folder path, or '' if no working dir is set. */

@@ -67,6 +67,12 @@ declare global {
       /** Delete a workflow JSON file from {workingDir}/workflows/. */
       deleteWorkflow: (workingDir: string, type: string) => Promise<{ ok: boolean } | { error: string }>
 
+      /** Read the persistent app config from {userData}/manyai-config.json. */
+      getConfig: () => Promise<{ config: Record<string, unknown> }>
+
+      /** Merge a patch into the persistent app config. */
+      setConfig: (patch: Record<string, unknown>) => Promise<{ ok: boolean } | { error: string }>
+
       /** Open a file or directory in the OS default app. */
       openPath: (filePath: string) => Promise<{ ok: true } | { error: string }>
 

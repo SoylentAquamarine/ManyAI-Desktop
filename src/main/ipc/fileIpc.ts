@@ -240,6 +240,37 @@ export function registerFileIpc(): void {
     return { path: result.filePaths[0] }
   })
 
+  // ── get-config / set-config ───────────────────────────────────────────────
+  // Persists app config (e.g. workingDir) to {userData}/manyai-config.json.
+  // More durable than renderer localStorage — survives origin changes and
+  // will be pre-populated by the Windows installer.
+  const CONFIG_PATH = path.join(app.getPath('userData'), 'manyai-config.json')
+
+  ipcMain.handle('get-config', () => {
+    try {
+      if (fs.existsSync(CONFIG_PATH)) {
+        return { config: JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8')) }
+      }
+      return { config: {} }
+    } catch (e: unknown) {
+      return { config: {} }
+    }
+  })
+
+  ipcMain.handle('set-config', (_event, patch: Record<string, unknown>) => {
+    try {
+      let existing: Record<string, unknown> = {}
+      if (fs.existsSync(CONFIG_PATH)) {
+        try { existing = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8')) } catch {}
+      }
+      const merged = { ...existing, ...patch }
+      fs.writeFileSync(CONFIG_PATH, JSON.stringify(merged, null, 2), 'utf-8')
+      return { ok: true }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
   // ── proxy-request ─────────────────────────────────────────────────────────
   // Forwards an HTTP request from the renderer through the main process.
   // Used by providers with proxyMode: 'proxied' to bypass renderer CORS restrictions.

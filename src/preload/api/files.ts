@@ -82,6 +82,14 @@ export const filesApi = {
   openPath: (filePath: string): Promise<{ ok: true } | { error: string }> =>
     ipcRenderer.invoke('open-path', filePath),
 
+  /** Read the persistent app config from {userData}/manyai-config.json. */
+  getConfig: (): Promise<{ config: Record<string, unknown> }> =>
+    ipcRenderer.invoke('get-config'),
+
+  /** Merge a patch into the persistent app config. */
+  setConfig: (patch: Record<string, unknown>): Promise<{ ok: boolean } | { error: string }> =>
+    ipcRenderer.invoke('set-config', patch),
+
   /** Forward an HTTP request through the main process, bypassing renderer CORS. */
   proxyRequest: (opts: {
     url: string
