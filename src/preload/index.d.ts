@@ -49,14 +49,23 @@ declare global {
       /** Fetch a URL through the main process, bypassing renderer CORS. Returns raw text. */
       fetchUrl: (url: string) => Promise<{ content: string } | { error: string }>
 
-      /** Read all provider JSON files from the providers/ folder. */
-      readProviders: () => Promise<{ providers: unknown[] } | { error: string }>
+      /** Read all provider JSON files from {workingDir}/providers/. */
+      readProviders: (workingDir: string) => Promise<{ providers: unknown[] } | { error: string }>
 
-      /** Write a single provider JSON file. */
-      writeProvider: (key: string, data: unknown) => Promise<{ ok: boolean } | { error: string }>
+      /** Write a single provider JSON file to {workingDir}/providers/. */
+      writeProvider: (workingDir: string, key: string, data: unknown) => Promise<{ ok: boolean } | { error: string }>
 
-      /** Delete a provider JSON file. */
-      deleteProvider: (key: string) => Promise<{ ok: boolean } | { error: string }>
+      /** Delete a provider JSON file from {workingDir}/providers/. */
+      deleteProvider: (workingDir: string, key: string) => Promise<{ ok: boolean } | { error: string }>
+
+      /** Read all custom workflow JSON files from {workingDir}/workflows/. */
+      readWorkflows: (workingDir: string) => Promise<{ workflows: unknown[] } | { error: string }>
+
+      /** Write a single workflow JSON file to {workingDir}/workflows/. */
+      writeWorkflow: (workingDir: string, type: string, data: unknown) => Promise<{ ok: boolean } | { error: string }>
+
+      /** Delete a workflow JSON file from {workingDir}/workflows/. */
+      deleteWorkflow: (workingDir: string, type: string) => Promise<{ ok: boolean } | { error: string }>
 
       /** Open a file or directory in the OS default app. */
       openPath: (filePath: string) => Promise<{ ok: true } | { error: string }>

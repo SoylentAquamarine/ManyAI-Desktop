@@ -8,12 +8,13 @@ import RightPanel from './components/RightPanel'
 import { workflowBus } from './lib/workflowBus'
 import { healthCheck } from './lib/healthCheck'
 import { TASK_META } from './lib/routing'
-import { loadWorkflows, getWorkflow } from './lib/workflows'
+import { loadWorkflows, getWorkflow, initWorkflows, resetWorkflows } from './lib/workflows'
 import { loadTheme, applyTheme } from './lib/theme'
 import { loadZoom, applyZoom } from './lib/zoom'
 import { loadFont, applyFont } from './lib/font'
 import type { TaskType } from './lib/providers'
 import { initProviders } from './lib/providers'
+import { getWorkingDir, setWorkingDir } from './lib/workingDir'
 
 export type PanelType = 'settings'
 
@@ -64,9 +65,18 @@ export default function App() {
   })
   const [workflowVersion, setWorkflowVersion] = useState(0)
   const [settingsTriggerAdd, setSettingsTriggerAdd] = useState(false)
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'api' | 'workflows' | 'backup'>('general')
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'api' | 'workflows' | 'smartrouting' | 'health' | 'backup' | 'about'>('general')
+  const [noWorkDirModal, setNoWorkDirModal] = useState(false)
 
-  useEffect(() => { applyTheme(loadTheme()); applyZoom(loadZoom()); applyFont(loadFont()); initProviders() }, [])
+  useEffect(() => {
+    applyTheme(loadTheme()); applyZoom(loadZoom()); applyFont(loadFont())
+    if (!getWorkingDir()) {
+      setNoWorkDirModal(true)
+    } else {
+      initProviders()
+      initWorkflows()
+    }
+  }, [])
 
   // ── Continuous health monitoring ─────────────────────────────────────────────
   useEffect(() => {
@@ -186,6 +196,22 @@ export default function App() {
     setShowPicker(false)
   }
 
+  const handleNoWorkDirOk = () => setNoWorkDirModal(false)
+
+  const handleNoWorkDirNew = async () => {
+    const result = await window.api.selectDirectory()
+    if ('error' in result) return
+    setWorkingDir(result.path)
+    await window.api.ensureDir(`${result.path}/providers`)
+    await window.api.ensureDir(`${result.path}/workflows`)
+    await window.api.ensureDir(`${result.path}/images`)
+    await window.api.ensureDir(`${result.path}/backups`)
+    resetWorkflows()
+    await initProviders()
+    await initWorkflows()
+    setNoWorkDirModal(false)
+  }
+
   const toggleContinuous = (workflowType: string) => {
     setContinuousMap(prev => {
       const next = { ...prev, [workflowType]: !(prev[workflowType] ?? true) }
@@ -264,6 +290,28 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {noWorkDirModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999,
+        }}>
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: 10, padding: '28px 32px', maxWidth: 420, width: '90%',
+            display: 'flex', flexDirection: 'column', gap: 16,
+          }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>No Working Directory Found</div>
+            <div style={{ fontSize: 13, color: 'var(--text-dim)', lineHeight: 1.6 }}>
+              The working directory could not be located. It may be on shared storage that is temporarily unavailable.
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="btn-ghost" onClick={handleNoWorkDirOk}>OK</button>
+              <button className="btn-primary" onClick={handleNoWorkDirNew}>NEW</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="right-panel-wrapper" style={{ width: rightWidth }}>
         <div className="panel-resize-handle" onMouseDown={onResizeMouseDown} />

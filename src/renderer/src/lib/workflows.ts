@@ -1,9 +1,12 @@
 /**
  * workflows.ts — Workflow definitions and persistence.
- * Built-in workflows come from src/workflows/. Custom ones live in localStorage.
+ * Built-in workflows come from src/workflows/. Custom ones live in
+ * {workingDir}/workflows/ as individual JSON files (one per workflow).
+ * On first run, any customs found in localStorage are migrated to files.
  */
 
 import { WORKFLOW_REGISTRY } from '../workflows'
+import { getWorkingDir } from './workingDir'
 
 export interface ContextFile {
   path: string
@@ -18,15 +21,13 @@ export interface WorkflowDef {
   enabled: boolean
   builtIn: boolean
   workflowType?: import('./workflowTypes').WorkflowType[]
-  /** Silently prepended before every user message */
   systemPrompt?: string
-  /** Files read from disk and silently injected into every message */
   contextFiles?: ContextFile[]
 }
 
-const ENABLED_KEY  = 'manyai_workflows_config'
-const CUSTOM_KEY   = 'manyai_custom_workflows'
-const REMOVED_KEY  = 'manyai_removed_builtins'
+const ENABLED_KEY = 'manyai_workflows_config'
+const REMOVED_KEY = 'manyai_removed_builtins'
+const LEGACY_CUSTOM_KEY = 'manyai_custom_workflows'
 
 export const BUILTIN_WORKFLOWS: WorkflowDef[] = WORKFLOW_REGISTRY.map(w => ({
   type: w.type,
@@ -37,6 +38,53 @@ export const BUILTIN_WORKFLOWS: WorkflowDef[] = WORKFLOW_REGISTRY.map(w => ({
   builtIn: true,
   workflowType: w.workflowType,
 }))
+
+// ── In-memory cache ───────────────────────────────────────────────────────────
+
+let _customs: WorkflowDef[] = []
+let _ready = false
+
+export async function initWorkflows(): Promise<void> {
+  if (_ready) return
+  const workingDir = getWorkingDir()
+  if (!workingDir) { _ready = true; return }
+
+  const result = await window.api.readWorkflows(workingDir)
+
+  if ('workflows' in result && result.workflows.length > 0) {
+    _customs = result.workflows as WorkflowDef[]
+    localStorage.removeItem(LEGACY_CUSTOM_KEY)
+    _ready = true
+    return
+  }
+
+  // Empty folder or first run — migrate from localStorage if anything is there
+  const legacy = _loadLegacy()
+  if (legacy.length > 0) {
+    _customs = legacy
+    for (const w of legacy) {
+      window.api.writeWorkflow(workingDir, w.type, w).catch(console.error)
+    }
+    localStorage.removeItem(LEGACY_CUSTOM_KEY)
+  }
+
+  _ready = true
+}
+
+/** Reset ready flag so initWorkflows re-runs (call after working dir changes). */
+export function resetWorkflows(): void {
+  _ready = false
+  _customs = []
+}
+
+function _loadLegacy(): WorkflowDef[] {
+  try {
+    const raw = localStorage.getItem(LEGACY_CUSTOM_KEY)
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+// ── Enabled / removed state (still localStorage — it's preference, not data) ─
 
 function loadEnabledMap(): Record<string, boolean> {
   try {
@@ -63,30 +111,41 @@ export function saveRemovedBuiltins(types: string[]): void {
   localStorage.setItem(REMOVED_KEY, JSON.stringify(types))
 }
 
+// ── Custom workflow CRUD ──────────────────────────────────────────────────────
+
 export function loadCustomWorkflows(): WorkflowDef[] {
-  try {
-    const raw = localStorage.getItem(CUSTOM_KEY)
-    return raw ? JSON.parse(raw) : []
-  } catch { return [] }
+  return _customs
 }
 
 export function saveCustomWorkflows(customs: WorkflowDef[]): void {
-  localStorage.setItem(CUSTOM_KEY, JSON.stringify(customs))
+  const workingDir = getWorkingDir()
+  const prev = new Set(_customs.map(w => w.type))
+  const next = new Set(customs.map(w => w.type))
+
+  // Write new/updated
+  for (const w of customs) {
+    if (workingDir) window.api.writeWorkflow(workingDir, w.type, w).catch(console.error)
+  }
+
+  // Delete removed
+  for (const type of prev) {
+    if (!next.has(type) && workingDir) {
+      window.api.deleteWorkflow(workingDir, type).catch(console.error)
+    }
+  }
+
+  _customs = customs
 }
+
+// ── Combined load/save (used by WorkflowsScreen) ─────────────────────────────
 
 export function loadWorkflows(): WorkflowDef[] {
   const enabledMap = loadEnabledMap()
   const removed = new Set(loadRemovedBuiltins())
   const builtins = BUILTIN_WORKFLOWS
     .filter(w => !removed.has(w.type))
-    .map(w => ({
-      ...w,
-      enabled: enabledMap[w.type] ?? true,
-    }))
-  const customs = loadCustomWorkflows().map(w => ({
-    ...w,
-    enabled: enabledMap[w.type] ?? true,
-  }))
+    .map(w => ({ ...w, enabled: enabledMap[w.type] ?? true }))
+  const customs = _customs.map(w => ({ ...w, enabled: enabledMap[w.type] ?? true }))
   return [...builtins, ...customs]
 }
 

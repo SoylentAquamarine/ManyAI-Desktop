@@ -1,39 +1,22 @@
 {
   "key": "laptop",
   "name": "Laptop (Ollama)",
-  "model": "llama3.1",
+  "model": "qwen2.5:7b",
   "models": [
-    {
-      "id": "llama3.1",
-      "name": "Llama 3.1 8B",
-      "capabilities": [
-        "chat"
-      ]
-    },
-    {
-      "id": "mistral",
-      "name": "Mistral 7B",
-      "capabilities": [
-        "chat"
-      ]
-    },
-    {
-      "id": "llama3.2:3b",
-      "name": "Llama 3.2 3B",
-      "capabilities": [
-        "chat"
-      ]
-    }
+    { "id": "qwen2.5:7b",           "name": "Qwen 2.5 7B (best for coding)", "capabilities": ["chat", "coding"] },
+    { "id": "llama3.1:latest",      "name": "Llama 3.1 8B",                  "capabilities": ["chat"] },
+    { "id": "llama3.2:latest",      "name": "Llama 3.2 (3B alias)",          "capabilities": ["chat"] },
+    { "id": "llama3.2:3b",          "name": "Llama 3.2 3B",                  "capabilities": ["chat"] },
+    { "id": "mistral:latest",       "name": "Mistral 7B",                    "capabilities": ["chat"] },
+    { "id": "phi3:latest",          "name": "Phi-3 (Microsoft)",             "capabilities": ["chat"] },
+    { "id": "nomic-embed-text:latest", "name": "Nomic Embed Text (RAG only)", "capabilities": [] }
   ],
   "baseUrl": "http://10.197.1.211:11434/v1",
   "needsKey": false,
   "keyOptional": false,
   "paidOnly": false,
   "color": "#A8E6CF",
-  "bestFor": [
-    "coding",
-    "general"
-  ],
+  "bestFor": ["coding", "general"],
   "goodAt": "Local, private, zero-cost — no internet required",
   "notGreatAt": "Slower than cloud providers (CPU inference)",
   "supportsVision": false,

@@ -2,7 +2,12 @@
  * fileIpc.ts — Main-process IPC handlers for all filesystem and dialog operations.
  *
  * Channels exposed:
- *   read-providers     — read all JSON files from <appPath>/providers/, returns Provider[]
+ *   read-providers     — read all JSON files from {workingDir}/providers/, returns Provider[]
+ *   write-provider     — write one provider JSON file to {workingDir}/providers/
+ *   delete-provider    — delete one provider JSON file from {workingDir}/providers/
+ *   read-workflows     — read all JSON files from {workingDir}/workflows/, returns WorkflowDef[]
+ *   write-workflow     — write one workflow JSON file to {workingDir}/workflows/
+ *   delete-workflow    — delete one workflow JSON file from {workingDir}/workflows/
  *   open-file          — single-file picker, returns {path, name, content}
  *   open-files         — multi-file picker, returns {files: [{path, name}]}
  *   read-file-by-path  — read arbitrary path, returns {content}
@@ -20,8 +25,8 @@ import path from 'path'
 export function registerFileIpc(): void {
 
   // ── read-providers ─────────────────────────────────────────────────────────
-  ipcMain.handle('read-providers', () => {
-    const dir = path.join(app.getAppPath(), 'providers')
+  ipcMain.handle('read-providers', (_event, workingDir: string) => {
+    const dir = path.join(workingDir, 'providers')
     try {
       const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'))
       const providers = files.map(f => {
@@ -36,8 +41,8 @@ export function registerFileIpc(): void {
   })
 
   // ── write-provider ─────────────────────────────────────────────────────────
-  ipcMain.handle('write-provider', (_event, key: string, data: unknown) => {
-    const dir = path.join(app.getAppPath(), 'providers')
+  ipcMain.handle('write-provider', (_event, workingDir: string, key: string, data: unknown) => {
+    const dir = path.join(workingDir, 'providers')
     try {
       fs.mkdirSync(dir, { recursive: true })
       fs.writeFileSync(path.join(dir, `${key}.json`), JSON.stringify(data, null, 2), 'utf-8')
@@ -48,8 +53,47 @@ export function registerFileIpc(): void {
   })
 
   // ── delete-provider ────────────────────────────────────────────────────────
-  ipcMain.handle('delete-provider', (_event, key: string) => {
-    const filePath = path.join(app.getAppPath(), 'providers', `${key}.json`)
+  ipcMain.handle('delete-provider', (_event, workingDir: string, key: string) => {
+    const filePath = path.join(workingDir, 'providers', `${key}.json`)
+    try {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
+      return { ok: true }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
+  // ── read-workflows ─────────────────────────────────────────────────────────
+  ipcMain.handle('read-workflows', (_event, workingDir: string) => {
+    const dir = path.join(workingDir, 'workflows')
+    try {
+      fs.mkdirSync(dir, { recursive: true })
+      const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'))
+      const workflows = files.map(f => {
+        const raw = fs.readFileSync(path.join(dir, f), 'utf-8')
+        return JSON.parse(raw)
+      })
+      return { workflows }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
+  // ── write-workflow ─────────────────────────────────────────────────────────
+  ipcMain.handle('write-workflow', (_event, workingDir: string, type: string, data: unknown) => {
+    const dir = path.join(workingDir, 'workflows')
+    try {
+      fs.mkdirSync(dir, { recursive: true })
+      fs.writeFileSync(path.join(dir, `${type}.json`), JSON.stringify(data, null, 2), 'utf-8')
+      return { ok: true }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
+  // ── delete-workflow ────────────────────────────────────────────────────────
+  ipcMain.handle('delete-workflow', (_event, workingDir: string, type: string) => {
+    const filePath = path.join(workingDir, 'workflows', `${type}.json`)
     try {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
       return { ok: true }

@@ -7,6 +7,7 @@
  */
 
 import type { WorkflowType } from './workflowTypes'
+import { getWorkingDir } from './workingDir'
 
 export type ProviderKey = string
 export type TaskType = string
@@ -53,7 +54,9 @@ let _ready = false
 
 export async function initProviders(): Promise<void> {
   if (_ready) return
-  const result = await window.api.readProviders()
+  const workingDir = getWorkingDir()
+  if (!workingDir) return
+  const result = await window.api.readProviders(workingDir)
   if ('error' in result) {
     console.error('Failed to load providers:', result.error)
     return
@@ -88,12 +91,14 @@ export function getKeylessProviderKeys(): string[] {
 export function upsertProvider(provider: Provider): void {
   _providers[provider.key] = provider
   if (!_order.includes(provider.key)) _order.push(provider.key)
-  window.api.writeProvider(provider.key, provider).catch(console.error)
+  const dir = getWorkingDir()
+  if (dir) window.api.writeProvider(dir, provider.key, provider).catch(console.error)
 }
 
 /** Remove a provider. Updates memory immediately; deletes JSON file in background. */
 export function removeProvider(key: string): void {
   delete _providers[key]
   _order = _order.filter(k => k !== key)
-  window.api.deleteProvider(key).catch(console.error)
+  const dir = getWorkingDir()
+  if (dir) window.api.deleteProvider(dir, key).catch(console.error)
 }
