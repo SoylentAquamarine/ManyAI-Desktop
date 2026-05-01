@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { loadWorkflows, saveWorkflows, saveRemovedBuiltins, loadRemovedBuiltins, WorkflowDef } from '../../lib/workflows'
+import { loadWorkflows, saveWorkflows, saveRemovedBuiltins, loadRemovedBuiltins, upsertCustomWorkflow, deleteCustomWorkflow, WorkflowDef } from '../../lib/workflows'
 import { WORKFLOW_TYPES, WORKFLOW_TYPE_LABELS, type WorkflowType } from '../../lib/workflowTypes'
 
 const BLANK: Omit<WorkflowDef, 'builtIn'> = {
@@ -87,19 +87,22 @@ export default function WorkflowsScreen({ autoOpenAdd = false, onAutoOpenAddCons
     }
 
     setWorkflows(prev => {
-      // Remove the original (built-in or custom) entry with this slug, then add updated
       const filtered = prev.filter(w => w.type !== slug)
       return [...filtered, updated]
     })
     if (isEditingBuiltIn) {
       setRemovedBuiltins(prev => prev.includes(slug) ? prev : [...prev, slug])
     }
+    // Write to file immediately — don't wait for the Save button
+    upsertCustomWorkflow(updated)
     setEditing(null)
   }
 
   const deleteWorkflow = (type: string, isBuiltIn: boolean) => {
     if (isBuiltIn) {
       setRemovedBuiltins(prev => [...prev, type])
+    } else {
+      deleteCustomWorkflow(type)
     }
     setWorkflows(prev => prev.filter(w => w.type !== type))
   }

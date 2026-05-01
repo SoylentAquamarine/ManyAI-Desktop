@@ -122,12 +122,10 @@ export function saveCustomWorkflows(customs: WorkflowDef[]): void {
   const prev = new Set(_customs.map(w => w.type))
   const next = new Set(customs.map(w => w.type))
 
-  // Write new/updated
   for (const w of customs) {
     if (workingDir) window.api.writeWorkflow(workingDir, w.type, w).catch(console.error)
   }
 
-  // Delete removed
   for (const type of prev) {
     if (!next.has(type) && workingDir) {
       window.api.deleteWorkflow(workingDir, type).catch(console.error)
@@ -135,6 +133,20 @@ export function saveCustomWorkflows(customs: WorkflowDef[]): void {
   }
 
   _customs = customs
+}
+
+/** Add or update a single custom workflow immediately. Updates memory and writes file. */
+export function upsertCustomWorkflow(w: WorkflowDef): void {
+  _customs = _customs.filter(c => c.type !== w.type).concat(w)
+  const workingDir = getWorkingDir()
+  if (workingDir) window.api.writeWorkflow(workingDir, w.type, w).catch(console.error)
+}
+
+/** Delete a single custom workflow immediately. Updates memory and deletes file. */
+export function deleteCustomWorkflow(type: string): void {
+  _customs = _customs.filter(c => c.type !== type)
+  const workingDir = getWorkingDir()
+  if (workingDir) window.api.deleteWorkflow(workingDir, type).catch(console.error)
 }
 
 // ── Combined load/save (used by WorkflowsScreen) ─────────────────────────────
