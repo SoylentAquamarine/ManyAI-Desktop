@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { loadWorkflows, saveWorkflows, saveRemovedBuiltins, loadRemovedBuiltins, upsertCustomWorkflow, deleteCustomWorkflow, WorkflowDef } from '../../lib/workflows'
+import { loadWorkflows, saveRemovedBuiltins, loadRemovedBuiltins, upsertCustomWorkflow, deleteCustomWorkflow, setBuiltinEnabled, WorkflowDef } from '../../lib/workflows'
 import { WORKFLOW_TYPES, WORKFLOW_TYPE_LABELS, type WorkflowType } from '../../lib/workflowTypes'
 
 const BLANK: Omit<WorkflowDef, 'builtIn'> = {
@@ -21,21 +21,22 @@ interface WorkflowsScreenProps {
 export default function WorkflowsScreen({ autoOpenAdd = false, onAutoOpenAddConsumed }: WorkflowsScreenProps) {
   const [workflows, setWorkflows]   = useState<WorkflowDef[]>(() => loadWorkflows())
   const [removedBuiltins, setRemovedBuiltins] = useState<string[]>(() => loadRemovedBuiltins())
-  const [saved, setSaved]           = useState(false)
   const [editing, setEditing]       = useState<WorkflowDef | null>(null)
   const [form, setForm]             = useState<typeof BLANK>(BLANK)
   const [formErr, setFormErr]       = useState('')
   const [addingFile, setAddingFile] = useState(false)
 
   const toggle = (type: string) => {
-    setWorkflows(prev => prev.map(w => w.type === type ? { ...w, enabled: !w.enabled } : w))
-  }
-
-  const handleSave = () => {
-    saveWorkflows(workflows)
-    saveRemovedBuiltins(removedBuiltins)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    setWorkflows(prev => prev.map(w => {
+      if (w.type !== type) return w
+      const next = { ...w, enabled: !w.enabled }
+      if (w.builtIn) {
+        setBuiltinEnabled(type, next.enabled)
+      } else {
+        upsertCustomWorkflow(next)
+      }
+      return next
+    }))
   }
 
   const openAdd = () => {
@@ -91,16 +92,22 @@ export default function WorkflowsScreen({ autoOpenAdd = false, onAutoOpenAddCons
       return [...filtered, updated]
     })
     if (isEditingBuiltIn) {
-      setRemovedBuiltins(prev => prev.includes(slug) ? prev : [...prev, slug])
+      setRemovedBuiltins(prev => {
+        if (prev.includes(slug)) return prev
+        const next = [...prev, slug]
+        saveRemovedBuiltins(next)
+        return next
+      })
     }
-    // Write to file immediately — don't wait for the Save button
     upsertCustomWorkflow(updated)
     setEditing(null)
   }
 
   const deleteWorkflow = (type: string, isBuiltIn: boolean) => {
     if (isBuiltIn) {
-      setRemovedBuiltins(prev => [...prev, type])
+      const next = [...removedBuiltins, type]
+      setRemovedBuiltins(next)
+      saveRemovedBuiltins(next)
     } else {
       deleteCustomWorkflow(type)
     }
@@ -138,14 +145,9 @@ export default function WorkflowsScreen({ autoOpenAdd = false, onAutoOpenAddCons
             Enabled workflows appear in the new-tab picker.
           </span>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button className="btn-ghost" onClick={openAdd} style={{ fontSize: 11 }}>
-            + Add
-          </button>
-          <button className="btn-primary" onClick={handleSave}>
-            {saved ? '✓ Saved' : 'Save'}
-          </button>
-        </div>
+        <button className="btn-ghost" onClick={openAdd} style={{ fontSize: 11 }}>
+          + Add
+        </button>
       </div>
 
       <div className="api-list">

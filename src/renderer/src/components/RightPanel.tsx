@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  enabledWorkflows, loadWorkflows, saveWorkflows,
+  enabledWorkflows, loadWorkflows, upsertCustomWorkflow,
   loadRemovedBuiltins, saveRemovedBuiltins,
   type WorkflowDef, type ContextFile,
 } from '../lib/workflows'
@@ -117,6 +117,12 @@ export default function RightPanel({
 }: Props) {
   const workflows = enabledWorkflows()
   const [prefs, setPrefs] = useState<RoutingPrefs>(() => loadRoutingPrefs())
+
+  // Re-read prefs when the active workflow changes — catches the async init case
+  // where workflows load after the panel mounts (restored tabs on startup).
+  useEffect(() => {
+    setPrefs(loadRoutingPrefs())
+  }, [activeWorkflow])
 
   const allProviders = getAllProviders()
   const allProviderOrder = getAllProviderOrder()
@@ -369,9 +375,7 @@ function WorkflowDetail({
       contextFiles: form.contextFiles.length ? form.contextFiles : undefined,
     }
 
-    const allWorkflows = loadWorkflows()
-    const filtered = allWorkflows.filter(w => w.type !== updated.type)
-    saveWorkflows([...filtered, updated])
+    upsertCustomWorkflow(updated)
 
     if (workflow.builtIn) {
       const removed = loadRemovedBuiltins()

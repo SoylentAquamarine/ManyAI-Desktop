@@ -1,85 +1,106 @@
 /**
  * providerPrefs.ts — Provider enabled state, priority order, and selected models.
+ * Enabled/disabled and model selection are stored in the provider JSON files.
+ * Only the display order (a pure UI preference) stays in localStorage.
  */
 
-import { getAllProviders, getAllProviderOrder } from './providers';
+import { getAllProviders, getAllProviderOrder, upsertProvider } from './providers'
 
-const ORDER_KEY         = 'manyai_provider_order';
-const ENABLED_KEY       = 'manyai_provider_enabled';
-const MODELS_KEY        = 'manyai_provider_models';
-const MODEL_ENABLED_KEY = 'manyai_model_enabled';
+const ORDER_KEY = 'manyai_provider_order'
 
 export function saveProviderOrder(order: string[]): void {
-  localStorage.setItem(ORDER_KEY, JSON.stringify(order));
+  localStorage.setItem(ORDER_KEY, JSON.stringify(order))
 }
 
 export function loadProviderOrder(): string[] {
-  const raw = localStorage.getItem(ORDER_KEY);
-  if (!raw) return getAllProviderOrder();
+  const raw = localStorage.getItem(ORDER_KEY)
+  if (!raw) return getAllProviderOrder()
   try {
-    const parsed = JSON.parse(raw) as string[];
-    const allProviders = getAllProviders();
-    const allOrder = getAllProviderOrder();
-    const valid = parsed.filter(k => allProviders[k]);
-    const extras = allOrder.filter(k => !valid.includes(k));
-    return [...valid, ...extras];
+    const parsed = JSON.parse(raw) as string[]
+    const allProviders = getAllProviders()
+    const allOrder = getAllProviderOrder()
+    const valid = parsed.filter(k => allProviders[k])
+    const extras = allOrder.filter(k => !valid.includes(k))
+    return [...valid, ...extras]
   } catch {
-    return getAllProviderOrder();
+    return getAllProviderOrder()
   }
-}
-
-export function saveEnabledProviders(enabled: Record<string, boolean>): void {
-  localStorage.setItem(ENABLED_KEY, JSON.stringify(enabled));
 }
 
 export function loadEnabledProviders(): Record<string, boolean> {
-  const raw = localStorage.getItem(ENABLED_KEY);
-  if (!raw) return {};
-  try { return JSON.parse(raw); } catch { return {}; }
+  const providers = getAllProviders()
+  return Object.fromEntries(
+    Object.entries(providers).map(([k, p]) => [k, p.enabled !== false])
+  )
 }
 
-export function saveSelectedModels(models: Partial<Record<string, string>>): void {
-  localStorage.setItem(MODELS_KEY, JSON.stringify(models));
-}
-
-export function loadEnabledModels(): Record<string, boolean> {
-  const raw = localStorage.getItem(MODEL_ENABLED_KEY);
-  if (!raw) return {};
-  try { return JSON.parse(raw); } catch { return {}; }
-}
-
-export function saveEnabledModels(enabled: Record<string, boolean>): void {
-  localStorage.setItem(MODEL_ENABLED_KEY, JSON.stringify(enabled));
-}
-
-export function isModelEnabled(providerKey: string, modelId: string): boolean {
-  const all = loadEnabledModels();
-  return all[`${providerKey}:${modelId}`] !== false;
-}
-
-export function setModelEnabled(providerKey: string, modelId: string, enabled: boolean): void {
-  const all = loadEnabledModels();
-  all[`${providerKey}:${modelId}`] = enabled;
-  saveEnabledModels(all);
+export function saveEnabledProviders(enabled: Record<string, boolean>): void {
+  const providers = getAllProviders()
+  for (const [k, isEnabled] of Object.entries(enabled)) {
+    const p = providers[k]
+    if (p && p.enabled !== isEnabled) {
+      upsertProvider({ ...p, enabled: isEnabled })
+    }
+  }
 }
 
 export function loadSelectedModels(): Record<string, string> {
-  const allProviders = getAllProviders();
-  const defaults = Object.fromEntries(
-    Object.entries(allProviders).map(([k, p]) => [k, p.model])
-  );
-  const raw = localStorage.getItem(MODELS_KEY);
-  if (!raw) return defaults;
-  try {
-    const stored = JSON.parse(raw) as Partial<Record<string, string>>;
-    const merged = { ...defaults };
-    for (const [k, v] of Object.entries(stored)) {
-      if (v && allProviders[k]?.models.some(m => m.id === v)) {
-        merged[k] = v;
-      }
+  const providers = getAllProviders()
+  return Object.fromEntries(Object.entries(providers).map(([k, p]) => [k, p.model]))
+}
+
+export function saveSelectedModels(models: Partial<Record<string, string>>): void {
+  const providers = getAllProviders()
+  for (const [k, modelId] of Object.entries(models)) {
+    const p = providers[k]
+    if (modelId && p && p.model !== modelId) {
+      upsertProvider({ ...p, model: modelId })
     }
-    return merged;
-  } catch {
-    return defaults;
   }
+}
+
+export function loadEnabledModels(): Record<string, boolean> {
+  const providers = getAllProviders()
+  const result: Record<string, boolean> = {}
+  for (const [pk, p] of Object.entries(providers)) {
+    for (const m of p.models) {
+      result[`${pk}:${m.id}`] = m.enabled !== false
+    }
+  }
+  return result
+}
+
+export function saveEnabledModels(enabled: Record<string, boolean>): void {
+  const providers = getAllProviders()
+  // Group changes by provider
+  const byProvider: Record<string, Record<string, boolean>> = {}
+  for (const [key, isEnabled] of Object.entries(enabled)) {
+    const colonIdx = key.indexOf(':')
+    const pk = key.slice(0, colonIdx)
+    const modelId = key.slice(colonIdx + 1)
+    if (!byProvider[pk]) byProvider[pk] = {}
+    byProvider[pk][modelId] = isEnabled
+  }
+  for (const [pk, modelMap] of Object.entries(byProvider)) {
+    const p = providers[pk]
+    if (!p) continue
+    upsertProvider({
+      ...p,
+      models: p.models.map(m => ({
+        ...m,
+        enabled: modelMap[m.id] !== undefined ? modelMap[m.id] : m.enabled,
+      })),
+    })
+  }
+}
+
+export function isModelEnabled(providerKey: string, modelId: string): boolean {
+  const m = getAllProviders()[providerKey]?.models.find(x => x.id === modelId)
+  return m?.enabled !== false
+}
+
+export function setModelEnabled(providerKey: string, modelId: string, enabled: boolean): void {
+  const p = getAllProviders()[providerKey]
+  if (!p) return
+  upsertProvider({ ...p, models: p.models.map(m => m.id === modelId ? { ...m, enabled } : m) })
 }

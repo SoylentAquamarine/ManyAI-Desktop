@@ -2,7 +2,7 @@
  * workflows.ts — Workflow definitions and persistence.
  * Built-in workflows come from src/workflows/. Custom ones live in
  * {workingDir}/workflows/ as individual JSON files (one per workflow).
- * On first run, any customs found in localStorage are migrated to files.
+ * Removed builtins and per-builtin enabled overrides live in manyai-config.json.
  */
 
 import { WORKFLOW_REGISTRY } from '../workflows'
@@ -23,10 +23,9 @@ export interface WorkflowDef {
   workflowType?: import('./workflowTypes').WorkflowType[]
   systemPrompt?: string
   contextFiles?: ContextFile[]
+  routes?: import('../workflows/types').RouteEntry[]
 }
 
-const ENABLED_KEY = 'manyai_workflows_config'
-const REMOVED_KEY = 'manyai_removed_builtins'
 const LEGACY_CUSTOM_KEY = 'manyai_custom_workflows'
 
 export const BUILTIN_WORKFLOWS: WorkflowDef[] = WORKFLOW_REGISTRY.map(w => ({
@@ -42,12 +41,25 @@ export const BUILTIN_WORKFLOWS: WorkflowDef[] = WORKFLOW_REGISTRY.map(w => ({
 // ── In-memory cache ───────────────────────────────────────────────────────────
 
 let _customs: WorkflowDef[] = []
+let _removedBuiltins: string[] = []
+let _builtinEnabled: Record<string, boolean> = {}
 let _ready = false
 
 export async function initWorkflows(): Promise<void> {
   if (_ready) return
   const workingDir = getWorkingDir()
   if (!workingDir) { _ready = true; return }
+
+  // Load removed builtins and builtin enabled overrides from durable config
+  const cfg = await window.api.getConfig()
+  _removedBuiltins = (cfg.config.removedBuiltins as string[] | undefined) ?? _loadLegacyRemovedBuiltins()
+  _builtinEnabled = (cfg.config.builtinEnabled as Record<string, boolean> | undefined) ?? {}
+
+  // Migrate legacy removedBuiltins from localStorage to config on first run
+  if (_removedBuiltins.length > 0 && !cfg.config.removedBuiltins) {
+    window.api.setConfig({ removedBuiltins: _removedBuiltins, builtinEnabled: _builtinEnabled }).catch(console.error)
+    localStorage.removeItem('manyai_removed_builtins')
+  }
 
   const result = await window.api.readWorkflows(workingDir)
 
@@ -75,6 +87,8 @@ export async function initWorkflows(): Promise<void> {
 export function resetWorkflows(): void {
   _ready = false
   _customs = []
+  _removedBuiltins = []
+  _builtinEnabled = {}
 }
 
 function _loadLegacy(): WorkflowDef[] {
@@ -84,31 +98,27 @@ function _loadLegacy(): WorkflowDef[] {
   } catch { return [] }
 }
 
-// ── Enabled / removed state (still localStorage — it's preference, not data) ─
-
-function loadEnabledMap(): Record<string, boolean> {
+function _loadLegacyRemovedBuiltins(): string[] {
   try {
-    const raw = localStorage.getItem(ENABLED_KEY)
-    if (!raw) return {}
-    const arr: { type: string; enabled: boolean }[] = JSON.parse(raw)
-    return Object.fromEntries(arr.map(e => [e.type, e.enabled]))
-  } catch { return {} }
-}
-
-function saveEnabledMap(workflows: WorkflowDef[]): void {
-  const slim = workflows.map(w => ({ type: w.type, enabled: w.enabled }))
-  localStorage.setItem(ENABLED_KEY, JSON.stringify(slim))
-}
-
-export function loadRemovedBuiltins(): string[] {
-  try {
-    const raw = localStorage.getItem(REMOVED_KEY)
+    const raw = localStorage.getItem('manyai_removed_builtins')
     return raw ? JSON.parse(raw) : []
   } catch { return [] }
 }
 
+// ── Removed builtins and builtin enabled (stored in manyai-config.json) ───────
+
+export function loadRemovedBuiltins(): string[] {
+  return _removedBuiltins
+}
+
 export function saveRemovedBuiltins(types: string[]): void {
-  localStorage.setItem(REMOVED_KEY, JSON.stringify(types))
+  _removedBuiltins = types
+  window.api.setConfig({ removedBuiltins: types }).catch(console.error)
+}
+
+export function setBuiltinEnabled(type: string, enabled: boolean): void {
+  _builtinEnabled = { ..._builtinEnabled, [type]: enabled }
+  window.api.setConfig({ builtinEnabled: _builtinEnabled }).catch(console.error)
 }
 
 // ── Custom workflow CRUD ──────────────────────────────────────────────────────
@@ -152,18 +162,11 @@ export function deleteCustomWorkflow(type: string): void {
 // ── Combined load/save (used by WorkflowsScreen) ─────────────────────────────
 
 export function loadWorkflows(): WorkflowDef[] {
-  const enabledMap = loadEnabledMap()
-  const removed = new Set(loadRemovedBuiltins())
+  const removed = new Set(_removedBuiltins)
   const builtins = BUILTIN_WORKFLOWS
     .filter(w => !removed.has(w.type))
-    .map(w => ({ ...w, enabled: enabledMap[w.type] ?? true }))
-  const customs = _customs.map(w => ({ ...w, enabled: enabledMap[w.type] ?? true }))
-  return [...builtins, ...customs]
-}
-
-export function saveWorkflows(workflows: WorkflowDef[]): void {
-  saveEnabledMap(workflows)
-  saveCustomWorkflows(workflows.filter(w => !w.builtIn))
+    .map(w => ({ ...w, enabled: _builtinEnabled[w.type] ?? true }))
+  return [...builtins, ..._customs]
 }
 
 export function enabledWorkflows(): WorkflowDef[] {

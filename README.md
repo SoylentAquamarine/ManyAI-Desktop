@@ -35,6 +35,16 @@ $ npm run build:linux
 
 ## Changelog
 
+### 2026-05-01 — All data in JSON files; no localStorage state for providers or workflows
+
+- **Provider & model state**: enabled/disabled and selected model per provider now stored in provider JSON files (`enabled` field on `Provider` and `ProviderModel`); no longer in localStorage
+- **Workflow state**: custom workflow enabled state stored in workflow JSON files; builtin enabled overrides and removed-builtins list moved to `manyai-config.json`
+- **Workflow routing**: provider assignments (the `routes` field) now stored in the workflow's own JSON file — workflow files are fully self-contained and shareable
+- **`providerPrefs.ts`** fully rewritten to read/write from provider JSON files; only display order stays in localStorage
+- **WorkflowsScreen Save button removed** — all changes (toggle, add, edit, delete) save immediately
+- **Startup timing fix**: `initWorkflows` completion increments `workflowVersion`, so right panel populates correctly for tabs restored from a previous session
+- **Routing reload fix**: right panel re-reads routing prefs when `activeWorkflow` changes, so restored tabs show their saved providers immediately on launch
+
 ### 2026-05-01 — Modular provider/workflow files, working directory enforcement, LAN provider support
 
 **Provider plugin system**

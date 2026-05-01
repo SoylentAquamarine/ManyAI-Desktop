@@ -19,6 +19,7 @@ export interface ProviderModel {
   maxTokens?: number
   imageSize?: string
   randomSeed?: boolean
+  enabled?: boolean
 }
 
 export interface Provider {
@@ -38,6 +39,7 @@ export interface Provider {
   extraHeaders?: Record<string, string>
   keyHint?: string
   sortOrder?: number
+  enabled?: boolean
   /** How to call the text API. Default: "openai-compat" */
   apiFormat?: 'openai-compat' | 'gemini' | 'anthropic' | 'cloudflare' | 'pollinations' | string
   /** How to call the image API. Default: "openai-compat-image" */

@@ -81,7 +81,7 @@ export default function App() {
         setNoWorkDirModal(true)
       } else {
         initProviders()
-        initWorkflows()
+        initWorkflows().then(() => setWorkflowVersion(v => v + 1))
       }
     })
   }, [])
