@@ -240,6 +240,28 @@ export function registerFileIpc(): void {
     return { path: result.filePaths[0] }
   })
 
+  // ── proxy-request ─────────────────────────────────────────────────────────
+  // Forwards an HTTP request from the renderer through the main process.
+  // Used by providers with proxyMode: 'proxied' to bypass renderer CORS restrictions.
+  ipcMain.handle('proxy-request', async (_event, opts: {
+    url: string
+    method: string
+    headers: Record<string, string>
+    body?: string
+  }) => {
+    try {
+      const res = await fetch(opts.url, {
+        method: opts.method,
+        headers: opts.headers,
+        body: opts.body,
+      })
+      const body = await res.text()
+      return { status: res.status, body }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
   // ── open-path ──────────────────────────────────────────────────────────────
   // Opens a file or directory in the OS default application.
   ipcMain.handle('open-path', async (_event, filePath: string) => {

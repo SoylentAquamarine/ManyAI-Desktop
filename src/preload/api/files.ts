@@ -81,4 +81,13 @@ export const filesApi = {
   /** Open a file or directory in the OS default application (e.g. log file in Notepad). */
   openPath: (filePath: string): Promise<{ ok: true } | { error: string }> =>
     ipcRenderer.invoke('open-path', filePath),
+
+  /** Forward an HTTP request through the main process, bypassing renderer CORS. */
+  proxyRequest: (opts: {
+    url: string
+    method: string
+    headers: Record<string, string>
+    body?: string
+  }): Promise<{ status: number; body: string } | { error: string }> =>
+    ipcRenderer.invoke('proxy-request', opts),
 }

@@ -44,6 +44,12 @@ export interface Provider {
   imageApiFormat?: 'openai-image' | 'pollinations-image' | 'openai-compat-image' | string
   /** Provider works without a key but can accept one if provided. */
   keyOptional?: boolean
+  /**
+   * How requests are sent.
+   * direct  — renderer calls API directly (works for cloud APIs with CORS headers)
+   * proxied — routes through Electron main process (required for local/LAN providers)
+   */
+  proxyMode?: 'direct' | 'proxied'
 }
 
 // ── Runtime registry (populated by initProviders at startup) ─────────────────

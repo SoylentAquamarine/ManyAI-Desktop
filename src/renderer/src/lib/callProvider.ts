@@ -42,6 +42,34 @@ function fetchWithTimeout(url: string, options?: RequestInit): Promise<Response>
     .finally(() => clearTimeout(timer));
 }
 
+// Fake Response shape returned when proxying through main process
+interface FetchLike {
+  ok: boolean
+  status: number
+  json: () => Promise<unknown>
+  text: () => Promise<string>
+}
+
+async function doFetch(provider: Provider, url: string, opts: RequestInit = {}): Promise<FetchLike> {
+  if (provider.proxyMode === 'proxied') {
+    const result = await window.api.proxyRequest({
+      url,
+      method: (opts.method as string) ?? 'GET',
+      headers: (opts.headers as Record<string, string>) ?? {},
+      body: opts.body as string | undefined,
+    })
+    if ('error' in result) throw new Error(result.error)
+    const { status, body } = result as { status: number; body: string }
+    return {
+      ok: status >= 200 && status < 300,
+      status,
+      json: () => { try { return Promise.resolve(JSON.parse(body)) } catch { return Promise.reject(new Error('Invalid JSON')) } },
+      text: () => Promise.resolve(body),
+    }
+  }
+  return fetchWithTimeout(url, opts)
+}
+
 
 export async function callProvider(
   provider: Provider,
@@ -65,7 +93,7 @@ export async function callProvider(
         ? recentHistory.map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`).join('\n') + '\nUser: '
         : '';
       const url = `${provider.baseUrl}/${encodeURIComponent(contextPrefix + prompt)}`;
-      const res = await fetchWithTimeout(url);
+      const res = await doFetch(provider, url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const content = await res.text();
       return { content, provider: provider.key, model: provider.model, latencyMs: elapsed() };
@@ -86,17 +114,17 @@ export async function callProvider(
       currentParts.push({ text: prompt });
       contents.push({ role: 'user', parts: currentParts });
 
-      const res = await fetchWithTimeout(url, {
+      const res = await doFetch(provider, url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contents }),
       });
       if (!res.ok) {
         let errMsg = `HTTP ${res.status}`;
-        try { const e = await res.json(); errMsg = e?.error?.message ?? errMsg; } catch {}
+        try { const e = await res.json(); errMsg = (e as any)?.error?.message ?? errMsg; } catch {}
         throw new Error(errMsg);
       }
-      const json = await res.json();
+      const json = await res.json() as any;
       const content: string = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
       return { content, provider: provider.key, model: provider.model, latencyMs: elapsed() };
     }
@@ -122,7 +150,7 @@ export async function callProvider(
         messages.push({ role: 'user', content: prompt });
       }
 
-      const res = await fetchWithTimeout(`${provider.baseUrl}/messages`, {
+      const res = await doFetch(provider, `${provider.baseUrl}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -137,10 +165,10 @@ export async function callProvider(
       });
       if (!res.ok) {
         let errMsg = `HTTP ${res.status}`;
-        try { const e = await res.json(); errMsg = e?.error?.message ?? errMsg; } catch {}
+        try { const e = await res.json(); errMsg = (e as any)?.error?.message ?? errMsg; } catch {}
         throw new Error(errMsg);
       }
-      const json = await res.json();
+      const json = await res.json() as any;
       const content: string = json?.content?.[0]?.text ?? '';
       return { content, provider: provider.key, model: json?.model ?? provider.model, latencyMs: elapsed() };
     }
@@ -156,7 +184,7 @@ export async function callProvider(
         { role: 'user', content: prompt },
       ];
 
-      const res = await fetchWithTimeout(url, {
+      const res = await doFetch(provider, url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -166,10 +194,10 @@ export async function callProvider(
       });
       if (!res.ok) {
         let errMsg = `HTTP ${res.status}`;
-        try { const e = await res.json(); errMsg = e?.errors?.[0]?.message ?? errMsg; } catch {}
+        try { const e = await res.json(); errMsg = (e as any)?.errors?.[0]?.message ?? errMsg; } catch {}
         throw new Error(errMsg);
       }
-      const json = await res.json();
+      const json = await res.json() as any;
       const content: string = json?.choices?.[0]?.message?.content ?? '';
       return { content, provider: provider.key, model: provider.model, latencyMs: elapsed() };
     }
@@ -192,7 +220,7 @@ export async function callProvider(
     }
     messages.push({ role: 'user', content: messageContent });
 
-    const res = await fetchWithTimeout(`${provider.baseUrl}/chat/completions`, {
+    const res = await doFetch(provider, `${provider.baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -208,11 +236,11 @@ export async function callProvider(
 
     if (!res.ok) {
       let errMsg = `HTTP ${res.status}`;
-      try { const e = await res.json(); errMsg = e?.error?.message ?? errMsg; } catch {}
+      try { const e = await res.json(); errMsg = (e as any)?.error?.message ?? errMsg; } catch {}
       throw new Error(errMsg);
     }
 
-    const json = await res.json();
+    const json = await res.json() as any;
     const content: string = json?.choices?.[0]?.message?.content ?? '';
     const model: string = json?.model ?? provider.model;
     return { content, provider: provider.key, model, latencyMs: elapsed() };

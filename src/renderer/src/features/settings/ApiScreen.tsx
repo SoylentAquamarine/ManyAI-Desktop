@@ -41,6 +41,7 @@ const BLANK_PROVIDER: Provider = {
   imageApiFormat: '',
   sortOrder: undefined,
   extraHeaders: {},
+  proxyMode: 'direct',
 }
 
 const PRESET_COLORS = [
@@ -220,6 +221,13 @@ function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
             {label('Image API Format')}
             <select value={form.imageApiFormat ?? ''} onChange={e => set({ imageApiFormat: e.target.value || undefined })} style={{ width: '100%' }}>
               {IMAGE_API_FORMATS.map(f => <option key={f} value={f}>{f || '(none)'}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            {label('Connection Mode')}
+            <select value={form.proxyMode ?? 'direct'} onChange={e => set({ proxyMode: e.target.value as 'direct' | 'proxied' })} style={{ width: '100%' }}>
+              <option value="direct">Direct (cloud APIs)</option>
+              <option value="proxied">Proxied via main process (local/LAN)</option>
             </select>
           </div>
           <div style={{ flex: 1 }}>
