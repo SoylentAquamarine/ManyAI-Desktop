@@ -7,9 +7,6 @@ import {
 import { WORKFLOW_TYPES, WORKFLOW_TYPE_LABELS, type WorkflowType } from '../../lib/workflowTypes'
 import { saveKey, loadKey, deleteKey } from '../../lib/keyStore'
 import { loadEnabledModels, saveEnabledModels } from '../../lib/providerPrefs'
-import { callProvider } from '../../lib/callProvider'
-import { callImageProvider } from '../../lib/callImageProvider'
-
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface ModelState {
@@ -355,13 +352,10 @@ export default function ApiScreen() {
   const [editTarget, setEditTarget] = useState<Provider | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
-  const [testResults, setTestResults] = useState<Record<string, 'idle' | 'testing' | 'ok' | string>>({})
   const [capOpen, setCapOpen] = useState<Record<string, boolean>>({})
   const [modelDeleteConfirm, setModelDeleteConfirm] = useState<string | null>(null)
   /** Per-provider key: brief "✓ Saved" flash after blur-save */
   const [keySaved, setKeySaved] = useState<Record<string, boolean>>({})
-  const [testingAll, setTestingAll] = useState(false)
-  const [testAllProgress, setTestAllProgress] = useState('')
 
   const refresh = () => {
     const providers = getAllProviders()
@@ -400,57 +394,6 @@ export default function ApiScreen() {
       saveEnabledModels(modelEnabled)
       return next
     })
-  }
-
-  /** True when the model only supports image generation (not chat). */
-  const isImageOnly = (pk: string, modelId: string) => {
-    const caps = getAllProviders()[pk]?.models.find(m => m.id === modelId)?.capabilities
-    return caps != null && caps.includes('image') && !caps.includes('chat')
-  }
-
-  /** Run a single model test, using image generation for image-only models. */
-  const runTest = async (pk: string, modelId: string, apiKey: string | undefined): Promise<string> => {
-    if (isImageOnly(pk, modelId)) {
-      try {
-        await callImageProvider('a small red square', pk, modelId, apiKey)
-        return 'ok'
-      } catch (e) {
-        return e instanceof Error ? e.message : String(e)
-      }
-    }
-    const p = getAllProviders()[pk]
-    const result = await callProvider({ ...p, model: modelId }, 'Hi', apiKey)
-    return result.error ?? 'ok'
-  }
-
-  /** Run Test on every enabled model across all providers, one after another. */
-  const handleTestAll = async () => {
-    setTestingAll(true)
-    setTestResults({})
-    const providers = getAllProviders()
-    const orderedKeys = [...getAllProviderOrder()].sort((a, b) =>
-      (providers[a]?.name ?? a).localeCompare(providers[b]?.name ?? b)
-    )
-    let done = 0
-    const jobs: { pk: string; modelId: string }[] = []
-    for (const pk of orderedKeys) {
-      const p = providers[pk]
-      if (!p) continue
-      for (const m of p.models) {
-        const mk = `${pk}:${m.id}`
-        if (state[pk]?.models[mk]?.enabled !== false) jobs.push({ pk, modelId: m.id })
-      }
-    }
-    for (const { pk, modelId } of jobs) {
-      const mk = `${pk}:${modelId}`
-      setTestAllProgress(`Testing ${providers[pk]?.name ?? pk} / ${modelId} (${++done}/${jobs.length})`)
-      setTestResults(prev => ({ ...prev, [mk]: 'testing' }))
-      const apiKey = state[pk]?.apiKey || loadKey(pk) || undefined
-      const result = await runTest(pk, modelId, apiKey)
-      setTestResults(prev => ({ ...prev, [mk]: result }))
-    }
-    setTestingAll(false)
-    setTestAllProgress('')
   }
 
   const handleEdit = (provider: Provider) => {
@@ -497,14 +440,6 @@ export default function ApiScreen() {
     refresh()
   }
 
-  const handleTest = async (pk: string, modelId: string) => {
-    const mk = `${pk}:${modelId}`
-    setTestResults(prev => ({ ...prev, [mk]: 'testing' }))
-    const apiKey = state[pk]?.apiKey || loadKey(pk) || undefined
-    const result = await runTest(pk, modelId, apiKey)
-    setTestResults(prev => ({ ...prev, [mk]: result }))
-  }
-
   const currentProviders = getAllProviders()
   const currentOrder = [...getAllProviderOrder()].sort((a, b) =>
     (currentProviders[a]?.name ?? a).localeCompare(currentProviders[b]?.name ?? b)
@@ -530,15 +465,6 @@ export default function ApiScreen() {
           </button>
           <button className="btn-ghost" onClick={handleAdd} style={{ fontSize: 12 }}>
             + Add Provider
-          </button>
-          <button
-            className="btn-primary"
-            onClick={handleTestAll}
-            disabled={testingAll}
-            title="Test every enabled model sequentially"
-            style={{ minWidth: 100 }}
-          >
-            {testingAll ? (testAllProgress || 'Testing…') : 'Test All'}
           </button>
         </div>
       </div>
@@ -627,34 +553,13 @@ export default function ApiScreen() {
                           </button>
                           <button
                             className="btn-ghost"
-                            style={{ fontSize: 10, padding: '1px 7px', marginLeft: 'auto' }}
-                            disabled={testResults[mk] === 'testing'}
-                            onClick={() => handleTest(pk, m.id)}
-                            title="Send a test message to verify this model works"
-                          >
-                            {testResults[mk] === 'testing' ? '...' : 'Test'}
-                          </button>
-                          <button
-                            className="btn-ghost"
-                            style={{ fontSize: 10, padding: '1px 7px', color: modelDeleteConfirm === mk ? '#e55' : undefined, borderColor: modelDeleteConfirm === mk ? '#e55' : undefined }}
+                            style={{ fontSize: 10, padding: '1px 7px', marginLeft: 'auto', color: modelDeleteConfirm === mk ? '#e55' : undefined, borderColor: modelDeleteConfirm === mk ? '#e55' : undefined }}
                             onClick={() => handleModelDelete(pk, m.id)}
                             title={p.models.length <= 1 ? 'Cannot delete the only model' : 'Delete this model'}
                             disabled={p.models.length <= 1}
                           >{modelDeleteConfirm === mk ? 'Confirm' : 'Delete'}</button>
                           {modelDeleteConfirm === mk && (
                             <button className="btn-ghost" style={{ fontSize: 10, padding: '1px 7px' }} onClick={() => setModelDeleteConfirm(null)}>Cancel</button>
-                          )}
-                          {testResults[mk] && testResults[mk] !== 'testing' && (
-                            <span style={{
-                              fontSize: 10,
-                              color: testResults[mk] === 'ok' ? '#4caf50' : '#e55',
-                              whiteSpace: 'nowrap',
-                              maxWidth: 120,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }} title={testResults[mk] === 'ok' ? 'OK' : testResults[mk]}>
-                              {testResults[mk] === 'ok' ? '✓ OK' : '✗ ' + testResults[mk]}
-                            </span>
                           )}
                         </div>
                         {isCapOpen && (

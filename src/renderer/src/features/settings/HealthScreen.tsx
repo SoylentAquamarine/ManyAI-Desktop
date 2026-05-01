@@ -1,5 +1,9 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { healthCheck, type ProviderSummary, type HealthResult, type HealthConfig } from '../../lib/healthCheck'
+import { testModel, discoverModel, buildRecommendations, type ModelTestResult, type CapabilityResult, type TestRecommendation } from '../../lib/modelTester'
+import { getAllProviders, getAllProviderOrder } from '../../lib/providers'
+import { loadAllKeys } from '../../lib/keyStore'
+import { loadEnabledProviders } from '../../lib/providerPrefs'
 import { getLogPath } from '../../lib/workingDir'
 
 const STATUS_COLOR: Record<string, string> = {
@@ -16,6 +20,99 @@ const STATUS_ICON: Record<string, string> = {
   unknown:  '?',
 }
 
+const GRADE_COLOR: Record<string, string> = {
+  A: 'var(--accent)',
+  B: '#4caf50',
+  C: '#fa0',
+  F: '#e55',
+}
+
+// ── Recommendations popup ──────────────────────────────────────────────────────
+
+function RecommendationsModal({ recs, onClose }: { recs: TestRecommendation[]; onClose: () => void }) {
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+    }} onClick={onClose}>
+      <div style={{
+        background: 'var(--bg)', border: '1px solid var(--border)',
+        borderRadius: 10, padding: 24, maxWidth: 560, width: '95%',
+        maxHeight: '80%', overflowY: 'auto',
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+          Capability Recommendations
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 16 }}>
+          Based on test results. Changes are not applied automatically — update capabilities in Settings → Providers.
+        </div>
+
+        {recs.length === 0 ? (
+          <div style={{ fontSize: 13, color: 'var(--text-dim)' }}>
+            No recommendations — declared capabilities match test results.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {recs.map((r, i) => (
+              <div key={i} style={{
+                padding: '8px 12px',
+                borderRadius: 6,
+                borderLeft: `3px solid ${r.action === 'enable' ? 'var(--accent)' : '#e55'}`,
+                background: r.action === 'enable' ? 'rgba(100,200,100,0.06)' : 'rgba(238,85,85,0.06)',
+                fontSize: 12,
+              }}>
+                <div style={{ fontWeight: 600, marginBottom: 2 }}>
+                  <span style={{ color: r.action === 'enable' ? 'var(--accent)' : '#e55' }}>
+                    {r.action === 'enable' ? '+ Enable' : '− Disable'}
+                  </span>
+                  {' '}<strong>{r.capability}</strong> on {r.providerName} / {r.modelName}
+                </div>
+                <div style={{ color: 'var(--text-dim)' }}>{r.reason}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <button className="btn-primary" onClick={onClose} style={{ marginTop: 20, width: '100%' }}>
+          Close
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Capability test results table for one provider/model ───────────────────────
+
+function CapabilityResults({ results }: { results: CapabilityResult[] }) {
+  return (
+    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+      {results.map(r => {
+        if (r.skipped) return (
+          <span key={r.capability} style={{
+            fontSize: 10, padding: '2px 7px', borderRadius: 12,
+            border: '1px solid var(--border)', color: 'var(--text-dim)',
+            whiteSpace: 'nowrap', fontStyle: 'italic',
+          }} title={r.note}>
+            {r.capability} —
+          </span>
+        )
+        return (
+          <span key={r.capability} style={{
+            fontSize: 10, padding: '2px 7px', borderRadius: 12,
+            border: `1px solid ${r.passed ? GRADE_COLOR[r.grade] : '#e55'}`,
+            color: r.passed ? GRADE_COLOR[r.grade] : '#e55',
+            whiteSpace: 'nowrap',
+          }} title={r.note ?? `${r.capability}: ${(r.latencyMs / 1000).toFixed(1)}s`}>
+            {r.passed ? r.grade : '✗'} {r.capability} {r.passed ? `${(r.latencyMs / 1000).toFixed(1)}s` : ''}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Main HealthScreen ──────────────────────────────────────────────────────────
+
 export default function HealthScreen() {
   const [config, setConfig]       = useState<HealthConfig>(() => healthCheck.loadConfig())
   const [summaries, setSummaries] = useState<ProviderSummary[]>(() => healthCheck.getSummaries())
@@ -27,6 +124,15 @@ export default function HealthScreen() {
   const [loadingLog, setLoadingLog] = useState(false)
   const [selected, setSelected]   = useState<string | null>(null)
 
+  // ── Capability testing state ───────────────────────────────────────────────
+  const [capTestResults, setCapTestResults] = useState<Record<string, ModelTestResult>>({})
+  const [capTesting, setCapTesting]         = useState<Record<string, boolean>>({})
+  const [testingAll, setTestingAll]           = useState(false)
+  const [discovering, setDiscovering]         = useState(false)
+  const [testProgress, setTestProgress]       = useState('')
+  const [recommendations, setRecommendations] = useState<TestRecommendation[] | null>(null)
+  const abortRef = useRef(false)
+
   const refresh = () => {
     setSummaries(healthCheck.getSummaries())
     setLog(healthCheck.loadLog())
@@ -37,7 +143,6 @@ export default function HealthScreen() {
     healthCheck.saveConfig(next)
   }
 
-  // Run all checks
   const runAll = async () => {
     setRunning(true)
     setProgress({ done: 0, total: 0 })
@@ -49,7 +154,6 @@ export default function HealthScreen() {
     refresh()
   }
 
-  // Run single check
   const runOne = async (pk: string) => {
     setSelected(pk)
     await healthCheck.checkProvider(pk)
@@ -57,7 +161,94 @@ export default function HealthScreen() {
     refresh()
   }
 
-  // Load app log file content
+  // ── Capability testing ─────────────────────────────────────────────────────
+
+  const getEnabledModels = () => {
+    const allProviders = getAllProviders()
+    const order = getAllProviderOrder()
+    const keys = loadAllKeys()
+    const enabledMap = loadEnabledProviders()
+    const availableKeys = new Set(Object.keys(keys))
+    availableKeys.add('pollinations')
+    const jobs: { pk: string; modelId: string }[] = []
+    for (const pk of order) {
+      if (enabledMap[pk] === false) continue
+      if (!availableKeys.has(pk)) continue
+      const p = allProviders[pk]
+      if (!p) continue
+      for (const m of p.models) {
+        jobs.push({ pk, modelId: m.id })
+      }
+    }
+    return jobs
+  }
+
+  const runCapTest = async (pk: string, modelId: string) => {
+    const mk = `${pk}:${modelId}`
+    setCapTesting(prev => ({ ...prev, [mk]: true }))
+    const keys = loadAllKeys()
+    const apiKey = keys[pk] ?? undefined
+    const result = await testModel(pk, modelId, apiKey, () => {
+      setCapTestResults(prev => ({ ...prev })) // trigger re-render per capability
+    })
+    setCapTestResults(prev => ({ ...prev, [mk]: result }))
+    setCapTesting(prev => ({ ...prev, [mk]: false }))
+    return result
+  }
+
+  const runCapTestAll = async () => {
+    setTestingAll(true)
+    abortRef.current = false
+    const jobs = getEnabledModels()
+    const allResults: ModelTestResult[] = []
+    const allProviders = getAllProviders()
+    for (let i = 0; i < jobs.length; i++) {
+      if (abortRef.current) break
+      const { pk, modelId } = jobs[i]
+      const name = allProviders[pk]?.name ?? pk
+      setTestProgress(`Testing ${name} / ${modelId} (${i + 1}/${jobs.length})`)
+      const result = await runCapTest(pk, modelId)
+      allResults.push(result)
+    }
+    setTestingAll(false)
+    setTestProgress('')
+    setRecommendations(buildRecommendations(allResults))
+  }
+
+  const runDiscover = async (pk: string, modelId: string) => {
+    const mk = `${pk}:${modelId}`
+    setCapTesting(prev => ({ ...prev, [mk]: true }))
+    const keys = loadAllKeys()
+    const apiKey = keys[pk] ?? undefined
+    const result = await discoverModel(pk, modelId, apiKey, () => {
+      setCapTestResults(prev => ({ ...prev }))
+    })
+    setCapTestResults(prev => ({ ...prev, [mk]: result }))
+    setCapTesting(prev => ({ ...prev, [mk]: false }))
+    return result
+  }
+
+  const runDiscoverAll = async () => {
+    setDiscovering(true)
+    abortRef.current = false
+    const jobs = getEnabledModels()
+    const allResults: ModelTestResult[] = []
+    const allProviders = getAllProviders()
+    for (let i = 0; i < jobs.length; i++) {
+      if (abortRef.current) break
+      const { pk, modelId } = jobs[i]
+      const name = allProviders[pk]?.name ?? pk
+      setTestProgress(`Discovering ${name} / ${modelId} (${i + 1}/${jobs.length})`)
+      const result = await runDiscover(pk, modelId)
+      allResults.push(result)
+    }
+    setDiscovering(false)
+    setTestProgress('')
+    setRecommendations(buildRecommendations(allResults))
+  }
+
+  // ── App log file ───────────────────────────────────────────────────────────
+
   const loadLogFile = async () => {
     const logPath = getLogPath()
     if (!logPath) { setLogLines(['No working directory set — log file unavailable.']); return }
@@ -80,8 +271,24 @@ export default function HealthScreen() {
 
   const logPath = getLogPath()
 
+  // ── Capability test providers list ─────────────────────────────────────────
+
+  const allProviders = getAllProviders()
+  const order = getAllProviderOrder()
+  const keys = loadAllKeys()
+  const enabledMap = loadEnabledProviders()
+  const availableKeys = new Set(Object.keys(keys))
+  availableKeys.add('pollinations')
+  const testableProviders = order.filter(pk =>
+    availableKeys.has(pk) && enabledMap[pk] !== false && !!allProviders[pk]
+  )
+
   return (
     <div style={{ padding: '0 0 32px' }}>
+      {recommendations !== null && (
+        <RecommendationsModal recs={recommendations} onClose={() => setRecommendations(null)} />
+      )}
+
       <div className="api-list">
 
         {/* ── Continuous monitoring ────────────────────────────── */}
@@ -203,7 +410,6 @@ export default function HealthScreen() {
           </div>
         )}
 
-        {/* Error details for degraded/down providers */}
         {summaries.filter(s => s.status === 'down' || s.status === 'degraded').map(s => s.lastError && (
           <div key={s.provider} style={{
             fontSize: 11, padding: '6px 10px', marginBottom: 6,
@@ -213,6 +419,156 @@ export default function HealthScreen() {
             <strong>{s.name}</strong> — {s.lastError}
           </div>
         ))}
+
+        <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0 16px' }} />
+
+        {/* ── Capability testing ────────────────────────────────── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <div style={{ color: 'var(--text-dim)', fontSize: 14, fontWeight: 600 }}>Capability Testing</div>
+          <div style={{ flex: 1 }} />
+          {(testingAll || discovering) && (
+            <span style={{ fontSize: 11, color: 'var(--text-dim)' }}>{testProgress}</span>
+          )}
+          {(testingAll || discovering) ? (
+            <button
+              className="btn-ghost"
+              onClick={() => { abortRef.current = true }}
+              style={{ fontSize: 11, padding: '4px 14px' }}
+            >
+              Stop
+            </button>
+          ) : (
+            <>
+              <button
+                className="btn-ghost"
+                onClick={runCapTestAll}
+                style={{ fontSize: 11, padding: '4px 14px' }}
+              >
+                Test All
+              </button>
+              <button
+                className="btn-primary"
+                onClick={runDiscoverAll}
+                style={{ fontSize: 11, padding: '4px 14px' }}
+                title="Test every capability on every model, regardless of what's declared"
+              >
+                Discover
+              </button>
+            </>
+          )}
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-dim)', marginBottom: 12 }}>
+          <strong>Test All</strong> — checks declared capabilities only. &nbsp;
+          <strong>Discover</strong> — probes all capabilities (chat, vision, image, audio, S2T, TTS) regardless of what's enabled, then recommends changes.
+        </div>
+
+        {testableProviders.length === 0 ? (
+          <div style={{ fontSize: 12, color: 'var(--text-dim)', marginBottom: 16 }}>
+            No providers with API keys found.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+            {testableProviders.map(pk => {
+              const p = allProviders[pk]
+              if (!p) return null
+              const providerResults = p.models
+                .map(m => ({ m, result: capTestResults[`${pk}:${m.id}`] }))
+              const anyResult = providerResults.some(x => x.result)
+
+              return (
+                <div key={pk} style={{
+                  border: '1px solid var(--border)', borderRadius: 6,
+                  padding: '8px 12px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: anyResult ? 6 : 0 }}>
+                    <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>{p.name}</span>
+                    <div style={{ flex: 1 }} />
+                    {anyResult && (
+                      <button
+                        className="btn-ghost"
+                        style={{ fontSize: 10, padding: '2px 8px' }}
+                        onClick={() => {
+                          const results = providerResults.filter(x => x.result).map(x => x.result!)
+                          setRecommendations(buildRecommendations(results))
+                        }}
+                      >
+                        Recommend
+                      </button>
+                    )}
+                    <button
+                      className="btn-ghost"
+                      style={{ fontSize: 10, padding: '2px 8px' }}
+                      disabled={testingAll || discovering || p.models.some(m => capTesting[`${pk}:${m.id}`])}
+                      onClick={async () => {
+                        const results: ModelTestResult[] = []
+                        for (const m of p.models) results.push(await runCapTest(pk, m.id))
+                        setRecommendations(buildRecommendations(results))
+                      }}
+                    >
+                      Test
+                    </button>
+                    <button
+                      className="btn-primary"
+                      style={{ fontSize: 10, padding: '2px 8px' }}
+                      disabled={testingAll || discovering || p.models.some(m => capTesting[`${pk}:${m.id}`])}
+                      onClick={async () => {
+                        const results: ModelTestResult[] = []
+                        for (const m of p.models) results.push(await runDiscover(pk, m.id))
+                        setRecommendations(buildRecommendations(results))
+                      }}
+                      title="Probe all capabilities regardless of what's declared"
+                    >
+                      Discover
+                    </button>
+                  </div>
+
+                  {p.models.map(m => {
+                    const mk = `${pk}:${m.id}`
+                    const testing = capTesting[mk]
+                    const result = capTestResults[mk]
+                    return (
+                      <div key={mk} style={{
+                        padding: '4px 0', borderTop: '1px solid var(--border)',
+                        display: 'flex', flexDirection: 'column', gap: 2,
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 12, color: 'var(--text-dim)', flex: 1 }}>
+                            {m.name} <span style={{ fontSize: 10 }}>({m.capabilities?.join(', ') ?? 'chat'})</span>
+                          </span>
+                          {!testing ? (
+                            <>
+                              <button
+                                className="btn-ghost"
+                                style={{ fontSize: 10, padding: '1px 7px' }}
+                                disabled={testingAll || discovering}
+                                onClick={() => runCapTest(pk, m.id)}
+                                title="Test declared capabilities"
+                              >
+                                Test
+                              </button>
+                              <button
+                                className="btn-ghost"
+                                style={{ fontSize: 10, padding: '1px 7px', color: 'var(--accent)', borderColor: 'var(--accent)' }}
+                                disabled={testingAll || discovering}
+                                onClick={() => runDiscover(pk, m.id)}
+                                title="Probe all capabilities"
+                              >
+                                Discover
+                              </button>
+                            </>
+                          ) : (
+                            <span style={{ fontSize: 10, color: 'var(--text-dim)' }}>testing…</span>
+                          )}
+                        </div>
+                        {result && <CapabilityResults results={result.results} />}
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </div>
+        )}
 
         <div style={{ borderTop: '1px solid var(--border)', margin: '8px 0 16px' }} />
 
