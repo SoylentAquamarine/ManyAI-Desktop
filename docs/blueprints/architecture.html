@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architecture — ManyAI Desktop</title>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1a1d27; --border: #2a2d3a;
+      --accent: #4ecdc4; --text: #e2e8f0; --muted: #8892a4;
+      --code-bg: #090c13; --th-bg: #141720;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.7; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.6rem 2rem; font-size: 0.82rem; color: var(--muted); }
+    .topbar a { color: var(--muted); } .topbar a:hover { color: var(--accent); } .topbar span { margin: 0 0.4rem; }
+    header { padding: 2.5rem 2rem 2rem; border-bottom: 1px solid var(--border); }
+    header h1 { font-size: 1.9rem; font-weight: 700; color: var(--accent); }
+    header p.meta { color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem; }
+    main { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    h2 { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin: 2.5rem 0 1rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin: 1.5rem 0 0.6rem; }
+    p { margin-bottom: 0.85rem; } p:last-child { margin-bottom: 0; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.4rem; } li { margin-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1rem; font-size: 0.88rem; }
+    th { background: var(--th-bg); color: var(--accent); padding: 0.55rem 1rem; text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid var(--border); }
+    td { padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; } tr:hover td { background: #1e2130; }
+    code { font-family: 'Courier New', Consolas, monospace; font-size: 0.85em; background: var(--code-bg); border: 1px solid var(--border); padding: 0.1rem 0.35rem; border-radius: 3px; color: var(--accent); }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; overflow-x: auto; margin: 0.8rem 0 1rem; }
+    pre code { background: none; border: none; padding: 0; font-size: 0.87rem; color: #c3cfe8; }
+    footer { margin-top: 4rem; padding: 1.5rem 2rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="../index.html">ManyAI Desktop</a>
+  <span>/</span>
+  <a href="../index.html">Docs</a>
+  <span>/</span>
+  Architecture
+</div>
+
+<header>
+  <h1>Architecture — ManyAI Desktop</h1>
+  <p class="meta">Blueprint · Last updated 2026-05-02</p>
+</header>
+
+<main>
+
+  <h2>Directory Structure</h2>
+  <pre><code>src/
+├── main/
+│   ├── index.ts                   # Electron entry: window creation, IPC, lifecycle
+│   └── ipc/
+│       ├── index.ts               # registerAllIpc() — wires all modules
+│       ├── fileIpc.ts             # registerFileIpc()
+│       ├── imageIpc.ts            # registerImageIpc()
+│       ├── ircIpc.ts              # registerIrcIpc()
+│       └── terminalIpc.ts         # registerTerminalIpc()
+│
+├── preload/
+│   ├── index.ts                   # contextBridge — exposes window.api
+│   ├── index.d.ts                 # TypeScript type declarations for window.api
+│   └── api/
+│       ├── files.ts               # api.files implementation
+│       ├── images.ts              # api.images implementation
+│       ├── irc.ts                 # api.irc implementation
+│       └── terminal.ts            # api.terminal implementation
+│
+└── renderer/src/
+    ├── main.tsx                   # React app entry point
+    ├── App.tsx                    # Root: tab system, panel state, startup
+    │
+    ├── features/
+    │   ├── chat/
+    │   │   ├── ChatScreen.tsx     # Multi-provider chat UI
+    │   │   └── fileHandler.ts     # File drag-drop + attachment
+    │   ├── editor/SavedScreen.tsx
+    │   ├── irc/IrcScreen.tsx
+    │   ├── rss/RssScreen.tsx
+    │   ├── terminal/TerminalScreen.tsx
+    │   ├── programming/ProgrammingScreen.tsx
+    │   └── settings/
+    │       ├── SettingsScreen.tsx # Hub: general/api/workflows/smartrouting/health/backup/about
+    │       ├── ApiScreen.tsx
+    │       ├── ProvidersScreen.tsx
+    │       ├── RoutingScreen.tsx
+    │       ├── WorkflowsScreen.tsx
+    │       ├── HealthScreen.tsx
+    │       └── AboutScreen.tsx
+    │
+    ├── components/
+    │   ├── RightPanel.tsx         # Settings slide-in panel
+    │   ├── WorkflowPickerModal.tsx
+    │   └── Versions.tsx
+    │
+    ├── lib/
+    │   ├── providers.ts           # Provider registry loader (reads providers/*.json)
+    │   ├── routing.ts             # TASK_META, DEFAULT_ROUTES, resolveProvider()
+    │   ├── smartRouter.ts         # Score-based provider selection
+    │   ├── healthCheck.ts         # Provider health polling and penalty scoring
+    │   ├── keyStore.ts            # API key storage (encrypted in localStorage)
+    │   ├── providerPrefs.ts       # Provider enabled/order/model preferences
+    │   ├── agentLoop.ts           # Multi-step agent execution
+    │   ├── workflowBus.ts         # Pub/sub bus for cross-tab content injection
+    │   ├── workflows.ts           # Load/save/upsert custom workflows (JSON files)
+    │   ├── workingDir.ts          # Working directory management
+    │   ├── callProvider.ts        # API adapter (text + image providers)
+    │   ├── callImageProvider.ts   # Image generation adapter
+    │   ├── modelTester.ts         # Provider model connection testing
+    │   ├── logger.ts              # Structured logging
+    │   ├── crypto.ts              # Key encryption/decryption
+    │   ├── ircStore.ts            # IRC state persistence
+    │   ├── remoteConfig.ts        # Remote provider/model config fetch
+    │   ├── theme.ts               # loadTheme() / applyTheme()
+    │   ├── zoom.ts                # loadZoom() / applyZoom()
+    │   ├── font.ts                # loadFont() / applyFont()
+    │   └── workflowTypes.ts       # WorkflowType type definitions
+    │
+    ├── workflows/
+    │   ├── index.ts               # WORKFLOW_REGISTRY — single source of truth
+    │   ├── types.ts               # WorkflowPlugin + RouteEntry interfaces
+    │   ├── coding.ts
+    │   ├── reasoning.ts
+    │   ├── creative.ts
+    │   ├── summarization.ts
+    │   ├── translation.ts
+    │   ├── image.ts
+    │   ├── irc.ts
+    │   ├── rss.ts
+    │   ├── terminal.ts
+    │   ├── programming.ts
+    │   └── laptop.ts
+    │
+    ├── i18n/
+    │   ├── config.ts              # i18next initialization
+    │   └── locales/               # 27 locale JSON files (en-US, fr-FR, ar-SA, zh-CN…)
+    │
+    └── styles/globals.css
+
+providers/                         # Provider definitions (one JSON per provider)
+    anthropic.json, cerebras.json, cloudflare.json, cohere.json,
+    fireworks.json, gemini.json, groq.json, huggingface.json,
+    laptop.json, mistral.json, openai.json, openrouter.json,
+    pollinations.json, sambanova.json
+
+scripts/gen-translations.py        # Locale file generation helper
+build/                             # electron-builder assets (icons, entitlements)</code></pre>
+
+  <h2>Main Process (<code>src/main/index.ts</code>)</h2>
+
+  <h3>Window State Persistence</h3>
+  <p>Window state stored at <code>app.getPath('userData')/window-state.json</code>. Shape: <code>{ x?, y?, width, height, isMaximized }</code>. On load:</p>
+  <ol>
+    <li>Read JSON, merge with <code>DEFAULT_STATE</code> (1000×720, not maximized).</li>
+    <li>Clamp width/height to minimums.</li>
+    <li>If stored position is outside any display bounds, drop x/y (let OS place window).</li>
+    <li>If <code>isMaximized</code>, call <code>win.maximize()</code> before <code>ready-to-show</code>.</li>
+  </ol>
+  <p>State saved on <code>'close'</code> event via <code>win.getNormalBounds()</code> (always returns restored bounds, even when maximized).</p>
+
+  <h3>IPC Registration</h3>
+  <pre><code>registerAllIpc()   // called once at app startup
+  → registerFileIpc()
+  → registerImageIpc()
+  → registerIrcIpc()
+  → registerTerminalIpc()</code></pre>
+  <p>Each module uses <code>ipcMain.handle('channel-name', async (event, ...args) =&gt; ...)</code>.</p>
+
+  <h2>Preload Layer (<code>src/preload/</code>)</h2>
+  <p><code>contextBridge.exposeInMainWorld('api', { ... })</code> — everything on <code>window.api</code> is explicitly typed. The bridge wraps <code>ipcRenderer.invoke()</code> calls. The renderer never sees <code>ipcRenderer</code> directly.</p>
+  <p><code>api.getConfig()</code> and <code>api.setConfig()</code> read/write a durable JSON config file in <code>userData</code>. Used to persist <code>workingDir</code> across origin changes (e.g., dev vs. prod URLs).</p>
+
+  <h2>Renderer Startup (<code>App.tsx</code>)</h2>
+  <p>On mount:</p>
+  <ol>
+    <li><code>applyTheme(loadTheme())</code>, <code>applyZoom(loadZoom())</code>, <code>applyFont(loadFont())</code> — immediate visual setup.</li>
+    <li><code>window.api.getConfig()</code> — read durable config. If <code>workingDir</code> found and not in localStorage, sync it. If no <code>workingDir</code>: show <code>noWorkDirModal</code>.</li>
+    <li><code>initProviders()</code> — load provider registry from <code>providers/*.json</code>.</li>
+    <li><code>initWorkflows()</code> — load built-in + custom workflows; triggers <code>setWorkflowVersion</code> to re-render workflow-dependent UI.</li>
+    <li>Health check: runs once on startup if continuous monitoring enabled; schedules recurring checks at configured interval.</li>
+  </ol>
+
+  <h2>Workflow Plugin System</h2>
+
+  <h3><code>WorkflowPlugin</code> Interface (<code>workflows/types.ts</code>)</h3>
+  <pre><code>interface WorkflowPlugin {
+  type: string           // unique identifier (e.g., 'coding')
+  label: string          // display name
+  icon: string           // emoji or icon name
+  description: string    // shown in workflow picker
+  defaultRoutes: RouteEntry[]  // ordered provider chain
+  workflowType: WorkflowType[] // capabilities required
+}
+
+interface RouteEntry {
+  provider: string
+  model: string
+  enabled?: boolean
+  instanceId?: string  // stable GUID — survives check/uncheck, resets on delete+re-add
+}</code></pre>
+
+  <h3>Adding a New Workflow</h3>
+  <ol>
+    <li>Create <code>src/renderer/src/workflows/myworkflow.ts</code> exporting a <code>WorkflowPlugin</code>.</li>
+    <li>Import it in <code>workflows/index.ts</code> and add to <code>WORKFLOW_REGISTRY</code>.</li>
+    <li>No other files need changing.</li>
+  </ol>
+  <p>Custom workflows can be added at runtime via Settings → Workflows; stored as JSON files on disk.</p>
+
+  <h2>Routing Layer (<code>lib/routing.ts</code>)</h2>
+  <ul>
+    <li><strong><code>TASK_META</code>:</strong> Derived from <code>WORKFLOW_REGISTRY</code> — maps type → <code>{ label, icon, description }</code>. Used by the UI to render tab labels.</li>
+    <li><strong><code>DEFAULT_ROUTES</code>:</strong> Derived from <code>WORKFLOW_REGISTRY</code> — maps type → <code>defaultRoutes</code>.</li>
+    <li><strong><code>resolveProvider(taskType, prefs, availableKeys, enabledProviders)</code>:</strong>
+      <ol>
+        <li>Get <code>workflowTypes</code> array from the matching <code>WorkflowPlugin</code>.</li>
+        <li>Walk the configured route chain for <code>taskType</code>.</li>
+        <li>For each <code>RouteEntry</code>: check provider is usable (has key or is keyless, not disabled) AND the model's <code>capabilities</code> includes all <code>workflowTypes</code>.</li>
+        <li>Return first matching entry, or fall back to any keyless provider with capable model.</li>
+        <li>Return <code>null</code> if nothing found.</li>
+      </ol>
+    </li>
+    <li><strong><code>resolveAllProviders</code>:</strong> Same logic but returns all matching entries (used for parallel mode).</li>
+  </ul>
+
+  <h2>Smart Router (<code>lib/smartRouter.ts</code>)</h2>
+  <p>Activates when a workflow has <code>smartRouting: true</code>.</p>
+  <h3>Scoring</h3>
+  <pre><code>score(workflowType, provider) =
+  successRate(last 20 calls) × 0.7
+  + speedScore(avgLatencyMs / 30000 capped) × 0.3
+  − healthPenalty(from healthCheck)</code></pre>
+  <p>Providers with no history score <code>0.5</code> (neutral). Score range: 0–1.</p>
+  <h3>Modes</h3>
+  <ul>
+    <li><strong><code>best-first</code></strong> (default): Pick highest-scored provider; fall back serially on failure.</li>
+    <li><strong><code>serial</code></strong>: Try in scored order; stop on first success.</li>
+    <li><strong><code>parallel</code></strong>: Fire all capable providers simultaneously (optional <code>maxParallel</code> cap).</li>
+  </ul>
+  <h3>Routing Log</h3>
+  <p>Rolling log of last 300 calls stored in <code>localStorage</code>. Each entry: <code>{ ts, workflowType, provider, model, success, latencyMs, mode }</code>.</p>
+  <h3>Config</h3>
+  <p>Stored in <code>localStorage</code> (<code>manyai_smart_routing_config</code>). Shape: <code>{ mode, fallbackEnabled, maxParallel }</code>.</p>
+
+  <h2>Health Check (<code>lib/healthCheck.ts</code>)</h2>
+  <p>Polls all configured providers. Records per-provider: uptime percentage, average latency (ms), last check result. <code>getPenalty(provider)</code> returns 0–1 penalty based on recent error rate, used by <code>smartRouter.scoreProvider()</code>. Configurable: interval (minutes), continuousEnabled flag. Config in <code>localStorage</code>.</p>
+
+  <h2>Workflow Bus (<code>lib/workflowBus.ts</code>)</h2>
+  <p>Lightweight pub/sub. Non-chat features (IRC, RSS, terminal) can publish a payload targeting a specific tab ID or <code>'active'</code>. In <code>App.tsx</code>, a <code>workflowBus.subscribe()</code> listener catches these events and calls the target tab's <code>injectFn</code> (a ref map <code>injectFns.current[tabId]</code>), then switches to that tab.</p>
+
+  <h2>Cross-Tab State (<code>App.tsx</code>)</h2>
+  <table>
+    <tr><th>State</th><th>Type</th><th>Purpose</th></tr>
+    <tr><td><code>tabs</code></td><td><code>ChatTab[]</code></td><td>Persisted tab list</td></tr>
+    <tr><td><code>activeTabId</code></td><td><code>string</code></td><td>Persisted active tab</td></tr>
+    <tr><td><code>panel</code></td><td><code>PanelType|null</code></td><td>Settings panel visibility</td></tr>
+    <tr><td><code>showPicker</code></td><td><code>boolean</code></td><td>Workflow picker modal</td></tr>
+    <tr><td><code>continuousMap</code></td><td><code>Record&lt;string, boolean&gt;</code></td><td>Continuous mode per tab</td></tr>
+    <tr><td><code>workflowVersion</code></td><td><code>number</code></td><td>Triggers re-render on workflow changes</td></tr>
+    <tr><td><code>settingsTriggerAdd</code></td><td><code>boolean</code></td><td>Direct-open workflow add from chat</td></tr>
+    <tr><td><code>settingsInitialTab</code></td><td>enum</td><td>Which settings tab opens first</td></tr>
+    <tr><td><code>noWorkDirModal</code></td><td><code>boolean</code></td><td>First-run working directory prompt</td></tr>
+  </table>
+
+</main>
+
+<footer>Blueprint · ManyAI Desktop · <a href="../index.html">← Back to docs</a></footer>
+</body>
+</html>
