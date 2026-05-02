@@ -38,16 +38,22 @@ export async function initKeyStore(): Promise<void> {
 
       if (stored.startsWith(ENC_TAG)) {
         // Normal encrypted path
+        if (typeof window.api?.safeDecrypt !== 'function') {
+          // IPC not available — skip, key will be missing until next rebuild
+          return
+        }
         const result = await window.api.safeDecrypt(stored.slice(ENC_TAG.length))
         if ('plaintext' in result && result.plaintext) {
           cache[provider] = result.plaintext
         }
       } else {
-        // Legacy plaintext key — migrate to encrypted
+        // Legacy plaintext key — use immediately, migrate to encrypted if possible
         cache[provider] = stored
-        const encrypted = await window.api.safeEncrypt(stored)
-        if ('ciphertext' in encrypted) {
-          localStorage.setItem(storageKey, ENC_TAG + encrypted.ciphertext)
+        if (typeof window.api?.safeEncrypt === 'function') {
+          const encrypted = await window.api.safeEncrypt(stored)
+          if ('ciphertext' in encrypted) {
+            localStorage.setItem(storageKey, ENC_TAG + encrypted.ciphertext)
+          }
         }
       }
     })
