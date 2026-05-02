@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Usage System — ManyAI Desktop</title>
+  <style>
+    :root {
+      --bg: #1a1a2e; --surface: #16213e; --border: #2a2a4a;
+      --accent: #4ecdc4; --text: #e0e0e0; --muted: #888;
+      --code-bg: #0a0a1a; --th-bg: #0f3460;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.7; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .bp-nav { display: flex; gap: 8px; padding: 0.75rem 2rem; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .bp-nav a { font-size: 0.82rem; padding: 0.3rem 0.9rem; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--muted); }
+    .bp-nav a:hover { border-color: var(--accent); color: var(--accent); }
+    .bp-nav a.home { background: var(--accent); color: #1a1a2e; border-color: var(--accent); font-weight: 700; }
+    .bp-nav a.home:hover { opacity: 0.85; }
+    .bp-nav a.current { border-color: var(--accent); color: var(--accent); font-weight: 700; cursor: default; }
+    header { padding: 2.5rem 2rem 2rem; border-bottom: 1px solid var(--border); }
+    header h1 { font-size: 1.9rem; font-weight: 700; color: var(--accent); }
+    header p.meta { color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem; }
+    main { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    h2 { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin: 2.5rem 0 1rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin: 1.5rem 0 0.6rem; }
+    p { margin-bottom: 0.85rem; } p:last-child { margin-bottom: 0; }
+    ul { margin: 0.5rem 0 0.85rem 1.4rem; } li { margin-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1rem; font-size: 0.88rem; }
+    th { background: var(--th-bg); color: var(--accent); padding: 0.55rem 1rem; text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid var(--border); }
+    td { padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; } tr:hover td { background: var(--surface); }
+    code { font-family: 'Courier New', Consolas, monospace; font-size: 0.85em; background: var(--code-bg); border: 1px solid var(--border); padding: 0.1rem 0.35rem; border-radius: 3px; color: var(--accent); }
+    footer { margin-top: 4rem; padding: 1.5rem 2rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div class="bp-nav">
+  <a class="home" href="../index.html">← Home</a>
+  <a href="system-overview.html">System Overview</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="data-pipeline.html">Data Pipeline</a>
+  <a href="health-system.html">Health System</a>
+  <a class="current">Usage System</a>
+  <a href="workflows.html">Workflows</a>
+  <a href="mcp-tools.html">MCP Tools</a>
+</div>
+
+<header>
+  <h1>Usage System — ManyAI Desktop</h1>
+  <p class="meta">Blueprint · Last updated 2026-05-02</p>
+</header>
+
+<main>
+
+<h2>No Dedicated Usage Log</h2>
+<p>ManyAI Desktop does not have a structured usage log or cost tracking system. API calls are made directly from the renderer process to provider APIs; token counts and costs are not captured or stored.</p>
+
+<h2>Smart Routing Log</h2>
+<p>The closest equivalent to usage tracking is the smart routing call log stored in <code>localStorage</code> under key <code>manyai_smart_routing_log</code>. It is a rolling array of the last 300 call results, retained for routing optimization only.</p>
+
+<h3>Log Entry Shape</h3>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>ts</code></td><td>timestamp</td><td>Time of the API call</td></tr>
+  <tr><td><code>workflowType</code></td><td>string</td><td>Workflow type that triggered the call</td></tr>
+  <tr><td><code>provider</code></td><td>string</td><td>Provider key used</td></tr>
+  <tr><td><code>model</code></td><td>string</td><td>Model identifier used</td></tr>
+  <tr><td><code>success</code></td><td>boolean</td><td>Whether the call succeeded</td></tr>
+  <tr><td><code>latencyMs</code></td><td>number</td><td>Response time in milliseconds</td></tr>
+  <tr><td><code>mode</code></td><td>string</td><td>Smart routing mode (best-first / serial / parallel)</td></tr>
+</table>
+
+<h2>What the Log Is Used For</h2>
+<p>The log is consumed exclusively by <code>smartRouter.scoreProvider()</code> to calculate per-provider success rates and speed scores. It is not surfaced as a usage report and is not exported or synced outside the app.</p>
+
+<h2>Viewing Aggregated Stats</h2>
+<p>Settings → Smart Routing shows aggregate stats (success rate, average latency) derived from the rolling log. There is no raw call list view and no cost breakdown.</p>
+
+<h2>Future Consideration</h2>
+<p>Capturing token usage would require reading <code>usage.total_tokens</code> from provider API responses — most OpenAI-compatible APIs return this in the response body. A dedicated usage system could then calculate per-provider cost estimates.</p>
+
+</main>
+
+<footer>Blueprint · ManyAI Desktop · <a href="../index.html">← Back to docs</a></footer>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Pipeline — ManyAI Desktop</title>
+  <style>
+    :root {
+      --bg: #1a1a2e; --surface: #16213e; --border: #2a2a4a;
+      --accent: #4ecdc4; --text: #e0e0e0; --muted: #888;
+      --code-bg: #0a0a1a; --th-bg: #0f3460;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.7; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .bp-nav { display: flex; gap: 8px; padding: 0.75rem 2rem; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .bp-nav a { font-size: 0.82rem; padding: 0.3rem 0.9rem; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--muted); }
+    .bp-nav a:hover { border-color: var(--accent); color: var(--accent); }
+    .bp-nav a.home { background: var(--accent); color: #1a1a2e; border-color: var(--accent); font-weight: 700; }
+    .bp-nav a.home:hover { opacity: 0.85; }
+    .bp-nav a.current { border-color: var(--accent); color: var(--accent); font-weight: 700; cursor: default; }
+    header { padding: 2.5rem 2rem 2rem; border-bottom: 1px solid var(--border); }
+    header h1 { font-size: 1.9rem; font-weight: 700; color: var(--accent); }
+    header p.meta { color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem; }
+    main { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    h2 { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin: 2.5rem 0 1rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin: 1.5rem 0 0.6rem; }
+    p { margin-bottom: 0.85rem; } p:last-child { margin-bottom: 0; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.4rem; } li { margin-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1rem; font-size: 0.88rem; }
+    th { background: var(--th-bg); color: var(--accent); padding: 0.55rem 1rem; text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid var(--border); }
+    td { padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; } tr:hover td { background: var(--surface); }
+    code { font-family: 'Courier New', Consolas, monospace; font-size: 0.85em; background: var(--code-bg); border: 1px solid var(--border); padding: 0.1rem 0.35rem; border-radius: 3px; color: var(--accent); }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; overflow-x: auto; margin: 0.8rem 0 1rem; }
+    pre code { background: none; border: none; padding: 0; font-size: 0.87rem; color: #c3cfe8; }
+    footer { margin-top: 4rem; padding: 1.5rem 2rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div class="bp-nav">
+  <a class="home" href="../index.html">← Home</a>
+  <a href="system-overview.html">System Overview</a>
+  <a href="architecture.html">Architecture</a>
+  <a class="current">Data Pipeline</a>
+  <a href="health-system.html">Health System</a>
+  <a href="usage-system.html">Usage System</a>
+  <a href="workflows.html">Workflows</a>
+  <a href="mcp-tools.html">MCP Tools</a>
+</div>
+
+<header>
+  <h1>Data Pipeline — ManyAI Desktop</h1>
+  <p class="meta">Blueprint · Last updated 2026-05-02</p>
+</header>
+
+<main>
+
+<h2>Message Flow</h2>
+<p>User types a message in <strong>ChatScreen</strong>, which triggers a workflow-specific provider chain. The <strong>RouteEntry</strong> chain is iterated in order, with <code>callProvider()</code> sending the request. On failure, the system tries the next entry in the chain. Responses are streamed to the chat UI in real-time. For multi-step execution, the <strong>agent loop</strong> handles sequential processing.</p>
+
+<h2>Manual Routing Pipeline</h2>
+<p>Per-workflow <strong>RouteEntry</strong> chains are stored in <code>localStorage</code> for built-in workflows and JSON files for custom workflows.</p>
+<p><code>resolveProvider()</code> checks each entry in order:</p>
+<ol>
+  <li>Provider has a key or is keyless</li>
+  <li>Provider is not disabled</li>
+  <li>Model capabilities include all required <code>workflowType</code> values</li>
+</ol>
+<p>Returns the first matching entry or <code>null</code> if nothing is usable.</p>
+
+<h2>Smart Routing Pipeline <em>(opt-in)</em></h2>
+<p>Replaces the manual chain when <code>smartRouting</code> is enabled for a workflow. <code>scoreProvider()</code> calculates a 0–1 score:</p>
+<pre><code>score = successRate(last 20 calls) × 0.7
+      + speedScore(avgLatencyMs / 30000, capped) × 0.3
+      − healthPenalty(from healthCheck)</code></pre>
+<p><strong>Three modes:</strong></p>
+<ul>
+  <li><strong>best-first</strong> — picks highest-scored provider, falls back serially on failure</li>
+  <li><strong>serial</strong> — tries in scored order, stops on first success</li>
+  <li><strong>parallel</strong> — fires all capable providers simultaneously (optional <code>maxParallel</code> cap)</li>
+</ul>
+
+<h2>Image Generation Path</h2>
+<p><code>callImageProvider.ts</code> handles image workflows separately, routing to Pollinations (free, no key required) or DALL·E based on available keys. Responses are rendered inline in the chat UI and can be downloaded.</p>
+
+<h2>File Attachment</h2>
+<p><code>fileHandler.ts</code> processes attached files:</p>
+<ol>
+  <li>Reads file content (text, source code, etc.)</li>
+  <li>Injects content silently into every subsequent message until detached</li>
+  <li>Auto-saves AI-generated code responses to a <code>.tmp</code> file in the working directory</li>
+</ol>
+
+<h2>Agent Loop</h2>
+<p><code>lib/agentLoop.ts</code> supports multi-step execution (continuous mode). When enabled per-tab via <code>continuousMap</code>, the AI response is automatically fed back as the next user message until a stop condition is detected. This enables autonomous multi-turn task execution within a single tab.</p>
+
+</main>
+
+<footer>Blueprint · ManyAI Desktop · <a href="../index.html">← Back to docs</a></footer>
+</body>
+</html>

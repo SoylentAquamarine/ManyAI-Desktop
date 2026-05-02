@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Health System — ManyAI Desktop</title>
+  <style>
+    :root {
+      --bg: #1a1a2e; --surface: #16213e; --border: #2a2a4a;
+      --accent: #4ecdc4; --text: #e0e0e0; --muted: #888;
+      --code-bg: #0a0a1a; --th-bg: #0f3460;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.7; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .bp-nav { display: flex; gap: 8px; padding: 0.75rem 2rem; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .bp-nav a { font-size: 0.82rem; padding: 0.3rem 0.9rem; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--muted); }
+    .bp-nav a:hover { border-color: var(--accent); color: var(--accent); }
+    .bp-nav a.home { background: var(--accent); color: #1a1a2e; border-color: var(--accent); font-weight: 700; }
+    .bp-nav a.home:hover { opacity: 0.85; }
+    .bp-nav a.current { border-color: var(--accent); color: var(--accent); font-weight: 700; cursor: default; }
+    header { padding: 2.5rem 2rem 2rem; border-bottom: 1px solid var(--border); }
+    header h1 { font-size: 1.9rem; font-weight: 700; color: var(--accent); }
+    header p.meta { color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem; }
+    main { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    h2 { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin: 2.5rem 0 1rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin: 1.5rem 0 0.6rem; }
+    p { margin-bottom: 0.85rem; } p:last-child { margin-bottom: 0; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.4rem; } li { margin-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1rem; font-size: 0.88rem; }
+    th { background: var(--th-bg); color: var(--accent); padding: 0.55rem 1rem; text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid var(--border); }
+    td { padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; } tr:hover td { background: var(--surface); }
+    code { font-family: 'Courier New', Consolas, monospace; font-size: 0.85em; background: var(--code-bg); border: 1px solid var(--border); padding: 0.1rem 0.35rem; border-radius: 3px; color: var(--accent); }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; overflow-x: auto; margin: 0.8rem 0 1rem; }
+    pre code { background: none; border: none; padding: 0; font-size: 0.87rem; color: #c3cfe8; }
+    footer { margin-top: 4rem; padding: 1.5rem 2rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div class="bp-nav">
+  <a class="home" href="../index.html">← Home</a>
+  <a href="system-overview.html">System Overview</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="data-pipeline.html">Data Pipeline</a>
+  <a class="current">Health System</a>
+  <a href="usage-system.html">Usage System</a>
+  <a href="workflows.html">Workflows</a>
+  <a href="mcp-tools.html">MCP Tools</a>
+</div>
+
+<header>
+  <h1>Health System — ManyAI Desktop</h1>
+  <p class="meta">Blueprint · Last updated 2026-05-02</p>
+</header>
+
+<main>
+
+<h2>Overview</h2>
+<p>ManyAI Desktop uses a health monitoring system implemented in <code>lib/healthCheck.ts</code> to periodically assess the status of all configured AI providers. The system polls each provider at a configurable interval, collects performance metrics, and uses these results to influence the smart router's provider selection. Degraded providers are automatically downweighted.</p>
+
+<h2>Per-Provider Metrics</h2>
+<table>
+  <tr><th>Metric</th><th>Description</th></tr>
+  <tr><td><code>uptime_pct</code></td><td>Percentage of recent health checks that succeeded</td></tr>
+  <tr><td><code>avg_latency_ms</code></td><td>Rolling average response time in milliseconds</td></tr>
+  <tr><td><code>last_check_ts</code></td><td>ISO 8601 timestamp of the most recent check</td></tr>
+  <tr><td><code>last_result</code></td><td><code>"success"</code> or an error string from the last check</td></tr>
+</table>
+
+<h2>getPenalty(provider)</h2>
+<p>Returns a 0–1 float for use in the smart router scoring formula:</p>
+<ul>
+  <li><strong>0</strong> = provider is fully healthy, no penalty</li>
+  <li><strong>1</strong> = provider is fully degraded, maximum penalty</li>
+</ul>
+<pre><code>score = successRate(last 20) × 0.7 + speedScore × 0.3 − getPenalty(provider)</code></pre>
+
+<h2>Configuration</h2>
+<p>Stored in <code>localStorage</code> under key <code>manyai_health_config</code>.</p>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>intervalMinutes</code></td><td>number</td><td>5</td><td>Interval between automatic checks</td></tr>
+  <tr><td><code>continuousEnabled</code></td><td>boolean</td><td>false</td><td>Whether to poll automatically on a schedule</td></tr>
+</table>
+
+<h2>Startup Behavior</h2>
+<ul>
+  <li><strong>If <code>continuousEnabled</code> is true:</strong> performs an immediate health check on app launch, then schedules recurring checks at <code>intervalMinutes</code>.</li>
+  <li><strong>If <code>continuousEnabled</code> is false:</strong> no automatic checks; manual check available via Settings → Health tab.</li>
+</ul>
+
+<h2>UI</h2>
+<p>Settings → Health tab displays a live status table showing: provider name, uptime %, average latency (ms), last check timestamp, and last result for all configured providers.</p>
+
+</main>
+
+<footer>Blueprint · ManyAI Desktop · <a href="../index.html">← Back to docs</a></footer>
+</body>
+</html>

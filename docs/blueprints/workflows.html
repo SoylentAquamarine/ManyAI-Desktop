@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workflows — ManyAI Desktop</title>
+  <style>
+    :root {
+      --bg: #1a1a2e; --surface: #16213e; --border: #2a2a4a;
+      --accent: #4ecdc4; --text: #e0e0e0; --muted: #888;
+      --code-bg: #0a0a1a; --th-bg: #0f3460;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.7; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .bp-nav { display: flex; gap: 8px; padding: 0.75rem 2rem; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .bp-nav a { font-size: 0.82rem; padding: 0.3rem 0.9rem; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--muted); }
+    .bp-nav a:hover { border-color: var(--accent); color: var(--accent); }
+    .bp-nav a.home { background: var(--accent); color: #1a1a2e; border-color: var(--accent); font-weight: 700; }
+    .bp-nav a.home:hover { opacity: 0.85; }
+    .bp-nav a.current { border-color: var(--accent); color: var(--accent); font-weight: 700; cursor: default; }
+    header { padding: 2.5rem 2rem 2rem; border-bottom: 1px solid var(--border); }
+    header h1 { font-size: 1.9rem; font-weight: 700; color: var(--accent); }
+    header p.meta { color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem; }
+    main { max-width: 860px; margin: 0 auto; padding: 2rem; }
+    h2 { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin: 2.5rem 0 1rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin: 1.5rem 0 0.6rem; }
+    p { margin-bottom: 0.85rem; } p:last-child { margin-bottom: 0; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.4rem; } li { margin-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1rem; font-size: 0.88rem; }
+    th { background: var(--th-bg); color: var(--accent); padding: 0.55rem 1rem; text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid var(--border); }
+    td { padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; } tr:hover td { background: var(--surface); }
+    code { font-family: 'Courier New', Consolas, monospace; font-size: 0.85em; background: var(--code-bg); border: 1px solid var(--border); padding: 0.1rem 0.35rem; border-radius: 3px; color: var(--accent); }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; overflow-x: auto; margin: 0.8rem 0 1rem; }
+    pre code { background: none; border: none; padding: 0; font-size: 0.87rem; color: #c3cfe8; }
+    footer { margin-top: 4rem; padding: 1.5rem 2rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div class="bp-nav">
+  <a class="home" href="../index.html">← Home</a>
+  <a href="system-overview.html">System Overview</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="data-pipeline.html">Data Pipeline</a>
+  <a href="health-system.html">Health System</a>
+  <a href="usage-system.html">Usage System</a>
+  <a class="current">Workflows</a>
+  <a href="mcp-tools.html">MCP Tools</a>
+</div>
+
+<header>
+  <h1>Workflows — ManyAI Desktop</h1>
+  <p class="meta">Blueprint · Last updated 2026-05-02</p>
+</header>
+
+<main>
+
+<h2>Overview</h2>
+<p>ManyAI Desktop includes a formal workflow plugin system with 10 built-in workflow types and support for unlimited custom workflows. Each workflow controls: system prompt behavior, provider chain, and which features are available in that tab.</p>
+
+<h2>WorkflowPlugin Interface</h2>
+<pre><code>interface WorkflowPlugin {
+  type: string;           // unique identifier, e.g. 'coding'
+  label: string;          // display name shown on tab
+  icon: string;           // emoji or icon
+  description: string;    // shown in workflow picker
+  defaultRoutes: RouteEntry[];   // ordered provider chain
+  workflowType: WorkflowType[];  // required model capabilities
+}
+
+interface RouteEntry {
+  provider: string;
+  model: string;
+  enabled?: boolean;
+  instanceId?: string;   // stable GUID — survives reorder, resets on delete+re-add
+}</code></pre>
+
+<h2>Built-in Workflow Types</h2>
+<table>
+  <tr><th>Type</th><th>Label</th><th>Use Case</th></tr>
+  <tr><td><code>coding</code></td><td>Code</td><td>Code generation and explanation</td></tr>
+  <tr><td><code>reasoning</code></td><td>Reasoning</td><td>Deep analysis and logic</td></tr>
+  <tr><td><code>creative</code></td><td>Creative</td><td>Writing and brainstorming</td></tr>
+  <tr><td><code>summarization</code></td><td>Summarize</td><td>Long text compression</td></tr>
+  <tr><td><code>translation</code></td><td>Translate</td><td>Language translation</td></tr>
+  <tr><td><code>image</code></td><td>Image</td><td>Image generation</td></tr>
+  <tr><td><code>irc</code></td><td>IRC</td><td>IRC chat assistance</td></tr>
+  <tr><td><code>rss</code></td><td>RSS</td><td>Feed analysis and summarization</td></tr>
+  <tr><td><code>terminal</code></td><td>Terminal</td><td>Command-line assistance</td></tr>
+  <tr><td><code>programming</code></td><td>Programming</td><td>Code-centric workspace</td></tr>
+</table>
+
+<h2>Custom Workflows</h2>
+<p>Created via Settings → Workflows. Stored as JSON files in the working directory and loaded by <code>lib/workflows.ts</code> at startup. Custom workflows can define: a custom system prompt, provider chain, and <code>workflowType</code> array.</p>
+
+<h2>Capability Gating</h2>
+<p>Each model in a <code>providers/*.json</code> file has a <code>capabilities[]</code> array. A model is only offered for a workflow if its capabilities include all values in that workflow's <code>workflowType</code> array. This prevents mismatched routing — for example, a text-only model will never appear in the image workflow's provider list.</p>
+
+<h2>WORKFLOW_REGISTRY</h2>
+<p><code>workflows/index.ts</code> is the single source of truth. All built-in plugins are registered here. Custom workflows are merged at load time via <code>lib/workflows.ts</code>. The registry drives tab rendering, workflow picker modal, and routing resolution.</p>
+
+<h2>Adding a New Built-in Workflow</h2>
+<ol>
+  <li>Create <code>src/renderer/src/workflows/myworkflow.ts</code> exporting a <code>WorkflowPlugin</code>.</li>
+  <li>Import it in <code>workflows/index.ts</code> and add to <code>WORKFLOW_REGISTRY</code>.</li>
+  <li>No other files need changing.</li>
+</ol>
+
+</main>
+
+<footer>Blueprint · ManyAI Desktop · <a href="../index.html">← Back to docs</a></footer>
+</body>
+</html>
