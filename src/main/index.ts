@@ -19,7 +19,31 @@ const DEFAULT_STATE: WindowState = { width: 1000, height: 720, isMaximized: fals
 function loadWindowState(): WindowState {
   try {
     if (existsSync(STATE_FILE)) {
-      return { ...DEFAULT_STATE, ...JSON.parse(readFileSync(STATE_FILE, 'utf-8')) }
+      const stored = JSON.parse(readFileSync(STATE_FILE, 'utf-8')) as Partial<WindowState>
+      const state: WindowState = { ...DEFAULT_STATE, ...stored }
+
+      // Clamp dimensions to sane minimums
+      state.width  = Math.max(state.width,  DEFAULT_STATE.width)
+      state.height = Math.max(state.height, DEFAULT_STATE.height)
+
+      // If stored position would land entirely off-screen, drop it so the OS
+      // places the window on the primary display instead.
+      if (state.x !== undefined && state.y !== undefined) {
+        const { screen } = require('electron')
+        const display = screen.getDisplayNearestPoint({ x: state.x, y: state.y })
+        const { bounds } = display
+        if (
+          state.x < bounds.x - state.width  ||
+          state.x > bounds.x + bounds.width  ||
+          state.y < bounds.y - state.height ||
+          state.y > bounds.y + bounds.height
+        ) {
+          state.x = undefined
+          state.y = undefined
+        }
+      }
+
+      return state
     }
   } catch { /* use defaults */ }
   return { ...DEFAULT_STATE }

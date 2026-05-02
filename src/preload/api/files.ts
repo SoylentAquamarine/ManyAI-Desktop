@@ -98,4 +98,12 @@ export const filesApi = {
     body?: string
   }): Promise<{ status: number; body: string } | { error: string }> =>
     ipcRenderer.invoke('proxy-request', opts),
+
+  /** Encrypt a string using the OS credential store (Keychain / DPAPI / libsecret). */
+  safeEncrypt: (plaintext: string): Promise<{ ciphertext: string; fallback?: boolean } | { error: string }> =>
+    ipcRenderer.invoke('safe-encrypt', plaintext),
+
+  /** Decrypt a string produced by safeEncrypt. */
+  safeDecrypt: (ciphertext: string): Promise<{ plaintext: string } | { error: string }> =>
+    ipcRenderer.invoke('safe-decrypt', ciphertext),
 }

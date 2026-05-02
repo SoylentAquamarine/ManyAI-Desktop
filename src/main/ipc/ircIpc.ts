@@ -269,6 +269,7 @@ async function handleDisconnect(): Promise<{ ok: true } | { error: string }> {
   if (!conn) return { error: 'Not connected' }
   sendRaw('QUIT :Goodbye')
   conn.socket.destroy()
+  cleanup()  // clear conn immediately so reconnect isn't rejected while 'close' is pending
   return { ok: true }
 }
 

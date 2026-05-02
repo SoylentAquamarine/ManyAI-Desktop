@@ -52,12 +52,16 @@ interface FetchLike {
 
 async function doFetch(provider: Provider, url: string, opts: RequestInit = {}): Promise<FetchLike> {
   if (provider.proxyMode === 'proxied') {
-    const result = await window.api.proxyRequest({
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out')), FETCH_TIMEOUT_MS)
+    )
+    const requestPromise = window.api.proxyRequest({
       url,
       method: (opts.method as string) ?? 'GET',
       headers: (opts.headers as Record<string, string>) ?? {},
       body: opts.body as string | undefined,
     })
+    const result = await Promise.race([requestPromise, timeoutPromise])
     if ('error' in result) throw new Error(result.error)
     const { status, body } = result as { status: number; body: string }
     return {

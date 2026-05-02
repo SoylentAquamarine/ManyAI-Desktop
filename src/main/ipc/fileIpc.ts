@@ -18,9 +18,24 @@
  *   select-directory   — directory picker, returns {path}
  */
 
-import { ipcMain, dialog, BrowserWindow, app, shell } from 'electron'
+import { ipcMain, dialog, BrowserWindow, app, shell, safeStorage } from 'electron'
 import fs from 'fs'
 import path from 'path'
+
+/** Allow only safe filename characters — no path separators, dots, or control chars. */
+function sanitizeFilename(name: string): string {
+  return name.replace(/[^a-zA-Z0-9_\-]/g, '_')
+}
+
+/** Block requests to localhost and RFC-1918 private ranges (SSRF guard). */
+function isPrivateUrl(rawUrl: string): boolean {
+  try {
+    const { hostname } = new URL(rawUrl)
+    return /^(localhost|127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|::1|0\.0\.0\.0)/i.test(hostname)
+  } catch {
+    return true // unparseable URL → treat as unsafe
+  }
+}
 
 export function registerFileIpc(): void {
 
@@ -45,7 +60,7 @@ export function registerFileIpc(): void {
     const dir = path.join(workingDir, 'providers')
     try {
       fs.mkdirSync(dir, { recursive: true })
-      fs.writeFileSync(path.join(dir, `${key}.json`), JSON.stringify(data, null, 2), 'utf-8')
+      fs.writeFileSync(path.join(dir, `${sanitizeFilename(key)}.json`), JSON.stringify(data, null, 2), 'utf-8')
       return { ok: true }
     } catch (e: unknown) {
       return { error: e instanceof Error ? e.message : String(e) }
@@ -54,7 +69,7 @@ export function registerFileIpc(): void {
 
   // ── delete-provider ────────────────────────────────────────────────────────
   ipcMain.handle('delete-provider', (_event, workingDir: string, key: string) => {
-    const filePath = path.join(workingDir, 'providers', `${key}.json`)
+    const filePath = path.join(workingDir, 'providers', `${sanitizeFilename(key)}.json`)
     try {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
       return { ok: true }
@@ -84,7 +99,7 @@ export function registerFileIpc(): void {
     const dir = path.join(workingDir, 'workflows')
     try {
       fs.mkdirSync(dir, { recursive: true })
-      fs.writeFileSync(path.join(dir, `${type}.json`), JSON.stringify(data, null, 2), 'utf-8')
+      fs.writeFileSync(path.join(dir, `${sanitizeFilename(type)}.json`), JSON.stringify(data, null, 2), 'utf-8')
       return { ok: true }
     } catch (e: unknown) {
       return { error: e instanceof Error ? e.message : String(e) }
@@ -93,7 +108,7 @@ export function registerFileIpc(): void {
 
   // ── delete-workflow ────────────────────────────────────────────────────────
   ipcMain.handle('delete-workflow', (_event, workingDir: string, type: string) => {
-    const filePath = path.join(workingDir, 'workflows', `${type}.json`)
+    const filePath = path.join(workingDir, 'workflows', `${sanitizeFilename(type)}.json`)
     try {
       if (fs.existsSync(filePath)) fs.unlinkSync(filePath)
       return { ok: true }
@@ -280,6 +295,7 @@ export function registerFileIpc(): void {
     headers: Record<string, string>
     body?: string
   }) => {
+    if (isPrivateUrl(opts.url)) return { error: 'Requests to private/local addresses are not allowed' }
     try {
       const res = await fetch(opts.url, {
         method: opts.method,
@@ -288,6 +304,32 @@ export function registerFileIpc(): void {
       })
       const body = await res.text()
       return { status: res.status, body }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
+  // ── safe-storage ──────────────────────────────────────────────────────────
+  // Encrypts/decrypts strings using the OS credential store (Keychain, DPAPI,
+  // libsecret). Falls back to base64 obfuscation if safeStorage is unavailable.
+  ipcMain.handle('safe-encrypt', (_event, plaintext: string) => {
+    try {
+      if (safeStorage.isEncryptionAvailable()) {
+        return { ciphertext: safeStorage.encryptString(plaintext).toString('base64') }
+      }
+      // Fallback: base64 obfuscation (better than plaintext, not cryptographically secure)
+      return { ciphertext: Buffer.from(plaintext, 'utf-8').toString('base64'), fallback: true }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
+  ipcMain.handle('safe-decrypt', (_event, ciphertext: string) => {
+    try {
+      if (safeStorage.isEncryptionAvailable()) {
+        return { plaintext: safeStorage.decryptString(Buffer.from(ciphertext, 'base64')) }
+      }
+      return { plaintext: Buffer.from(ciphertext, 'base64').toString('utf-8') }
     } catch (e: unknown) {
       return { error: e instanceof Error ? e.message : String(e) }
     }
@@ -304,6 +346,7 @@ export function registerFileIpc(): void {
   // Fetches a URL through the main process to bypass renderer CORS restrictions.
   // Used by the RSS reader and any future workflow that needs to pull remote data.
   ipcMain.handle('fetch-url', async (_event, url: string) => {
+    if (isPrivateUrl(url)) return { error: 'Requests to private/local addresses are not allowed' }
     try {
       const response = await fetch(url, {
         headers: { 'User-Agent': 'ManyAI-Desktop/1.0 (RSS reader)' },

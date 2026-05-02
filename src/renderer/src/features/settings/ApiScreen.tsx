@@ -426,7 +426,7 @@ export default function ApiScreen() {
   /** Save the API key for one provider, called on blur of the key input. */
   const saveKeyForProvider = (pk: string) => {
     const v = state[pk]?.apiKey?.trim()
-    if (v) saveKey(pk, v)
+    if (v) saveKey(pk, v)  // async, fire-and-forget — UI feedback is immediate
     else deleteKey(pk)
     setKeySaved(prev => ({ ...prev, [pk]: true }))
     setTimeout(() => setKeySaved(prev => ({ ...prev, [pk]: false })), 2000)

@@ -2,7 +2,6 @@ import { ipcMain, WebContents, dialog, app } from 'electron'
 import { Client as SshClient, SFTPWrapper } from 'ssh2'
 import * as ftp from 'basic-ftp'
 import * as path from 'path'
-import * as fs from 'fs'
 
 // ── SSH shell sessions ────────────────────────────────────────────────────────
 
@@ -43,7 +42,20 @@ export interface FtpEntry {
   date: string
 }
 
+function closeAllSessions(): void {
+  for (const [id, s] of sessions) {
+    try {
+      if (s.kind === 'shell') { s.stream.end(); s.client.end() }
+      else if (s.kind === 'sftp') s.client.end()
+      else if (s.kind === 'ftp') s.client.close()
+    } catch { /* best-effort on quit */ }
+    sessions.delete(id)
+  }
+}
+
 export function registerTerminalIpc(): void {
+  // Close all open sessions when the app is about to quit
+  app.on('before-quit', closeAllSessions)
 
   // ── SSH shell connect ───────────────────────────────────────────────────────
 
@@ -215,13 +227,12 @@ export function registerTerminalIpc(): void {
     if (!s || s.kind !== 'sftp') return { error: 'Not an SFTP session' }
 
     return new Promise<{ ok: true } | { error: string }>(resolve => {
-      const fn = isDir
-        ? (p: string, cb: (err: Error | null) => void) => s.sftp.rmdir(p, cb)
-        : (p: string, cb: (err: Error | null) => void) => s.sftp.unlink(p, cb)
-      fn(remotePath, err => {
+      const cb = (err: Error | null | undefined) => {
         if (err) resolve({ error: err.message })
         else resolve({ ok: true })
-      })
+      }
+      if (isDir) s.sftp.rmdir(remotePath, cb)
+      else s.sftp.unlink(remotePath, cb)
     })
   })
 

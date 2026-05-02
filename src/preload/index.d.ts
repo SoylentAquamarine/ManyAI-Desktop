@@ -84,6 +84,12 @@ declare global {
         body?: string
       }) => Promise<{ status: number; body: string } | { error: string }>
 
+      /** Encrypt a string using the OS credential store (Keychain / DPAPI / libsecret). */
+      safeEncrypt: (plaintext: string) => Promise<{ ciphertext: string; fallback?: boolean } | { error: string }>
+
+      /** Decrypt a string produced by safeEncrypt. */
+      safeDecrypt: (ciphertext: string) => Promise<{ plaintext: string } | { error: string }>
+
       /** Open a TCP connection to an IRC server. Listen for 'irc-event' connected to confirm. */
       ircConnect: (args: { server: string; port: number; nick: string; username: string; realname: string; password?: string }) => Promise<{ ok: true } | { error: string }>
 
