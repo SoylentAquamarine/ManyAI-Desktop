@@ -35,6 +35,14 @@ $ npm run build:linux
 
 ## Changelog
 
+### 2026-05-01 — Local Code agent loop (GPT-4o autonomous file editing)
+
+- Added GPT-4o agent loop to Local Code workflow — AI autonomously calls `read_file`, `write_file`, `list_directory` tools in a loop until task is complete, no user interaction needed
+- Agent ON/OFF toggle button in UI; tool calls stream into chat as activity messages (`📖 read_file`, `✍️ write_file`, `📁 list_directory`)
+- Selected files auto-refresh after agent writes them
+- Agent requires an OpenAI-compatible provider; shows helpful error if misconfigured
+- New `agentLoop.ts` — standalone OpenAI tool-calling loop, max 20 iterations, respects `proxyMode`
+
 ### 2026-05-01 — All data in JSON files; no localStorage state for providers or workflows
 
 - **Provider & model state**: enabled/disabled and selected model per provider now stored in provider JSON files (`enabled` field on `Provider` and `ProviderModel`); no longer in localStorage
