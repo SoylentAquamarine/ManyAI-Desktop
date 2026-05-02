@@ -293,6 +293,57 @@ export function registerFileIpc(): void {
     }
   })
 
+  // ── read-dir ───────────────────────────────────────────────────────────────
+  // Returns a recursive file tree from dirPath.
+  // Files over maxBytes (default 100 KB) are flagged with oversized: true.
+  // Skips hidden files/dirs (dot-prefix), node_modules, __pycache__, .git.
+  ipcMain.handle('read-dir', (_event, dirPath: string, extensions?: string[]) => {
+    const MAX_BYTES = 100 * 1024
+    const SKIP_DIRS = new Set(['node_modules', '__pycache__', '.git', 'dist', 'out', '.next', 'build'])
+
+    interface FileEntry {
+      name: string
+      path: string
+      type: 'file' | 'dir'
+      size?: number
+      oversized?: boolean
+      children?: FileEntry[]
+    }
+
+    const walk = (dir: string, depth = 0): FileEntry[] => {
+      if (depth > 8) return []
+      let entries: string[]
+      try { entries = fs.readdirSync(dir) } catch { return [] }
+      const result: FileEntry[] = []
+      for (const name of entries.sort()) {
+        if (name.startsWith('.')) continue
+        const full = path.join(dir, name)
+        let stat: import('fs').Stats
+        try { stat = fs.statSync(full) } catch { continue }
+        if (stat.isDirectory()) {
+          if (SKIP_DIRS.has(name)) continue
+          result.push({ name, path: full, type: 'dir', children: walk(full, depth + 1) })
+        } else {
+          if (extensions && extensions.length > 0) {
+            const ext = path.extname(name).toLowerCase()
+            if (!extensions.includes(ext)) continue
+          }
+          const oversized = stat.size > MAX_BYTES
+          result.push({ name, path: full, type: 'file', size: stat.size, oversized })
+        }
+      }
+      return result
+    }
+
+    try {
+      const stat = fs.statSync(dirPath)
+      if (!stat.isDirectory()) return { error: 'Not a directory' }
+      return { entries: walk(dirPath) }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
   // ── open-path ──────────────────────────────────────────────────────────────
   // Opens a file or directory in the OS default application.
   ipcMain.handle('open-path', async (_event, filePath: string) => {

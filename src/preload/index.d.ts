@@ -7,6 +7,15 @@ interface FtpEntry {
   date: string
 }
 
+interface FileEntry {
+  name: string
+  path: string
+  type: 'file' | 'dir'
+  size?: number
+  oversized?: boolean
+  children?: FileEntry[]
+}
+
 declare global {
   interface Window {
     electron: ElectronAPI
@@ -75,6 +84,9 @@ declare global {
 
       /** Open a file or directory in the OS default app. */
       openPath: (filePath: string) => Promise<{ ok: true } | { error: string }>
+
+      /** Read a directory tree recursively. Extensions filter e.g. ['.html','.css']. */
+      readDir: (dirPath: string, extensions?: string[]) => Promise<{ entries: FileEntry[] } | { error: string }>
 
       /** Forward an HTTP request through the main process, bypassing renderer CORS. */
       proxyRequest: (opts: {

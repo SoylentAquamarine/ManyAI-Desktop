@@ -82,6 +82,10 @@ export const filesApi = {
   openPath: (filePath: string): Promise<{ ok: true } | { error: string }> =>
     ipcRenderer.invoke('open-path', filePath),
 
+  /** Read a directory tree recursively. Extensions filter e.g. ['.html','.css']. */
+  readDir: (dirPath: string, extensions?: string[]): Promise<{ entries: FileEntry[] } | { error: string }> =>
+    ipcRenderer.invoke('read-dir', dirPath, extensions),
+
   /** Read the persistent app config from {userData}/manyai-config.json. */
   getConfig: (): Promise<{ config: Record<string, unknown> }> =>
     ipcRenderer.invoke('get-config'),

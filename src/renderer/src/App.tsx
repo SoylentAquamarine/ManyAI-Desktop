@@ -3,6 +3,7 @@ import ChatScreen from './features/chat/ChatScreen'
 import IrcScreen from './features/irc/IrcScreen'
 import RssScreen from './features/rss/RssScreen'
 import TerminalScreen from './features/terminal/TerminalScreen'
+import FileSystemScreen from './features/filesystem/FileSystemScreen'
 import SettingsScreen from './features/settings/SettingsScreen'
 import RightPanel from './components/RightPanel'
 import { workflowBus } from './lib/workflowBus'
@@ -271,6 +272,8 @@ export default function App() {
                 <IrcScreen />
               ) : t.workflowType === 'terminal' ? (
                 <TerminalScreen />
+              ) : t.workflowType === 'filesystem' ? (
+                <FileSystemScreen tabId={t.id} />
               ) : t.workflowType === 'rss' ? (
                 <RssScreen
                   availableTabs={tabs
