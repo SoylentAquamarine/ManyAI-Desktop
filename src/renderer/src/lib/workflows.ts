@@ -35,7 +35,7 @@ export interface WorkflowDef {
 
 // ── System workflows — always code-defined, never file-backed ─────────────────
 
-const SYSTEM_TYPES = new Set(['irc', 'rss', 'terminal', 'laptop'])
+const SYSTEM_TYPES = new Set(['irc', 'rss', 'terminal', 'programming'])
 
 const SYSTEM_WORKFLOWS: WorkflowDef[] = WORKFLOW_REGISTRY
   .filter(w => SYSTEM_TYPES.has(w.type))

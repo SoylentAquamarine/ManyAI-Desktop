@@ -16,7 +16,7 @@ import { translationWorkflow }   from './translation'
 import { ircWorkflow }           from './irc'
 import { rssWorkflow }           from './rss'
 import { terminalWorkflow }      from './terminal'
-import { laptopWorkflow }        from './laptop'
+import { programmingWorkflow }   from './programming'
 
 export type { WorkflowPlugin, RouteEntry } from './types'
 
@@ -30,5 +30,5 @@ export const WORKFLOW_REGISTRY = [
   ircWorkflow,
   rssWorkflow,
   terminalWorkflow,
-  laptopWorkflow,
+  programmingWorkflow,
 ]
