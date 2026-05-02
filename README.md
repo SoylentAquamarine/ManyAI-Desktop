@@ -35,6 +35,16 @@ $ npm run build:linux
 
 ## Changelog
 
+### 2026-05-02 — Security Hardening, Bug Fixes, and Workflow Redesign
+
+- Added path traversal protection for provider/workflow filenames and SSRF guard on fetch-url calls.
+- Encrypted API keys using OS credential stores (Keychain/DPAPI/libsecret) via Electron's safeStorage.
+- Fixed IRC disconnect race condition and ensured terminal sessions close on app quit.
+- Enforced 30s timeout for proxied fetch calls and validated window position on restore to prevent off-screen placement.
+- Introduced per-provider timeout field; set laptop/Ollama provider default to 10 minutes.
+- Redesigned workflow system: 4 built-in system workflows (irc, rss, terminal, programming) are now code-defined, while others are seeded as JSON files in the working directory on first run.
+- Added new Programming built-in workflow: autonomous coding agent using local Ollama, with file tree browsing and direct file read/write via tool-calling loop, no token limits.
+
 ### 2026-05-01 — All data in JSON files; no localStorage state for providers or workflows
 
 - **Provider & model state**: enabled/disabled and selected model per provider now stored in provider JSON files (`enabled` field on `Provider` and `ProviderModel`); no longer in localStorage
