@@ -32,6 +32,10 @@
     .badge-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
     .badge { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 20px; font-size: 0.85rem; }
     .badge strong { color: var(--accent); }
+    .dev-nav { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+    .dev-nav span { color: var(--dim); font-size: 0.75rem; align-self: center; }
+    .dev-nav a { font-size: 0.8rem; padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border); color: var(--dim); text-decoration: none; }
+    .dev-nav a:hover { border-color: var(--accent); color: var(--accent); }
 
     .divider { border: none; border-top: 1px solid var(--border); }
     section { max-width: 920px; margin: 0 auto; padding: 60px 20px; }
@@ -71,6 +75,11 @@
     <div class="badge">🪟 Windows · Mac · Linux</div>
     <div class="badge">🆓 <strong>Free &amp; open source</strong></div>
     <div class="badge">🔑 13 AI providers</div>
+  </div>
+  <div class="dev-nav">
+    <span>Dev docs:</span>
+    <a href="blueprints/system-overview.html">System Overview</a>
+    <a href="blueprints/architecture.html">Architecture</a>
   </div>
 </header>
 
@@ -171,16 +180,6 @@ cd ManyAI-Desktop
 npm install
 npm run dev</pre>
     <p>Add your API keys under <strong>Settings → API</strong>. Most providers have a free tier — no credit card needed.</p>
-  </div>
-</section>
-
-<section style="padding:40px 20px;border-top:1px solid var(--border);">
-  <div style="max-width:920px;margin:0 auto;">
-    <h2 style="font-size:1.1rem;margin-bottom:16px;">Developer <span style="color:var(--accent)">Documentation</span></h2>
-    <div style="display:flex;flex-wrap:wrap;gap:10px;">
-      <a href="blueprints/system-overview.html" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 18px;font-size:0.85rem;color:var(--accent);">System Overview</a>
-      <a href="blueprints/architecture.html" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 18px;font-size:0.85rem;color:var(--accent);">Architecture</a>
-    </div>
   </div>
 </section>
 
