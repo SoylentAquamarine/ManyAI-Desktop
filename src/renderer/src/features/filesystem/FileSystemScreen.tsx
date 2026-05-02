@@ -4,6 +4,7 @@ import { getAllProviders, getKeylessProviderKeys } from '../../lib/providers'
 import { loadAllKeys } from '../../lib/keyStore'
 import { loadEnabledProviders } from '../../lib/providerPrefs'
 import { callProvider, type HistoryMessage } from '../../lib/callProvider'
+import { runAgentLoop } from '../../lib/agentLoop'
 
 interface FileEntry {
   name: string
@@ -23,6 +24,7 @@ interface SelectedFile {
 interface Message {
   role: 'user' | 'assistant'
   content: string
+  type?: 'activity'
 }
 
 interface SaveBlock {
@@ -53,6 +55,7 @@ export default function FileSystemScreen({ tabId }: FileSystemScreenProps) {
   })
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [agentMode, setAgentMode] = useState(false)
   const [saveConfirm, setSaveConfirm] = useState<{ block: SaveBlock; idx: number; blockIdx: number } | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -130,6 +133,83 @@ export default function FileSystemScreen({ tabId }: FileSystemScreenProps) {
     )
   }
 
+  const buildAgentSystemPrompt = (): string => {
+    const rootNote = root ? `The root working directory is: ${root}\n\n` : ''
+    return (
+      `You are an autonomous file editing agent. You have direct access to the filesystem via tools.\n` +
+      `${rootNote}` +
+      `Use read_file, write_file, and list_directory tools to accomplish the user's request fully.\n` +
+      `Do NOT output raw file content in your text response — write files using write_file instead.\n` +
+      `When all tasks are complete, respond with a short summary of what you did.`
+    )
+  }
+
+  const sendAgent = async () => {
+    const text = input.trim()
+    if (!text || sending) return
+    setInput('')
+    setSending(true)
+
+    const keys = loadAllKeys()
+    const prefs = loadRoutingPrefs()
+    const availableKeys = new Set(Object.keys(keys))
+    getKeylessProviderKeys().forEach(k => availableKeys.add(k))
+    const enabledMap = loadEnabledProviders()
+    const entry = resolveProvider('filesystem', prefs, availableKeys, enabledMap)
+
+    if (!entry) {
+      setMessages(m => [...m, { role: 'user', content: text }, { role: 'assistant', content: '⚠️ No provider configured for this workflow.' }])
+      setSending(false)
+      return
+    }
+
+    const allProviders = getAllProviders()
+    const provider = allProviders[entry.provider]
+    const fmt = provider?.apiFormat ?? 'openai-compat'
+
+    if (!provider || fmt !== 'openai-compat') {
+      setMessages(m => [...m, { role: 'user', content: text }, { role: 'assistant', content: `⚠️ Agent mode requires an OpenAI-compatible provider (configured: ${entry.provider}). Set GPT-4o as the first route in Settings → Workflows → Local Code.` }])
+      setSending(false)
+      return
+    }
+
+    setMessages(m => [...m, { role: 'user', content: text }])
+
+    const history = messages
+      .filter(m => !m.type)
+      .map(m => ({ role: m.role as 'user' | 'assistant', content: m.content }))
+
+    try {
+      const finalContent = await runAgentLoop({
+        provider,
+        apiKey: keys[entry.provider] ?? '',
+        systemPrompt: buildAgentSystemPrompt(),
+        userMessage: text,
+        history,
+        onEvent: ({ toolName, args, emoji }) => {
+          const desc = String(args.path ?? args.content ?? '')
+          const label = toolName === 'write_file' ? `${args.path}` : desc
+          setMessages(m => [...m, { role: 'assistant', type: 'activity', content: `${emoji} ${toolName} · ${label}` }])
+        },
+      })
+      setMessages(m => [...m, { role: 'assistant', content: finalContent || '(Agent completed with no text response.)' }])
+      // Refresh any selected files the agent may have written
+      if (selectedFiles.length > 0) {
+        const refreshed = await Promise.all(
+          selectedFiles.map(async f => {
+            const r = await window.api.readFileByPath(f.path)
+            return 'error' in r ? f : { ...f, content: r.content }
+          })
+        )
+        setSelectedFiles(refreshed)
+      }
+    } catch (e) {
+      setMessages(m => [...m, { role: 'assistant', content: `⚠️ Agent error: ${e}` }])
+    } finally {
+      setSending(false)
+    }
+  }
+
   const send = async () => {
     const text = input.trim()
     if (!text || sending) return
@@ -178,7 +258,7 @@ export default function FileSystemScreen({ tabId }: FileSystemScreenProps) {
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); agentMode ? sendAgent() : send() }
   }
 
   // Parse fenced code blocks from assistant messages
@@ -357,7 +437,11 @@ export default function FileSystemScreen({ tabId }: FileSystemScreenProps) {
           )}
           {messages.map((msg, msgIdx) => (
             <div key={msgIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-              {msg.role === 'user' ? (
+              {msg.type === 'activity' ? (
+                <div style={{ fontSize: 11, color: 'var(--text-dim)', fontFamily: 'monospace', paddingLeft: 4 }}>
+                  {msg.content}
+                </div>
+              ) : msg.role === 'user' ? (
                 <div style={{
                   background: 'var(--accent, #4a90d9)', color: '#fff',
                   borderRadius: 10, padding: '8px 12px', maxWidth: '75%',
@@ -425,7 +509,9 @@ export default function FileSystemScreen({ tabId }: FileSystemScreenProps) {
             </div>
           ))}
           {sending && (
-            <div style={{ color: 'var(--text-dim)', fontSize: 12, fontStyle: 'italic' }}>Thinking…</div>
+            <div style={{ color: 'var(--text-dim)', fontSize: 12, fontStyle: 'italic' }}>
+              {agentMode ? '⚙️ Agent running…' : 'Thinking…'}
+            </div>
           )}
           <div ref={bottomRef} />
         </div>
@@ -437,16 +523,30 @@ export default function FileSystemScreen({ tabId }: FileSystemScreenProps) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a command… e.g. 'Create index.html with a nav bar' or select files to edit them. Enter to send."
+            placeholder={agentMode ? 'Agent mode — AI will read/write files autonomously. Enter to run.' : 'Type a command… e.g. "Create index.html with a nav bar". Enter to send.'}
             rows={3}
             style={{ flex: 1, resize: 'none', fontFamily: 'inherit', fontSize: 13, padding: '6px 10px' }}
           />
-          <button
-            className="btn-primary"
-            style={{ padding: '8px 16px', flexShrink: 0 }}
-            onClick={send}
-            disabled={sending || !input.trim()}
-          >{sending ? '…' : 'Send'}</button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+            <button
+              title={agentMode ? 'Agent mode ON — click to switch to manual' : 'Manual mode — click to enable Agent (auto read/write)'}
+              style={{
+                fontSize: 11, padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)',
+                background: agentMode ? 'var(--accent, #4a90d9)' : 'var(--surface)',
+                color: agentMode ? '#fff' : 'var(--text-dim)',
+                cursor: 'pointer', whiteSpace: 'nowrap',
+              }}
+              onClick={() => setAgentMode(v => !v)}
+            >
+              🤖 {agentMode ? 'Agent ON' : 'Agent OFF'}
+            </button>
+            <button
+              className="btn-primary"
+              style={{ padding: '8px 16px' }}
+              onClick={agentMode ? sendAgent : send}
+              disabled={sending || !input.trim()}
+            >{sending ? (agentMode ? '⚙️…' : '…') : 'Send'}</button>
+          </div>
         </div>
 
         {/* Clear chat */}
