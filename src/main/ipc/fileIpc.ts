@@ -295,7 +295,8 @@ export function registerFileIpc(): void {
     headers: Record<string, string>
     body?: string
   }) => {
-    if (isPrivateUrl(opts.url)) return { error: 'Requests to private/local addresses are not allowed' }
+    // No SSRF guard here — proxy-request is used for user-configured provider
+    // endpoints (including local Ollama on localhost). Trust the provider URL.
     try {
       const res = await fetch(opts.url, {
         method: opts.method,
