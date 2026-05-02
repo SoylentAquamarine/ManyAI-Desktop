@@ -112,15 +112,21 @@ export default function FileSystemScreen({ tabId }: FileSystemScreenProps) {
   }
 
   const buildFileContext = (): string => {
-    if (selectedFiles.length === 0) return ''
-    const blocks = selectedFiles.map(f =>
-      `### File: ${f.path}\n\`\`\`\n${f.content}\n\`\`\``
-    ).join('\n\n')
+    const fileBlocks = selectedFiles.length > 0
+      ? '\n\nThe user has the following files open:\n\n' +
+        selectedFiles.map(f => `### File: ${f.path}\n\`\`\`\n${f.content}\n\`\`\``).join('\n\n')
+      : ''
+
     return (
-      `You are a code and file editor assistant. The user has the following files open:\n\n${blocks}\n\n` +
-      `When returning edited files, wrap each in a fenced code block with the filename header exactly like this:\n` +
-      `\`\`\`filename: path/to/file.html\n...complete file content...\n\`\`\`\n` +
-      `Always return the complete file content, not just the changed section.`
+      `You are a file editor assistant with direct read/write access to the user's filesystem.\n` +
+      `IMPORTANT RULES — follow these exactly, no exceptions:\n` +
+      `1. Whenever you produce file content (new files OR edits), you MUST wrap it in a fenced block with a filename header like this:\n` +
+      `\`\`\`filename: path/to/file.html\n...complete file content here...\n\`\`\`\n` +
+      `2. Always return the COMPLETE file content — never partial snippets or diffs.\n` +
+      `3. NEVER tell the user to copy, paste, or save manually. The UI has a Save button that writes the file directly. Just produce the block.\n` +
+      `4. If the user asks you to create a new file, use a sensible filename and produce the block. The user will click Save to write it.\n` +
+      `5. If the user asks you to save, that means produce the filename block — the UI handles the actual write.` +
+      fileBlocks
     )
   }
 
@@ -317,10 +323,18 @@ export default function FileSystemScreen({ tabId }: FileSystemScreenProps) {
         {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
           {messages.length === 0 && (
-            <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 40, textAlign: 'center' }}>
-              {selectedFiles.length === 0
-                ? 'Select files from the tree, then type a command.'
-                : `${selectedFiles.length} file${selectedFiles.length > 1 ? 's' : ''} loaded. Type a command.`}
+            <div style={{ color: 'var(--text-dim)', fontSize: 13, marginTop: 40, textAlign: 'center', lineHeight: 1.8 }}>
+              {selectedFiles.length === 0 ? (
+                <>
+                  <div>No files selected.</div>
+                  <div style={{ fontSize: 11, marginTop: 6 }}>
+                    Browse a folder and check files to edit them,<br />
+                    or just ask to <em>create</em> a new file — no selection needed.
+                  </div>
+                </>
+              ) : (
+                <div>{selectedFiles.length} file{selectedFiles.length > 1 ? 's' : ''} in context — type a command.</div>
+              )}
             </div>
           )}
           {messages.map((msg, msgIdx) => (
@@ -386,7 +400,7 @@ export default function FileSystemScreen({ tabId }: FileSystemScreenProps) {
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={selectedFiles.length ? 'Type a command… (Enter to send, Shift+Enter for newline)' : 'Select files first, then type a command…'}
+            placeholder="Type a command… e.g. 'Create index.html with a nav bar' or select files to edit them. Enter to send."
             rows={3}
             style={{ flex: 1, resize: 'none', fontFamily: 'inherit', fontSize: 13, padding: '6px 10px' }}
           />
