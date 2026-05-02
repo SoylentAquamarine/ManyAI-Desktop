@@ -211,18 +211,36 @@ export default function FileSystemScreen({ tabId }: FileSystemScreenProps) {
   const doSave = async (savePath: string, content: string, msgIdx: number, blockIdx: number) => {
     const result = await window.api.writeFileDirect(savePath, content)
     if ('error' in result) { alert(`Save failed: ${result.error}`); return }
-    // Mark block as saved in UI — rebuild message content
-    setMessages(prev => prev.map((m, i) => {
-      if (i !== msgIdx) return m
-      // Re-render is driven by block state — we track saved via a separate set
-      return m
-    }))
     setSavedBlocks(prev => new Set(prev).add(`${msgIdx}:${blockIdx}`))
     setSaveConfirm(null)
-    // Refresh file content in selectedFiles
     const refreshed = await window.api.readFileByPath(savePath)
     if (!('error' in refreshed)) {
       setSelectedFiles(prev => prev.map(f => f.path === savePath ? { ...f, content: refreshed.content } : f))
+    }
+  }
+
+  const saveAll = async (msgIdx: number) => {
+    const msg = messages[msgIdx]
+    if (!msg) return
+    const blocks = parseBlocks(msg.content).filter((p): p is SaveBlock => typeof p !== 'string')
+    for (let i = 0; i < blocks.length; i++) {
+      const block = blocks[i]
+      // Count block index within the full parsed list
+      const allParts = parseBlocks(msg.content)
+      const blockIdx = allParts.filter((p): p is SaveBlock => typeof p !== 'string').indexOf(block)
+      if (savedBlocks.has(`${msgIdx}:${blockIdx}`)) continue
+      if (block.originalPath) {
+        await doSave(block.originalPath, block.content, msgIdx, blockIdx)
+      } else {
+        // Derive save path from root + filename if we have a root folder
+        if (root) {
+          const savePath = `${root}\\${block.filename}`
+          await doSave(savePath, block.content, msgIdx, blockIdx)
+        } else {
+          setSaveConfirm({ block, idx: msgIdx, blockIdx })
+          return // Stop and let user resolve this one; they can Save All again after
+        }
+      }
     }
   }
 
@@ -347,6 +365,25 @@ export default function FileSystemScreen({ tabId }: FileSystemScreenProps) {
                 }}>{msg.content}</div>
               ) : (
                 <div style={{ maxWidth: '90%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {(() => {
+                    const fileBlocks = parseBlocks(msg.content).filter((p): p is SaveBlock => typeof p !== 'string')
+                    const unsaved = fileBlocks.filter((_, i) => {
+                      const allParts = parseBlocks(msg.content)
+                      const blockIdx = allParts.filter((p): p is SaveBlock => typeof p !== 'string').indexOf(fileBlocks[i])
+                      return !savedBlocks.has(`${msgIdx}:${blockIdx}`)
+                    })
+                    return fileBlocks.length >= 2 && unsaved.length > 0 ? (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          className="btn-primary"
+                          style={{ fontSize: 11, padding: '4px 14px' }}
+                          onClick={() => saveAll(msgIdx)}
+                        >
+                          💾 Save All {unsaved.length} files
+                        </button>
+                      </div>
+                    ) : null
+                  })()}
                   {parseBlocks(msg.content).map((part, blockIdx) =>
                     typeof part === 'string' ? (
                       part.trim() && (
