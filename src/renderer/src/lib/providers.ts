@@ -52,6 +52,8 @@ export interface Provider {
    * proxied — routes through Electron main process (required for local/LAN providers)
    */
   proxyMode?: 'direct' | 'proxied'
+  /** Request timeout in milliseconds. Defaults to 30 000. Use a higher value for slow local models. */
+  timeoutMs?: number
 }
 
 // ── Runtime registry (populated by initProviders at startup) ─────────────────

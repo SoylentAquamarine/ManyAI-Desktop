@@ -22,5 +22,7 @@
   "supportsVision": false,
   "instructionsUrl": "ollama.com",
   "apiFormat": "openai-compat",
+  "proxyMode": "proxied",
+  "timeoutMs": 600000,
   "sortOrder": 14
 }

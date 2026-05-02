@@ -11,7 +11,7 @@
 
 import { Provider } from './providers';
 
-const FETCH_TIMEOUT_MS = 30_000;
+const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_HISTORY = 10;
 
 export interface AIResponse {
@@ -35,9 +35,9 @@ type OpenAIContentItem =
   | { type: 'text'; text: string }
   | { type: 'image_url'; image_url: { url: string } };
 
-function fetchWithTimeout(url: string, options?: RequestInit): Promise<Response> {
+function fetchWithTimeout(url: string, options?: RequestInit, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   return fetch(url, { ...options, signal: controller.signal })
     .finally(() => clearTimeout(timer));
 }
@@ -51,9 +51,10 @@ interface FetchLike {
 }
 
 async function doFetch(provider: Provider, url: string, opts: RequestInit = {}): Promise<FetchLike> {
+  const timeoutMs = provider.timeoutMs ?? DEFAULT_TIMEOUT_MS
   if (provider.proxyMode === 'proxied') {
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error('Request timed out')), FETCH_TIMEOUT_MS)
+      setTimeout(() => reject(new Error('Request timed out')), timeoutMs)
     )
     const requestPromise = window.api.proxyRequest({
       url,
@@ -71,7 +72,7 @@ async function doFetch(provider: Provider, url: string, opts: RequestInit = {}):
       text: () => Promise.resolve(body),
     }
   }
-  return fetchWithTimeout(url, opts)
+  return fetchWithTimeout(url, opts, timeoutMs)
 }
 
 
