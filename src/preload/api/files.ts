@@ -99,6 +99,10 @@ export const filesApi = {
   }): Promise<{ status: number; body: string } | { error: string }> =>
     ipcRenderer.invoke('proxy-request', opts),
 
+  /** Return a recursive file tree for a directory. Flags files over 100 KB as oversized. */
+  readDir: (dirPath: string): Promise<{ entries: unknown[] } | { error: string }> =>
+    ipcRenderer.invoke('read-dir', dirPath),
+
   /** Encrypt a string using the OS credential store (Keychain / DPAPI / libsecret). */
   safeEncrypt: (plaintext: string): Promise<{ ciphertext: string; fallback?: boolean } | { error: string }> =>
     ipcRenderer.invoke('safe-encrypt', plaintext),

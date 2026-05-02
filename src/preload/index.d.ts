@@ -84,6 +84,9 @@ declare global {
         body?: string
       }) => Promise<{ status: number; body: string } | { error: string }>
 
+      /** Return a recursive file tree for a directory. Flags files over 100 KB as oversized. */
+      readDir: (dirPath: string) => Promise<{ entries: unknown[] } | { error: string }>
+
       /** Encrypt a string using the OS credential store (Keychain / DPAPI / libsecret). */
       safeEncrypt: (plaintext: string) => Promise<{ ciphertext: string; fallback?: boolean } | { error: string }>
 

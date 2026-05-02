@@ -310,6 +310,40 @@ export function registerFileIpc(): void {
     }
   })
 
+  // ── read-dir ───────────────────────────────────────────────────────────────
+  // Returns a recursive file tree. Skips hidden files, node_modules, .git, dist.
+  // Files over 100 KB are flagged oversized: true so the UI can grey them out.
+  ipcMain.handle('read-dir', (_event, dirPath: string) => {
+    const MAX_BYTES = 100 * 1024
+    const SKIP = new Set(['node_modules', '__pycache__', '.git', 'dist', 'out', '.next', 'build'])
+    interface Entry { name: string; path: string; type: 'file' | 'dir'; size?: number; oversized?: boolean; children?: Entry[] }
+    const walk = (dir: string, depth = 0): Entry[] => {
+      if (depth > 8) return []
+      let names: string[]
+      try { names = fs.readdirSync(dir) } catch { return [] }
+      const result: Entry[] = []
+      for (const name of names.sort()) {
+        if (name.startsWith('.')) continue
+        const full = path.join(dir, name)
+        let stat: import('fs').Stats
+        try { stat = fs.statSync(full) } catch { continue }
+        if (stat.isDirectory()) {
+          if (SKIP.has(name)) continue
+          result.push({ name, path: full, type: 'dir', children: walk(full, depth + 1) })
+        } else {
+          result.push({ name, path: full, type: 'file', size: stat.size, oversized: stat.size > MAX_BYTES })
+        }
+      }
+      return result
+    }
+    try {
+      if (!fs.statSync(dirPath).isDirectory()) return { error: 'Not a directory' }
+      return { entries: walk(dirPath) }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
   // ── safe-storage ──────────────────────────────────────────────────────────
   // Encrypts/decrypts strings using the OS credential store (Keychain, DPAPI,
   // libsecret). Falls back to base64 obfuscation if safeStorage is unavailable.
