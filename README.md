@@ -35,6 +35,17 @@ $ npm run build:linux
 
 ## Changelog
 
+### 2026-05-03 — MCP Client, SQLite Persistence, Built-in Modules, Expanded Agent Tools
+
+- Integrated MCP (Model Context Protocol) client: `McpClientManager` in main process connects to stdio and HTTP MCP servers, persists configs to `userData/mcp-servers.json`, and reconnects all on app start.
+- Added Settings → MCP tab (`McpScreen.tsx`) with add/edit/remove/reconnect UI and a live tool viewer. Edit button pre-fills the form and locks the name field.
+- MCP tools are discovered dynamically at agent run time and merged with native tools; all namespaced as `mcp__<server>__<tool>`.
+- Added `better-sqlite3` SQLite database (`userData/manyai.db`, WAL mode) with three tables: `messages` (chat history per tab), `routing_log`, `agent_audit`. Chat history restores on tab load and persists incrementally via a delta pattern.
+- Expanded agent loop from 3 to 9 native tools: added `rename_file`, `delete_file`, `create_directory`, `search_web` (Jina), `fetch_url` (Jina Reader), and `read_image` with vision injection.
+- Refactored IRC, RSS, Terminal, and Programming out of the workflow picker into Settings → Built-in tab with load/unload checkboxes. `enabledUserWorkflows()` now excludes these types from the New Tab picker.
+- Added ↺ Refresh button to Programming screen file tree.
+- Updated all four affected blueprints (mcp-tools, data-pipeline, system-overview, workflows).
+
 ### 2026-05-02 — Security Hardening, Bug Fixes, and Workflow Redesign
 
 - Added path traversal protection for provider/workflow filenames and SSRF guard on fetch-url calls.

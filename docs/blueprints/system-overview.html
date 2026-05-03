@@ -53,13 +53,13 @@
 
 <header>
   <h1>System Overview — ManyAI Desktop</h1>
-  <p class="meta">Blueprint · Last updated 2026-05-02</p>
+  <p class="meta">Blueprint · Last updated 2026-05-03</p>
 </header>
 
 <main>
 
   <h2>Purpose</h2>
-  <p>ManyAI Desktop is an Electron-based desktop application providing a unified, multi-tab AI chat interface that routes user requests to multiple free and paid AI providers based on task type, provider health, and user configuration. It extends the ManyAI mobile concept with a richer workflow system, integrated tools (IRC, terminal, RSS, programming environment), smart routing with health-aware scoring, and per-workflow provider chain configuration.</p>
+  <p>ManyAI Desktop is an Electron-based desktop application providing a unified, multi-tab AI chat interface that routes user requests to multiple free and paid AI providers based on task type, provider health, and user configuration. It extends the ManyAI mobile concept with a richer workflow system, integrated built-in modules (IRC, terminal, RSS, programming), smart routing with health-aware scoring, MCP client integration for external tool servers, and SQLite-backed persistence for chat history and audit logs.</p>
 
   <h2>Tech Stack</h2>
   <table>
@@ -69,7 +69,8 @@
     <tr><td>Build system</td><td>electron-vite (Vite-based HMR)</td></tr>
     <tr><td>Packaging</td><td>electron-builder</td></tr>
     <tr><td>Internationalization</td><td>i18next (27 locales)</td></tr>
-    <tr><td>Storage</td><td>localStorage + JSON config file in userData</td></tr>
+    <tr><td>Local database</td><td>better-sqlite3 (WAL mode) — chat history, routing log, agent audit</td></tr>
+    <tr><td>MCP client</td><td>@modelcontextprotocol/sdk@1.29.0</td></tr>
   </table>
 
   <h2>Application Architecture (3 Layers)</h2>
@@ -79,6 +80,7 @@
   <ul>
     <li><strong>Window management:</strong> Creates BrowserWindow with persisted state (<code>userData/window-state.json</code>). Saves/restores x, y, width, height, isMaximized. Clamps to minimum 600×500. Corrects off-screen positions by checking nearest display bounds.</li>
     <li><strong>IPC registration:</strong> <code>registerAllIpc()</code> wires all IPC handler modules at startup.</li>
+    <li><strong>MCP startup:</strong> <code>mcpManager.connectAll()</code> reconnects all saved MCP server configs after IPC registration.</li>
     <li><strong>Security:</strong> <code>webSecurity: false</code> (CORS bypass — acceptable for a desktop app calling user-owned APIs). <code>autoHideMenuBar: true</code>.</li>
     <li><strong>Theme:</strong> <code>backgroundColor: '#1a1a2e'</code> prevents white flash before React renders.</li>
     <li><strong>macOS:</strong> Handles <code>activate</code> event to re-create window when dock icon clicked with no windows open.</li>
@@ -86,10 +88,12 @@
   <p>IPC modules in <code>src/main/ipc/</code>:</p>
   <table>
     <tr><th>Module</th><th>Handles</th></tr>
-    <tr><td><code>fileIpc.ts</code></td><td>File system read/write/list operations</td></tr>
-    <tr><td><code>imageIpc.ts</code></td><td>Image fetching via main process (CORS bypass for image APIs)</td></tr>
+    <tr><td><code>fileIpc.ts</code></td><td>File system read/write/list/rename/delete operations</td></tr>
+    <tr><td><code>imageIpc.ts</code></td><td>Image fetching and local image reading (CORS bypass + base64 encode)</td></tr>
     <tr><td><code>ircIpc.ts</code></td><td>IRC client connection, channel join, message send/receive</td></tr>
     <tr><td><code>terminalIpc.ts</code></td><td>Terminal command execution</td></tr>
+    <tr><td><code>dbIpc.ts</code></td><td>SQLite operations — messages, routing log, agent audit (7 channels)</td></tr>
+    <tr><td><code>mcpIpc.ts</code></td><td>MCP server management — list/add/remove/reconnect/list-tools/call-tool (6 channels)</td></tr>
     <tr><td><code>index.ts</code></td><td><code>registerAllIpc()</code> — calls all module register functions</td></tr>
   </table>
 
@@ -97,42 +101,47 @@
   <p>Secure bridge using <code>contextBridge</code> — raw <code>ipcRenderer</code> is never exposed to the renderer. Exposes <code>window.api</code>:</p>
   <table>
     <tr><th>API Group</th><th>Module</th><th>Purpose</th></tr>
-    <tr><td><code>api.files</code></td><td><code>api/files.ts</code></td><td>File CRUD operations</td></tr>
-    <tr><td><code>api.images</code></td><td><code>api/images.ts</code></td><td>Image fetching (CORS-safe via main)</td></tr>
-    <tr><td><code>api.irc</code></td><td><code>api/irc.ts</code></td><td>IRC client actions</td></tr>
-    <tr><td><code>api.terminal</code></td><td><code>api/terminal.ts</code></td><td>Terminal commands</td></tr>
-    <tr><td><code>api.getConfig()</code> / <code>api.setConfig()</code></td><td><code>index.ts</code></td><td>Durable config file (workingDir etc.)</td></tr>
+    <tr><td>file ops</td><td><code>api/files.ts</code></td><td>File CRUD, rename, delete, directory list</td></tr>
+    <tr><td>image ops</td><td><code>api/images.ts</code></td><td>Image fetching (CORS-safe via main) + local image reading</td></tr>
+    <tr><td>IRC</td><td><code>api/irc.ts</code></td><td>IRC client actions</td></tr>
+    <tr><td>terminal</td><td><code>api/terminal.ts</code></td><td>Terminal commands</td></tr>
+    <tr><td>database</td><td><code>api/db.ts</code></td><td>SQLite — addMessage, getMessages, clearMessages, logRouting, getRoutingStats, logAgent, getAgentLog</td></tr>
+    <tr><td>MCP</td><td><code>api/mcp.ts</code></td><td>MCP server management — listServers, addServer, removeServer, reconnect, listTools, callTool</td></tr>
+    <tr><td>config</td><td><code>index.ts</code></td><td>Durable config file (workingDir etc.) via <code>api.getConfig()</code> / <code>api.setConfig()</code></td></tr>
   </table>
-  <p>TypeScript definitions in <code>src/preload/index.d.ts</code>.</p>
+  <p>TypeScript definitions in <code>src/preload/index.d.ts</code>. Shared MCP types in <code>src/preload/types/mcp.ts</code>.</p>
 
   <h3>Layer 3: Renderer (<code>src/renderer/src/</code>)</h3>
   <p>React application. No direct Node/Electron access — all system calls go through <code>window.api</code>. Feature modules in <code>features/</code>:</p>
   <table>
     <tr><th>Feature</th><th>Description</th></tr>
-    <tr><td><code>chat/ChatScreen.tsx</code></td><td>Main chat interface, multi-provider routing, file attachment</td></tr>
+    <tr><td><code>chat/ChatScreen.tsx</code></td><td>Main chat interface, multi-provider routing, file attachment, SQLite message persistence</td></tr>
     <tr><td><code>chat/fileHandler.ts</code></td><td>File drag-drop and attachment logic</td></tr>
     <tr><td><code>editor/SavedScreen.tsx</code></td><td>Saved responses viewer and editor</td></tr>
-    <tr><td><code>irc/IrcScreen.tsx</code></td><td>IRC client UI</td></tr>
-    <tr><td><code>rss/RssScreen.tsx</code></td><td>RSS feed reader</td></tr>
-    <tr><td><code>terminal/TerminalScreen.tsx</code></td><td>Integrated terminal</td></tr>
-    <tr><td><code>programming/ProgrammingScreen.tsx</code></td><td>Code-focused workspace</td></tr>
-    <tr><td><code>settings/SettingsScreen.tsx</code></td><td>Settings hub (tabs: general / api / workflows / smartrouting / health / backup / about)</td></tr>
+    <tr><td><code>irc/IrcScreen.tsx</code></td><td>IRC client UI (built-in module, loaded via Settings → Built-in)</td></tr>
+    <tr><td><code>rss/RssScreen.tsx</code></td><td>RSS feed reader (built-in module)</td></tr>
+    <tr><td><code>terminal/TerminalScreen.tsx</code></td><td>Integrated terminal (built-in module)</td></tr>
+    <tr><td><code>programming/ProgrammingScreen.tsx</code></td><td>Autonomous coding agent with file tree, Browse + Refresh buttons (built-in module)</td></tr>
+    <tr><td><code>settings/SettingsScreen.tsx</code></td><td>Settings hub — tabs: General / Providers / Built-in / MCP / Workflows / Smart Routing / Health / Backup / About</td></tr>
+    <tr><td><code>settings/McpScreen.tsx</code></td><td>MCP server config UI — add/edit/remove/reconnect, tool list viewer</td></tr>
   </table>
 
   <h2>Provider Registry</h2>
   <p>Providers defined in <code>providers/*.json</code> (one file per provider): <code>anthropic</code>, <code>cerebras</code>, <code>cloudflare</code>, <code>cohere</code>, <code>fireworks</code>, <code>gemini</code>, <code>groq</code>, <code>huggingface</code>, <code>laptop</code> (local Ollama), <code>mistral</code>, <code>openai</code>, <code>openrouter</code>, <code>pollinations</code>, <code>sambanova</code>.</p>
   <p>Each provider JSON defines: name, baseUrl, models (each with <code>id</code>, <code>name</code>, <code>capabilities[]</code>). <code>capabilities</code> drives workflow routing — a model is only offered for a workflow if its capabilities include all of the workflow's <code>workflowType</code> values.</p>
 
-  <h2>Workflow System (10 registered — 4 system, 6 file-backed)</h2>
-  <p><strong>System workflows</strong> — code-only, never written to <code>/workflows/</code>, defined in <code>SYSTEM_TYPES</code>:</p>
+  <h2>Built-in Modules (4) — opt-in via Settings → Built-in tab</h2>
+  <p>IRC, RSS, Terminal, and Programming are modular built-ins. They are not workflow-picker items. Each has a checkbox in Settings → Built-in; checking it opens a tab, unchecking closes all tabs of that type. Toggle state is derived from <code>tabs.some(t =&gt; t.workflowType === type)</code> — no separate enabled flag.</p>
   <table>
     <tr><th>Type</th><th>Label</th><th>Use case</th></tr>
-    <tr><td><code>irc</code></td><td>IRC</td><td>IRC client — publishes to workflowBus</td></tr>
-    <tr><td><code>rss</code></td><td>RSS</td><td>RSS feed reader — publishes to workflowBus</td></tr>
-    <tr><td><code>terminal</code></td><td>Terminal</td><td>SSH/Telnet/SFTP/FTP client</td></tr>
-    <tr><td><code>programming</code></td><td>Programming</td><td>Autonomous coding agent with file read/write/list tools</td></tr>
+    <tr><td><code>irc</code></td><td>IRC 💬</td><td>IRC client — raw TCP via main process, publishes to workflowBus</td></tr>
+    <tr><td><code>rss</code></td><td>RSS 📰</td><td>RSS feed reader — publishes to workflowBus</td></tr>
+    <tr><td><code>terminal</code></td><td>Terminal 🖥️</td><td>SSH/Telnet/SFTP/FTP client — xterm.js + ssh2 + basic-ftp</td></tr>
+    <tr><td><code>programming</code></td><td>Programming ⚙️</td><td>Autonomous coding agent — agentLoop with 9 native tools + dynamic MCP tools; file tree with Browse + Refresh</td></tr>
   </table>
-  <p><strong>File-backed workflows</strong> — seeded to <code>{workingDir}/workflows/*.json</code> on first run; user-editable:</p>
+
+  <h2>Workflow System (6 file-backed)</h2>
+  <p>File-backed workflows are seeded to <code>{workingDir}/workflows/*.json</code> on first run and user-editable. They appear in the New Tab picker (<code>enabledUserWorkflows()</code> excludes built-in types).</p>
   <table>
     <tr><th>Type</th><th>Label</th><th>Use case</th></tr>
     <tr><td><code>image</code></td><td>Image</td><td>Image generation</td></tr>
@@ -142,31 +151,28 @@
     <tr><td><code>summarization</code></td><td>Summarize</td><td>Long text compression</td></tr>
     <tr><td><code>translation</code></td><td>Translate</td><td>Language translation</td></tr>
   </table>
-  <p>Each <code>WorkflowPlugin</code> has: <code>type</code>, <code>label</code>, <code>icon</code>, <code>description</code>, <code>defaultRoutes: RouteEntry[]</code>, <code>workflowType: WorkflowType[]</code>. Custom workflows are stored as JSON files, loaded from filesystem, and can have custom provider routes.</p>
+
+  <h2>MCP Subsystem</h2>
+  <p><code>McpClientManager</code> (singleton in main process) manages connections to external MCP servers. Configs persisted to <code>userData/mcp-servers.json</code>. All servers reconnect on app start. Tools are discovered dynamically at agent run time and merged into the tool list sent to the model. See <a href="mcp-tools.html">MCP Tools blueprint</a> for full details.</p>
 
   <h2>Routing System</h2>
-  <p><strong>Manual routing</strong> (default): Per-workflow <code>RouteEntry</code> chain (provider + model + enabled + instanceId). Built-in routes stored in <code>localStorage</code>. Custom workflow routes stored in their JSON files. Users configure order and enabled state in Settings → Routing.</p>
-  <p><strong>Smart Routing</strong> (opt-in): Replaces the manual chain. Scores providers 0–1:</p>
-  <pre><code>score = successRate(last 20) × 0.7 + speedScore × 0.3 − healthPenalty</code></pre>
-  <p>Three modes:</p>
-  <ul>
-    <li><strong><code>best-first</code></strong> — try highest-scored provider, fall back serially on failure</li>
-    <li><strong><code>serial</code></strong> — try in scored order, stop on first success</li>
-    <li><strong><code>parallel</code></strong> — fire all capable providers simultaneously</li>
-  </ul>
+  <p><strong>Manual routing</strong> (default): Per-workflow <code>RouteEntry</code> chain (provider + model + enabled + instanceId). Built-in routes stored in <code>localStorage</code>. Custom workflow routes stored in their JSON files.</p>
+  <p><strong>Smart Routing</strong> (opt-in): Scores providers 0–1 using success rate, speed, and health penalty. Three modes: best-first, serial, parallel.</p>
 
   <h2>Health System</h2>
-  <p><code>lib/healthCheck.ts</code> polls provider endpoints on a configurable interval. Records uptime percentage and average latency per provider. <code>getPenalty(provider)</code> returns a 0–1 penalty used by <code>smartRouter.scoreProvider()</code> to downweight degraded providers. Health status visible in Settings → Health.</p>
+  <p><code>lib/healthCheck.ts</code> polls provider endpoints on a configurable interval. Records uptime percentage and average latency per provider. <code>getPenalty(provider)</code> returns a 0–1 penalty used by <code>smartRouter.scoreProvider()</code>. Continuous monitoring runs on a timer in <code>App.tsx</code> re-reading config each tick so interval changes take effect without restart.</p>
 
   <h2>Persistence</h2>
   <table>
     <tr><th>Storage</th><th>Contents</th></tr>
     <tr><td><code>localStorage</code></td><td>Tabs, active tab, continuous mode, routing prefs, smart routing config+log, provider order, enabled state, selected models, theme, zoom, font</td></tr>
-    <tr><td><code>localStorage</code> (encrypted)</td><td>API keys</td></tr>
+    <tr><td><code>localStorage</code> (encrypted via safeStorage)</td><td>API keys</td></tr>
+    <tr><td><code>userData/manyai.db</code> (SQLite)</td><td>Chat messages per tab, routing log, agent audit log</td></tr>
     <tr><td><code>userData/window-state.json</code></td><td>Window position and size</td></tr>
     <tr><td><code>userData/config.json</code></td><td>workingDir and other durable settings</td></tr>
+    <tr><td><code>userData/mcp-servers.json</code></td><td>MCP server configurations</td></tr>
     <tr><td><code>providers/*.json</code></td><td>Provider + model registry (in repo)</td></tr>
-    <tr><td>Custom workflow JSON files</td><td>Custom workflow definitions + routes</td></tr>
+    <tr><td><code>{workingDir}/workflows/*.json</code></td><td>Custom workflow definitions + routes</td></tr>
   </table>
 
   <h2>Internationalization</h2>
@@ -178,8 +184,9 @@
     <li>Old tabs without <code>workflowType</code> are migrated to <code>'coding'</code> on load.</li>
     <li>Default first tab: <code>{ workflowType: 'coding', label: 'Code' }</code>.</li>
     <li><code>workflowBus</code> pub/sub: non-chat features can inject content into any tab by tab ID or <code>'active'</code>.</li>
-    <li><code>continuousMap</code>: per-tab flag for agent continuous mode.</li>
-    <li>Settings panel slides in as <code>RightPanel</code> — not a tab, toggled by <code>panel</code> state.</li>
+    <li><code>continuousMap</code>: per-workflow flag for agent continuous mode.</li>
+    <li>Built-in tabs (IRC, terminal, RSS, programming) are toggled via Settings → Built-in checkboxes, not the New Tab picker.</li>
+    <li>Settings panel slides in as an overlay — not a tab, toggled by <code>panel</code> state in <code>App.tsx</code>.</li>
   </ul>
 
 </main>

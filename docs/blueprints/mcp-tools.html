@@ -25,7 +25,16 @@
     header p.meta { color: var(--muted); font-size: 0.85rem; margin-top: 0.4rem; }
     main { max-width: 860px; margin: 0 auto; padding: 2rem; }
     h2 { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin: 2.5rem 0 1rem; padding-bottom: 0.4rem; border-bottom: 1px solid var(--border); }
+    h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin: 1.5rem 0 0.6rem; }
     p { margin-bottom: 0.85rem; } p:last-child { margin-bottom: 0; }
+    ul, ol { margin: 0.5rem 0 0.85rem 1.4rem; } li { margin-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; margin: 0.8rem 0 1rem; font-size: 0.88rem; }
+    th { background: var(--th-bg); color: var(--accent); padding: 0.55rem 1rem; text-align: left; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid var(--border); }
+    td { padding: 0.5rem 1rem; border-bottom: 1px solid var(--border); }
+    tr:last-child td { border-bottom: none; } tr:hover td { background: var(--surface); }
+    code { font-family: 'Courier New', Consolas, monospace; font-size: 0.85em; background: var(--code-bg); border: 1px solid var(--border); padding: 0.1rem 0.35rem; border-radius: 3px; color: var(--accent); }
+    pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1.2rem; overflow-x: auto; margin: 0.8rem 0 1rem; }
+    pre code { background: none; border: none; padding: 0; font-size: 0.87rem; color: #c3cfe8; }
     footer { margin-top: 4rem; padding: 1.5rem 2rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; text-align: center; }
   </style>
 </head>
@@ -44,14 +53,92 @@
 
 <header>
   <h1>MCP Tools — ManyAI Desktop</h1>
-  <p class="meta">Blueprint · Last updated 2026-05-02</p>
+  <p class="meta">Blueprint · Last updated 2026-05-03</p>
 </header>
 
 <main>
 
-<h2>Not Applicable</h2>
-<p>ManyAI Desktop is a standalone Electron desktop application. It does not implement or expose any MCP (Model Context Protocol) tools and is not designed to integrate with AI development workflows as a tool provider.</p>
-<p>MCP tools are a developer-facing feature. The project in this ecosystem that implements MCP is <strong>The Brain</strong>, which exposes a <code>delegate</code> tool enabling Claude Code to route AI tasks to free providers natively. See <a href="../../the-brain/docs/blueprints/mcp-tools.html">The Brain — MCP Tools</a> for details.</p>
+<h2>Overview</h2>
+<p>ManyAI Desktop implements an MCP (Model Context Protocol) <strong>client</strong>. It connects to external MCP servers — stdio child processes or HTTP endpoints — and exposes their tools dynamically to the agent loop. MCP tools are namespaced and merged with the 9 native agent tools at the start of every agent run.</p>
+
+<h2>McpClientManager (<code>src/main/mcp.ts</code>)</h2>
+<p>Singleton in the main process. Manages connection lifecycle for all configured MCP servers. Server configurations are persisted to <code>userData/mcp-servers.json</code> and all saved servers are reconnected on app start.</p>
+<table>
+  <tr><th>Method</th><th>Description</th></tr>
+  <tr><td><code>connect(config)</code></td><td>Spawns or connects to a server, lists its tools, stores the client</td></tr>
+  <tr><td><code>disconnect(name)</code></td><td>Closes the transport and removes the client from memory</td></tr>
+  <tr><td><code>addServer(config)</code></td><td>Upserts config to disk, disconnects any existing connection, reconnects</td></tr>
+  <tr><td><code>removeServer(name)</code></td><td>Disconnects and removes config from disk</td></tr>
+  <tr><td><code>connectAll()</code></td><td>Called at app start — reconnects all saved configs silently</td></tr>
+  <tr><td><code>listAllTools()</code></td><td>Returns flat list of all tools from all connected servers</td></tr>
+  <tr><td><code>callTool(serverName, toolName, args)</code></td><td>Forwards a tool call to the named server; returns result string</td></tr>
+</table>
+
+<h2>SDK &amp; Transports</h2>
+<p>Uses <code>@modelcontextprotocol/sdk@1.29.0</code> — Anthropic's official MCP client SDK.</p>
+<ul>
+  <li><strong>stdio:</strong> <code>StdioClientTransport</code> — spawns a child process, communicates over stdin/stdout. Suitable for local MCP servers (e.g. <code>npx @modelcontextprotocol/server-filesystem</code>).</li>
+  <li><strong>HTTP:</strong> <code>StreamableHTTPClientTransport</code> — connects to a remote HTTP endpoint. Suitable for cloud-hosted MCP servers.</li>
+</ul>
+
+<h2>Server Config Schema</h2>
+<pre><code>interface McpServerConfig {
+  name: string           // unique identifier — used as the namespace prefix
+  transport: 'stdio' | 'http'
+  // stdio fields:
+  command?: string       // e.g. "npx"
+  args?: string[]        // e.g. ["-y", "@modelcontextprotocol/server-filesystem", "/path"]
+  env?: Record&lt;string, string&gt;  // extra environment variables for the child process
+  // http fields:
+  url?: string           // e.g. "http://localhost:3000"
+}</code></pre>
+
+<h2>IPC Channels (<code>src/main/ipc/mcpIpc.ts</code>)</h2>
+<table>
+  <tr><th>Channel</th><th>Description</th></tr>
+  <tr><td><code>mcp-list-servers</code></td><td>Returns all configs + live status (connected/error) and tool count per server</td></tr>
+  <tr><td><code>mcp-add-server</code></td><td>Upserts a server config and connects; returns <code>{ ok, error? }</code></td></tr>
+  <tr><td><code>mcp-remove-server</code></td><td>Disconnects and removes config from disk</td></tr>
+  <tr><td><code>mcp-reconnect</code></td><td>Disconnects and reconnects a named server; returns <code>{ ok, error? }</code></td></tr>
+  <tr><td><code>mcp-list-tools</code></td><td>Returns all tools from all connected servers: fullName, description, inputSchema, serverName</td></tr>
+  <tr><td><code>mcp-call-tool</code></td><td>Calls a tool on a named server with args; returns <code>{ result }</code> or <code>{ error }</code></td></tr>
+</table>
+
+<h2>Tool Naming Convention</h2>
+<p>All MCP tools are prefixed to prevent collisions with native agent tools:</p>
+<pre><code>mcp__&lt;serverName&gt;__&lt;toolName&gt;</code></pre>
+<p>Examples: <code>mcp__filesystem__read_file</code>, <code>mcp__my-db__query_table</code>. Native tools never begin with <code>mcp__</code>, so dispatch routing is unambiguous.</p>
+
+<h2>Agent Loop Integration</h2>
+<p>At the start of every <code>runAgentLoop()</code> call (<code>src/renderer/src/lib/agentLoop.ts</code>):</p>
+<ol>
+  <li>Calls <code>window.api.listTools()</code> to discover all currently-connected MCP tools</li>
+  <li>Builds a <code>mcpToolIndex: Map&lt;string, { serverName, toolName }&gt;</code></li>
+  <li>Converts each MCP tool to OpenAI function format via <code>buildMcpToolDef()</code></li>
+  <li>Merges MCP defs with the 9 native tools into <code>allTools</code></li>
+  <li>Sends the merged list to the model in every API call within the run</li>
+</ol>
+<p>When the model calls an MCP tool, <code>executeTool()</code> detects the <code>mcp__</code> prefix, looks up the entry in <code>mcpToolIndex</code>, and forwards to <code>window.api.callTool(serverName, toolName, args)</code>. The result is a plain string tool result returned to the model. MCP tools display the 🔌 emoji in the agent event log.</p>
+
+<h2>McpTool Interface (<code>src/preload/types/mcp.ts</code>)</h2>
+<pre><code>interface McpTool {
+  name: string           // raw tool name as reported by the server
+  fullName: string       // namespaced: mcp__serverName__name
+  description?: string
+  inputSchema: Record&lt;string, unknown&gt;  // JSON Schema for parameters
+  serverName: string     // which server this tool came from
+}</code></pre>
+
+<h2>Settings UI (<code>src/renderer/src/features/settings/McpScreen.tsx</code>)</h2>
+<p>Accessible via Settings → MCP tab. Features:</p>
+<ul>
+  <li><strong>Server list:</strong> name, status dot (colored by connected/error), tool count, command+args or URL</li>
+  <li><strong>Add Server form:</strong> name, transport selector, command/args/env fields (stdio) or URL field (HTTP)</li>
+  <li><strong>Edit button:</strong> pre-fills the form with the existing config; name field is locked (<code>readOnly</code>) during edit; save button label changes to "Save &amp; Reconnect"</li>
+  <li><strong>Reconnect button:</strong> triggers a disconnect + reconnect cycle in place</li>
+  <li><strong>Remove button:</strong> disconnects and deletes the config permanently</li>
+  <li><strong>Tool viewer (ToolList):</strong> shown at the bottom when at least one server has connected tools — lists each tool's fullName and description</li>
+</ul>
 
 </main>
 

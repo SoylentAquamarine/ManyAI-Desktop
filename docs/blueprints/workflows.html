@@ -53,13 +53,13 @@
 
 <header>
   <h1>Workflows — ManyAI Desktop</h1>
-  <p class="meta">Blueprint · Last updated 2026-05-02</p>
+  <p class="meta">Blueprint · Last updated 2026-05-03</p>
 </header>
 
 <main>
 
 <h2>Overview</h2>
-<p>ManyAI Desktop includes a formal workflow plugin system with 10 registered workflows (4 system, 6 file-backed) and support for unlimited custom workflows. Each workflow controls: system prompt behavior, provider chain, and which features are available in that tab.</p>
+<p>ManyAI Desktop separates its tab types into two categories: <strong>built-in modules</strong> (IRC, RSS, Terminal, Programming) and <strong>file-backed workflows</strong> (coding, image, reasoning, etc.). Built-ins are toggled via Settings → Built-in and are never shown in the New Tab picker. File-backed workflows appear in the picker and can be created, edited, and deleted by the user.</p>
 
 <h2>WorkflowPlugin Interface</h2>
 <pre><code>interface WorkflowPlugin {
@@ -78,16 +78,18 @@ interface RouteEntry {
   instanceId?: string;   // stable GUID — survives reorder, resets on delete+re-add
 }</code></pre>
 
-<h2>System Workflows (4) — code-only, never file-backed</h2>
+<h2>Built-in Modules (4) — Settings → Built-in tab</h2>
+<p>These are modular features, not workflows. They are defined in <code>SYSTEM_TYPES</code> and excluded from the workflow picker by <code>enabledUserWorkflows()</code>. Each has a checkbox in Settings → Built-in. Checking opens a tab of that type; unchecking closes all open tabs of that type. Toggle state is derived live from <code>tabs.some(t =&gt; t.workflowType === type)</code> — no separate persistence flag.</p>
 <table>
   <tr><th>Type</th><th>Label</th><th>Use Case</th><th>Notes</th></tr>
-  <tr><td><code>irc</code></td><td>IRC</td><td>IRC client</td><td>Publishes to workflowBus; raw TCP via main process</td></tr>
-  <tr><td><code>rss</code></td><td>RSS</td><td>RSS feed reader</td><td>Publishes to workflowBus</td></tr>
-  <tr><td><code>terminal</code></td><td>Terminal</td><td>SSH/Telnet/SFTP/FTP client</td><td>xterm.js + ssh2 + basic-ftp</td></tr>
-  <tr><td><code>programming</code></td><td>Programming</td><td>Autonomous coding agent</td><td>agentLoop tool-use: read_file, write_file, list_directory; max 20 iterations</td></tr>
+  <tr><td><code>irc</code></td><td>IRC 💬</td><td>IRC client</td><td>Raw TCP via main process; publishes to workflowBus</td></tr>
+  <tr><td><code>rss</code></td><td>RSS 📰</td><td>RSS feed reader</td><td>Publishes to workflowBus</td></tr>
+  <tr><td><code>terminal</code></td><td>Terminal 🖥️</td><td>SSH/Telnet/SFTP/FTP client</td><td>xterm.js + ssh2 + basic-ftp</td></tr>
+  <tr><td><code>programming</code></td><td>Programming ⚙️</td><td>Autonomous coding agent</td><td>agentLoop — 9 native tools + dynamic MCP tools; file tree with Browse + Refresh; max 20 iterations</td></tr>
 </table>
 
-<h2>File-backed Workflows (6) — seeded to /workflows/ on first run</h2>
+<h2>File-backed Workflows (6) — appear in New Tab picker</h2>
+<p>Seeded to <code>{workingDir}/workflows/*.json</code> on first run. User-editable via Settings → Workflows. The picker uses <code>enabledUserWorkflows()</code> which filters out <code>SYSTEM_TYPES</code> so built-ins never appear here.</p>
 <table>
   <tr><th>Type</th><th>Label</th><th>Use Case</th><th>Default Routes</th></tr>
   <tr><td><code>image</code></td><td>Image</td><td>Image generation</td><td>pollinations/flux</td></tr>
@@ -99,19 +101,30 @@ interface RouteEntry {
 </table>
 
 <h2>Custom Workflows</h2>
-<p>Created via Settings → Workflows. Stored as JSON files in the working directory and loaded by <code>lib/workflows.ts</code> at startup. Custom workflows can define: a custom system prompt, provider chain, and <code>workflowType</code> array.</p>
+<p>Created via Settings → Workflows. Stored as JSON files in the working directory and loaded by <code>lib/workflows.ts</code> at startup. Custom workflows can define: a custom system prompt, provider chain, and <code>workflowType</code> array. They appear alongside the 6 built-in file-backed types in the New Tab picker.</p>
 
 <h2>Capability Gating</h2>
 <p>Each model in a <code>providers/*.json</code> file has a <code>capabilities[]</code> array. A model is only offered for a workflow if its capabilities include all values in that workflow's <code>workflowType</code> array. This prevents mismatched routing — for example, a text-only model will never appear in the image workflow's provider list.</p>
 
-<h2>WORKFLOW_REGISTRY</h2>
-<p><code>workflows/index.ts</code> is the single source of truth. All built-in plugins are registered here. Custom workflows are merged at load time via <code>lib/workflows.ts</code>. The registry drives tab rendering, workflow picker modal, and routing resolution.</p>
+<h2>enabledUserWorkflows()</h2>
+<p>Exported from <code>lib/workflows.ts</code>. Returns <code>loadWorkflows().filter(w =&gt; w.enabled &amp;&amp; !SYSTEM_TYPES.has(w.type))</code>. Used by <code>RightPanel</code> to populate the New Tab workflow picker. Built-in module types are always excluded regardless of their enabled state.</p>
 
-<h2>Adding a New Built-in Workflow</h2>
+<h2>WORKFLOW_REGISTRY</h2>
+<p><code>workflows/index.ts</code> is the single source of truth for all registered plugins. Custom workflows are merged at load time via <code>lib/workflows.ts</code>. The registry drives tab rendering, the New Tab picker, and routing resolution.</p>
+
+<h2>Adding a New File-backed Workflow</h2>
 <ol>
   <li>Create <code>src/renderer/src/workflows/myworkflow.ts</code> exporting a <code>WorkflowPlugin</code>.</li>
   <li>Import it in <code>workflows/index.ts</code> and add to <code>WORKFLOW_REGISTRY</code>.</li>
-  <li>No other files need changing.</li>
+  <li>Ensure the type is NOT in <code>SYSTEM_TYPES</code> — it will then appear in the picker automatically.</li>
+</ol>
+
+<h2>Adding a New Built-in Module</h2>
+<ol>
+  <li>Add the type string to <code>SYSTEM_TYPES</code> in <code>lib/workflows.ts</code>.</li>
+  <li>Add a checkbox entry in <code>settings/SettingsScreen.tsx</code> → <code>BuiltinSettings</code> component.</li>
+  <li>Add the rendering branch in <code>App.tsx</code> tab content area.</li>
+  <li>Wire up any required IPC in <code>src/main/ipc/</code>.</li>
 </ol>
 
 </main>

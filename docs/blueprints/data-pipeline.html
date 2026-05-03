@@ -53,7 +53,7 @@
 
 <header>
   <h1>Data Pipeline — ManyAI Desktop</h1>
-  <p class="meta">Blueprint · Last updated 2026-05-02</p>
+  <p class="meta">Blueprint · Last updated 2026-05-03</p>
 </header>
 
 <main>
@@ -95,14 +95,59 @@
 </ol>
 
 <h2>Agent Loop</h2>
-<p><code>lib/agentLoop.ts</code> implements a proper tool-use agent using the OpenAI <code>tool_calls</code> API. The AI receives a set of tool definitions and can request tool executions in its response. The loop executes the requested tools and feeds results back until the model produces a plain text response with no tool calls.</p>
-<p><strong>Available tools:</strong></p>
-<ul>
-  <li><code>read_file(path)</code> — reads a file from the filesystem via <code>window.api</code></li>
-  <li><code>write_file(path, content)</code> — writes or overwrites a file</li>
-  <li><code>list_directory(path)</code> — returns a recursive directory tree</li>
-</ul>
-<p><strong>Limits:</strong> max 20 iterations per run; 10-minute timeout per API call. Used by the <code>programming</code> workflow for autonomous coding tasks. This is not MCP — it is a self-contained tool-use loop within the app.</p>
+<p><code>lib/agentLoop.ts</code> implements a tool-use agent using the OpenAI <code>tool_calls</code> API. The AI receives a merged set of tool definitions and can request tool executions in its response. The loop executes the requested tools and feeds results back until the model produces a plain-text response with no tool calls. Maximum 20 iterations per run; 10-minute timeout per API call.</p>
+
+<h3>Native Tools (9)</h3>
+<table>
+  <tr><th>Tool</th><th>Description</th></tr>
+  <tr><td><code>read_file(path)</code></td><td>Reads a file from the filesystem via <code>window.api</code></td></tr>
+  <tr><td><code>write_file(path, content)</code></td><td>Writes or overwrites a file with full content</td></tr>
+  <tr><td><code>rename_file(old_path, new_path)</code></td><td>Moves/renames a file; creates destination parent dirs automatically</td></tr>
+  <tr><td><code>delete_file(path)</code></td><td>Permanently deletes a file</td></tr>
+  <tr><td><code>list_directory(path)</code></td><td>Returns a recursive directory tree as formatted text</td></tr>
+  <tr><td><code>create_directory(path)</code></td><td>Creates a directory and any missing parents (mkdir -p)</td></tr>
+  <tr><td><code>search_web(query)</code></td><td>Searches the web via Jina Search (<code>s.jina.ai/?q=</code>) — no API key required</td></tr>
+  <tr><td><code>fetch_url(url)</code></td><td>Fetches a URL as readable text via Jina Reader (<code>r.jina.ai/&lt;url&gt;</code>)</td></tr>
+  <tr><td><code>read_image(path)</code></td><td>Loads a local image (jpeg/png/gif/webp) and injects it as a vision message</td></tr>
+</table>
+
+<h3>Dynamic MCP Tools</h3>
+<p>At the start of every agent run, <code>window.api.listTools()</code> is called to discover all tools from connected MCP servers. These are merged with the 9 native tools and sent to the model. MCP tools are prefixed <code>mcp__&lt;server&gt;__&lt;tool&gt;</code>. See <a href="mcp-tools.html">MCP Tools blueprint</a> for details.</p>
+
+<h3>Vision Injection</h3>
+<p><code>read_image</code> returns a sentinel string <code>__IMG__:&lt;dataUri&gt;</code>. The loop handles this specially:</p>
+<ol>
+  <li>Pushes a text tool result (<code>"Image loaded."</code>) to satisfy the API's tool result requirement</li>
+  <li>Pushes a separate user message with a <code>image_url</code> content block containing the base64 data URI</li>
+</ol>
+<p>This works around the OpenAI API constraint that tool result messages cannot contain image content.</p>
+
+<h2>SQLite Persistence (<code>src/main/db.ts</code>)</h2>
+<p>A <code>better-sqlite3</code> database at <code>userData/manyai.db</code> provides durable storage for chat history, routing decisions, and agent audit logs. WAL mode is enabled for safe concurrent reads from the renderer.</p>
+
+<h3>Tables</h3>
+<table>
+  <tr><th>Table</th><th>Purpose</th></tr>
+  <tr><td><code>messages</code></td><td>Chat messages per tab — role, content, provider, model, timestamp</td></tr>
+  <tr><td><code>routing_log</code></td><td>Per-call routing decisions — workflow, provider, model, latency, success</td></tr>
+  <tr><td><code>agent_audit</code></td><td>Agent tool calls — tab_id, tool name, args (truncated), result (truncated), success flag</td></tr>
+</table>
+
+<h3>IPC Handlers (<code>src/main/ipc/dbIpc.ts</code>)</h3>
+<table>
+  <tr><th>Channel</th><th>Description</th></tr>
+  <tr><td><code>db-add-message</code></td><td>Inserts a single message row</td></tr>
+  <tr><td><code>db-get-messages</code></td><td>Returns the last N messages for a tab (default 200)</td></tr>
+  <tr><td><code>db-clear-messages</code></td><td>Deletes all messages for a tab</td></tr>
+  <tr><td><code>db-log-routing</code></td><td>Inserts a routing_log row</td></tr>
+  <tr><td><code>db-get-routing-stats</code></td><td>Returns per-provider success rate and average latency</td></tr>
+  <tr><td><code>db-log-agent</code></td><td>Inserts an agent_audit row</td></tr>
+  <tr><td><code>db-get-agent-log</code></td><td>Returns recent agent audit rows for a tab</td></tr>
+</table>
+
+<h3>Delta Persistence Pattern</h3>
+<p>ChatScreen uses a <code>persistedCount</code> ref to track how many messages have already been written to SQLite. On each messages state change, only <code>messages.slice(persistedCount.current)</code> is written — avoiding duplicate inserts without needing a read-before-write. Image messages are skipped (data URIs are not stored).</p>
+<p>On tab load, <code>window.api.getMessages(tabId, 200)</code> restores the last 200 messages from SQLite, and <code>persistedCount.current</code> is initialized to the count of loaded messages.</p>
 
 </main>
 
