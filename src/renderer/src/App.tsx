@@ -66,7 +66,7 @@ export default function App() {
   })
   const [workflowVersion, setWorkflowVersion] = useState(0)
   const [settingsTriggerAdd, setSettingsTriggerAdd] = useState(false)
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'api' | 'builtin' | 'workflows' | 'smartrouting' | 'health' | 'backup' | 'about'>('general')
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'api' | 'builtin' | 'mcp' | 'workflows' | 'smartrouting' | 'health' | 'backup' | 'about'>('general')
   const [noWorkDirModal, setNoWorkDirModal] = useState(false)
 
   useEffect(() => {

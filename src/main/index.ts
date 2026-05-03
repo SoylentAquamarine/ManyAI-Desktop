@@ -4,6 +4,7 @@ import { existsSync, readFileSync, writeFileSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { registerAllIpc } from './ipc'
+import { mcpManager } from './mcp'
 
 interface WindowState {
   x?: number
@@ -111,6 +112,7 @@ app.whenReady().then(() => {
   ipcMain.on('ping', () => console.log('pong'))
 
   registerAllIpc()
+  mcpManager.connectAll().catch(console.error)
 
   createWindow()
 

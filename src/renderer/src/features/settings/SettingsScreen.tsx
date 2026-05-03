@@ -15,13 +15,14 @@ import WorkflowsScreen from './WorkflowsScreen'
 import AboutScreen from './AboutScreen'
 import SmartRoutingScreen from './RoutingScreen'
 import HealthScreen from './HealthScreen'
+import McpScreen from './McpScreen'
 import { THEMES, loadTheme, saveTheme, type ThemeId } from '../../lib/theme'
 import { getWorkingDir, setWorkingDir, getBackupsDir } from '../../lib/workingDir'
 import { encryptText, decryptText } from '../../lib/crypto'
 import { loadZoom, increaseZoom, decreaseZoom, ZOOM_MIN, ZOOM_MAX } from '../../lib/zoom'
 import { FONTS, loadFont, saveFont } from '../../lib/font'
 
-type SettingsTab = 'general' | 'api' | 'builtin' | 'workflows' | 'smartrouting' | 'health' | 'backup' | 'about'
+type SettingsTab = 'general' | 'api' | 'builtin' | 'mcp' | 'workflows' | 'smartrouting' | 'health' | 'backup' | 'about'
 
 interface SettingsScreenProps {
   initialTab?: SettingsTab
@@ -68,6 +69,7 @@ export default function SettingsScreen({
         {tabBtn('general',      'General')}
         {tabBtn('api',          'Providers')}
         {tabBtn('builtin',      'Built-in')}
+        {tabBtn('mcp',          'MCP')}
         {tabBtn('workflows',    'Workflows')}
         {tabBtn('smartrouting', 'Smart Routing')}
         {tabBtn('health',       'Health')}
@@ -90,6 +92,7 @@ export default function SettingsScreen({
             onAutoOpenAddConsumed={onTriggerAddConsumed}
           />
         )}
+        {tab === 'mcp'          && <McpScreen />}
         {tab === 'smartrouting' && <SmartRoutingScreen />}
         {tab === 'health'       && <HealthScreen />}
         {tab === 'backup' && <BackupConfig />}

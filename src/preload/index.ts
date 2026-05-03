@@ -5,12 +5,14 @@ import { imagesApi } from './api/images'
 import { ircApi } from './api/irc'
 import { terminalApi } from './api/terminal'
 import { dbApi } from './api/db'
+import { mcpApi } from './api/mcp'
 
 const api = {
   ...filesApi,
   ...imagesApi,
   ...ircApi,
   ...dbApi,
+  ...mcpApi,
   terminal: terminalApi,
 }
 

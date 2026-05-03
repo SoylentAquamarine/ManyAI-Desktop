@@ -169,7 +169,15 @@ function formatDirEntries(entries: unknown[], depth = 0): string {
 }
 
 // Returns either a plain string result or an image data URI prefixed with __IMG__:
-async function executeTool(name: string, args: Record<string, unknown>): Promise<string> {
+async function executeTool(name: string, args: Record<string, unknown>, mcpToolIndex?: Map<string, { serverName: string; toolName: string }>): Promise<string> {
+  // Route MCP tools (prefixed mcp__<server>__<tool>)
+  if (name.startsWith('mcp__') && mcpToolIndex) {
+    const entry = mcpToolIndex.get(name)
+    if (!entry) return `Unknown MCP tool: ${name}`
+    const r = await window.api.callTool(entry.serverName, entry.toolName, args)
+    return 'error' in r ? `MCP error: ${r.error}` : r.result
+  }
+
   if (name === 'read_file') {
     const r = await window.api.readFileByPath(args.path as string)
     return 'error' in r ? `Error: ${r.error}` : r.content
@@ -213,6 +221,17 @@ async function executeTool(name: string, args: Record<string, unknown>): Promise
   return `Unknown tool: ${name}`
 }
 
+function buildMcpToolDef(tool: { fullName: string; description?: string; inputSchema: Record<string, unknown> }) {
+  return {
+    type: 'function',
+    function: {
+      name: tool.fullName,
+      description: tool.description ?? tool.fullName,
+      parameters: tool.inputSchema.type ? tool.inputSchema : { type: 'object', properties: {}, required: [] },
+    },
+  }
+}
+
 export async function runAgentLoop(opts: {
   provider: Provider
   apiKey: string
@@ -223,6 +242,21 @@ export async function runAgentLoop(opts: {
   tabId?: string
 }): Promise<string> {
   const { provider, apiKey, systemPrompt, userMessage, history, onEvent, tabId } = opts
+
+  // Discover MCP tools from connected servers
+  const mcpToolDefs: typeof TOOLS = []
+  const mcpToolIndex = new Map<string, { serverName: string; toolName: string }>()
+  try {
+    const r = await window.api.listTools()
+    if ('tools' in r) {
+      for (const t of r.tools) {
+        mcpToolDefs.push(buildMcpToolDef(t))
+        mcpToolIndex.set(t.fullName, { serverName: t.serverName, toolName: t.name })
+      }
+    }
+  } catch {}
+
+  const allTools = [...TOOLS, ...mcpToolDefs]
 
   const messages: AgentMessage[] = [
     { role: 'system', content: systemPrompt },
@@ -236,7 +270,7 @@ export async function runAgentLoop(opts: {
     const reqBody = JSON.stringify({
       model: provider.model,
       messages,
-      tools: TOOLS,
+      tools: allTools,
       tool_choice: 'auto',
       max_tokens: maxTokens,
     })
@@ -285,8 +319,8 @@ export async function runAgentLoop(opts: {
       let args: Record<string, unknown> = {}
       try { args = JSON.parse(tc.function.arguments) } catch {}
 
-      const result = await executeTool(name, args)
-      const emoji = TOOL_EMOJI[name] ?? '🔧'
+      const result = await executeTool(name, args, mcpToolIndex)
+      const emoji = name.startsWith('mcp__') ? '🔌' : (TOOL_EMOJI[name] ?? '🔧')
       const displayResult = result.startsWith('__IMG__:') ? '[image loaded]' : result
       onEvent({ toolName: name, args, result: displayResult, emoji })
 

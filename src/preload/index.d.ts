@@ -1,4 +1,5 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
+import type { McpServerConfig, McpTool } from './types/mcp'
 
 interface DbMessage {
   id: number
@@ -145,6 +146,24 @@ declare global {
 
       /** Get agent audit log entries for a tab. */
       getAgentLog: (tabId: string, limit?: number) => Promise<{ rows: DbAgentRow[] } | { error: string }>
+
+      /** List all configured MCP servers (status + configs). */
+      listServers: () => Promise<{ servers: { name: string; status: string; error?: string; toolCount: number }[]; configs: McpServerConfig[] } | { error: string }>
+
+      /** Add (or update) an MCP server config and connect to it. */
+      addServer: (config: McpServerConfig) => Promise<{ ok: boolean; error?: string }>
+
+      /** Remove an MCP server config and disconnect. */
+      removeServer: (name: string) => Promise<{ ok: boolean } | { error: string }>
+
+      /** Reconnect a named MCP server. */
+      reconnect: (name: string) => Promise<{ ok: boolean; error?: string }>
+
+      /** List all tools currently available from connected MCP servers. */
+      listTools: () => Promise<{ tools: McpTool[] } | { error: string }>
+
+      /** Call a tool on a named MCP server. */
+      callTool: (serverName: string, toolName: string, args: Record<string, unknown>) => Promise<{ result: string } | { error: string }>
 
       /** Open a TCP connection to an IRC server. Listen for 'irc-event' connected to confirm. */
       ircConnect: (args: { server: string; port: number; nick: string; username: string; realname: string; password?: string }) => Promise<{ ok: true } | { error: string }>
