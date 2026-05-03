@@ -59,7 +59,7 @@
 <main>
 
 <h2>Overview</h2>
-<p>ManyAI Desktop includes a formal workflow plugin system with 10 built-in workflow types and support for unlimited custom workflows. Each workflow controls: system prompt behavior, provider chain, and which features are available in that tab.</p>
+<p>ManyAI Desktop includes a formal workflow plugin system with 12 built-in workflow types and support for unlimited custom workflows. Each workflow controls: system prompt behavior, provider chain, and which features are available in that tab.</p>
 
 <h2>WorkflowPlugin Interface</h2>
 <pre><code>interface WorkflowPlugin {
@@ -80,17 +80,19 @@ interface RouteEntry {
 
 <h2>Built-in Workflow Types</h2>
 <table>
-  <tr><th>Type</th><th>Label</th><th>Use Case</th></tr>
-  <tr><td><code>coding</code></td><td>Code</td><td>Code generation and explanation</td></tr>
-  <tr><td><code>reasoning</code></td><td>Reasoning</td><td>Deep analysis and logic</td></tr>
-  <tr><td><code>creative</code></td><td>Creative</td><td>Writing and brainstorming</td></tr>
-  <tr><td><code>summarization</code></td><td>Summarize</td><td>Long text compression</td></tr>
-  <tr><td><code>translation</code></td><td>Translate</td><td>Language translation</td></tr>
-  <tr><td><code>image</code></td><td>Image</td><td>Image generation</td></tr>
-  <tr><td><code>irc</code></td><td>IRC</td><td>IRC chat assistance</td></tr>
-  <tr><td><code>rss</code></td><td>RSS</td><td>Feed analysis and summarization</td></tr>
-  <tr><td><code>terminal</code></td><td>Terminal</td><td>Command-line assistance</td></tr>
-  <tr><td><code>programming</code></td><td>Programming</td><td>Code-centric workspace</td></tr>
+  <tr><th>Type</th><th>Label</th><th>Use Case</th><th>Notes</th></tr>
+  <tr><td><code>general</code></td><td>General</td><td>Q&amp;A, chat, general information</td><td>Default starting workflow; routes to cerebras/groq</td></tr>
+  <tr><td><code>coding</code></td><td>Code</td><td>Code generation and explanation</td><td></td></tr>
+  <tr><td><code>reasoning</code></td><td>Reasoning</td><td>Deep analysis and logic</td><td>Routes to sambanova by default</td></tr>
+  <tr><td><code>creative</code></td><td>Creative</td><td>Writing and brainstorming</td><td></td></tr>
+  <tr><td><code>summarization</code></td><td>Summarize</td><td>Long text compression</td><td>Routes to gemini/cohere</td></tr>
+  <tr><td><code>translation</code></td><td>Translate</td><td>Language translation</td><td>Routes to gemini/mistral</td></tr>
+  <tr><td><code>image</code></td><td>Image</td><td>Image generation</td><td>Routes to pollinations/flux; separate image pipeline</td></tr>
+  <tr><td><code>laptop</code></td><td>Laptop</td><td>Local Ollama inference via LAN</td><td>Routes to laptop/qwen2.5:7b; proxied through main process</td></tr>
+  <tr><td><code>programming</code></td><td>Programming</td><td>Autonomous coding agent with file access</td><td>Uses agentLoop — tool-use API with read/write/list tools; system workflow (not file-backed)</td></tr>
+  <tr><td><code>irc</code></td><td>IRC</td><td>IRC client (data source)</td><td>System workflow; publishes to workflowBus</td></tr>
+  <tr><td><code>rss</code></td><td>RSS</td><td>RSS feed reader and summarization</td><td>System workflow; publishes to workflowBus</td></tr>
+  <tr><td><code>terminal</code></td><td>Terminal</td><td>SSH/Telnet/SFTP/FTP client</td><td>System workflow; wraps xterm.js + ssh2 + basic-ftp</td></tr>
 </table>
 
 <h2>Custom Workflows</h2>

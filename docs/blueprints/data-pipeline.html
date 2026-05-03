@@ -95,7 +95,14 @@
 </ol>
 
 <h2>Agent Loop</h2>
-<p><code>lib/agentLoop.ts</code> supports multi-step execution (continuous mode). When enabled per-tab via <code>continuousMap</code>, the AI response is automatically fed back as the next user message until a stop condition is detected. This enables autonomous multi-turn task execution within a single tab.</p>
+<p><code>lib/agentLoop.ts</code> implements a proper tool-use agent using the OpenAI <code>tool_calls</code> API. The AI receives a set of tool definitions and can request tool executions in its response. The loop executes the requested tools and feeds results back until the model produces a plain text response with no tool calls.</p>
+<p><strong>Available tools:</strong></p>
+<ul>
+  <li><code>read_file(path)</code> — reads a file from the filesystem via <code>window.api</code></li>
+  <li><code>write_file(path, content)</code> — writes or overwrites a file</li>
+  <li><code>list_directory(path)</code> — returns a recursive directory tree</li>
+</ul>
+<p><strong>Limits:</strong> max 20 iterations per run; 10-minute timeout per API call. Used by the <code>programming</code> workflow for autonomous coding tasks. This is not MCP — it is a self-contained tool-use loop within the app.</p>
 
 </main>
 
