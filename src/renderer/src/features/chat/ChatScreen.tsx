@@ -406,10 +406,6 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
     } finally {
       setLoading(false)
       textareaRef.current?.focus()
-      // Non-continuous: wipe messages after each exchange so next send has no history
-      if (!continuousState) {
-        setMessages([])
-      }
     }
   }
 
