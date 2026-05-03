@@ -123,22 +123,24 @@
   <p>Providers defined in <code>providers/*.json</code> (one file per provider): <code>anthropic</code>, <code>cerebras</code>, <code>cloudflare</code>, <code>cohere</code>, <code>fireworks</code>, <code>gemini</code>, <code>groq</code>, <code>huggingface</code>, <code>laptop</code> (local Ollama), <code>mistral</code>, <code>openai</code>, <code>openrouter</code>, <code>pollinations</code>, <code>sambanova</code>.</p>
   <p>Each provider JSON defines: name, baseUrl, models (each with <code>id</code>, <code>name</code>, <code>capabilities[]</code>). <code>capabilities</code> drives workflow routing — a model is only offered for a workflow if its capabilities include all of the workflow's <code>workflowType</code> values.</p>
 
-  <h2>Workflow System (12 Built-in Types)</h2>
-  <p>Workflows defined in <code>src/renderer/src/workflows/</code>:</p>
+  <h2>Workflow System (10 registered — 4 system, 6 file-backed)</h2>
+  <p><strong>System workflows</strong> — code-only, never written to <code>/workflows/</code>, defined in <code>SYSTEM_TYPES</code>:</p>
   <table>
     <tr><th>Type</th><th>Label</th><th>Use case</th></tr>
-    <tr><td><code>general</code></td><td>General</td><td>Q&amp;A, chat, general information</td></tr>
+    <tr><td><code>irc</code></td><td>IRC</td><td>IRC client — publishes to workflowBus</td></tr>
+    <tr><td><code>rss</code></td><td>RSS</td><td>RSS feed reader — publishes to workflowBus</td></tr>
+    <tr><td><code>terminal</code></td><td>Terminal</td><td>SSH/Telnet/SFTP/FTP client</td></tr>
+    <tr><td><code>programming</code></td><td>Programming</td><td>Autonomous coding agent with file read/write/list tools</td></tr>
+  </table>
+  <p><strong>File-backed workflows</strong> — seeded to <code>{workingDir}/workflows/*.json</code> on first run; user-editable:</p>
+  <table>
+    <tr><th>Type</th><th>Label</th><th>Use case</th></tr>
+    <tr><td><code>image</code></td><td>Image</td><td>Image generation</td></tr>
     <tr><td><code>coding</code></td><td>Code</td><td>Code generation and explanation</td></tr>
     <tr><td><code>reasoning</code></td><td>Reasoning</td><td>Deep analysis and logic</td></tr>
     <tr><td><code>creative</code></td><td>Creative</td><td>Writing, brainstorming</td></tr>
     <tr><td><code>summarization</code></td><td>Summarize</td><td>Long text compression</td></tr>
     <tr><td><code>translation</code></td><td>Translate</td><td>Language translation</td></tr>
-    <tr><td><code>image</code></td><td>Image</td><td>Image generation</td></tr>
-    <tr><td><code>laptop</code></td><td>Laptop</td><td>Local Ollama inference via LAN</td></tr>
-    <tr><td><code>programming</code></td><td>Programming</td><td>Autonomous coding agent with file read/write</td></tr>
-    <tr><td><code>irc</code></td><td>IRC</td><td>IRC client (data source)</td></tr>
-    <tr><td><code>rss</code></td><td>RSS</td><td>RSS feed reader and summarization</td></tr>
-    <tr><td><code>terminal</code></td><td>Terminal</td><td>SSH/Telnet/SFTP/FTP client</td></tr>
   </table>
   <p>Each <code>WorkflowPlugin</code> has: <code>type</code>, <code>label</code>, <code>icon</code>, <code>description</code>, <code>defaultRoutes: RouteEntry[]</code>, <code>workflowType: WorkflowType[]</code>. Custom workflows are stored as JSON files, loaded from filesystem, and can have custom provider routes.</p>
 
