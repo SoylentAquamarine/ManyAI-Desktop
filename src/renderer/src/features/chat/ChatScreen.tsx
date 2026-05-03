@@ -119,10 +119,41 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
   // always-current activeTab for use in the scroll handler without stale closure
   const activeTabRef = useRef<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const persistedCount = useRef(0)
 
   useEffect(() => {
     if (msgsKey) localStorage.setItem(msgsKey, JSON.stringify(messages))
   }, [messages, msgsKey])
+
+  // Load history from SQLite on mount (overrides localStorage with full history)
+  useEffect(() => {
+    if (!tabId) return
+    window.api.getMessages(tabId, 200).then(r => {
+      if ('messages' in r && r.messages.length > 0) {
+        const loaded = r.messages.map(m => ({
+          role: m.role as 'user' | 'assistant',
+          content: m.content,
+          provider: m.provider,
+          model: m.model,
+        }))
+        setMessages(loaded)
+        persistedCount.current = loaded.length
+      }
+    })
+  }, [tabId])
+
+  // Persist new messages to SQLite (delta only — skips already-persisted and image messages)
+  useEffect(() => {
+    if (!tabId) return
+    const newMsgs = messages.slice(persistedCount.current)
+    if (!newMsgs.length) return
+    for (const msg of newMsgs) {
+      if (!msg.imageUrl) {
+        window.api.addMessage(tabId, msg.role, msg.content, msg.provider, msg.model)
+      }
+    }
+    persistedCount.current = messages.length
+  }, [messages, tabId])
 
   useEffect(() => {
     if (inputKey) localStorage.setItem(inputKey, input)
@@ -548,7 +579,11 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
           </span>
         )}
         {messages.length > 0 && !savedMsg && !tmpStatus && (
-          <button className="btn-ghost" onClick={() => setMessages([])} style={{ marginLeft: 'auto', fontSize: 11, padding: '3px 8px' }}>
+          <button className="btn-ghost" onClick={() => {
+            setMessages([])
+            persistedCount.current = 0
+            if (tabId) window.api.clearMessages(tabId)
+          }} style={{ marginLeft: 'auto', fontSize: 11, padding: '3px 8px' }}>
             Clear
           </button>
         )}

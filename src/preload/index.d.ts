@@ -1,5 +1,28 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 
+interface DbMessage {
+  id: number
+  role: string
+  content: string
+  provider?: string
+  model?: string
+  created_at: number
+}
+
+interface DbRoutingRow {
+  success: number
+  latency_ms: number
+  created_at: number
+}
+
+interface DbAgentRow {
+  tool_name: string
+  args: string
+  result_preview: string
+  success: number
+  created_at: number
+}
+
 interface FtpEntry {
   name: string
   type: 'file' | 'dir' | 'link'
@@ -101,6 +124,27 @@ declare global {
 
       /** Decrypt a string produced by safeEncrypt. */
       safeDecrypt: (ciphertext: string) => Promise<{ plaintext: string } | { error: string }>
+
+      /** Persist a chat message to the SQLite database. */
+      addMessage: (tabId: string, role: string, content: string, provider?: string, model?: string) => Promise<{ id: number } | { error: string }>
+
+      /** Load the last N messages for a tab from SQLite. */
+      getMessages: (tabId: string, limit?: number) => Promise<{ messages: DbMessage[] } | { error: string }>
+
+      /** Delete all messages for a tab (used when tab is closed/cleared). */
+      clearMessages: (tabId: string) => Promise<{ ok: boolean } | { error: string }>
+
+      /** Record a provider call result for routing score history. */
+      logRouting: (provider: string, model: string, workflowType: string | null, success: boolean, latencyMs: number, errorMsg?: string) => Promise<{ ok: boolean } | { error: string }>
+
+      /** Get routing history rows for a provider/model. */
+      getRoutingStats: (provider: string, model: string, limit?: number) => Promise<{ rows: DbRoutingRow[] } | { error: string }>
+
+      /** Record an agent tool call for the audit log. */
+      logAgent: (tabId: string, toolName: string, args: string, resultPreview: string, success: boolean) => Promise<{ ok: boolean } | { error: string }>
+
+      /** Get agent audit log entries for a tab. */
+      getAgentLog: (tabId: string, limit?: number) => Promise<{ rows: DbAgentRow[] } | { error: string }>
 
       /** Open a TCP connection to an IRC server. Listen for 'irc-event' connected to confirm. */
       ircConnect: (args: { server: string; port: number; nick: string; username: string; realname: string; password?: string }) => Promise<{ ok: true } | { error: string }>

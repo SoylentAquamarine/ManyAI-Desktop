@@ -220,8 +220,9 @@ export async function runAgentLoop(opts: {
   userMessage: string
   history: { role: 'user' | 'assistant'; content: string }[]
   onEvent: (e: AgentEvent) => void
+  tabId?: string
 }): Promise<string> {
-  const { provider, apiKey, systemPrompt, userMessage, history, onEvent } = opts
+  const { provider, apiKey, systemPrompt, userMessage, history, onEvent, tabId } = opts
 
   const messages: AgentMessage[] = [
     { role: 'system', content: systemPrompt },
@@ -286,7 +287,12 @@ export async function runAgentLoop(opts: {
 
       const result = await executeTool(name, args)
       const emoji = TOOL_EMOJI[name] ?? '🔧'
-      onEvent({ toolName: name, args, result: result.startsWith('__IMG__:') ? '[image loaded]' : result, emoji })
+      const displayResult = result.startsWith('__IMG__:') ? '[image loaded]' : result
+      onEvent({ toolName: name, args, result: displayResult, emoji })
+
+      if (tabId) {
+        window.api.logAgent(tabId, name, JSON.stringify(args), displayResult.slice(0, 500), !result.startsWith('Error:'))
+      }
 
       if (result.startsWith('__IMG__:')) {
         const dataUri = result.slice('__IMG__:'.length)
