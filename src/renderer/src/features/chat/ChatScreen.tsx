@@ -119,41 +119,11 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
   // always-current activeTab for use in the scroll handler without stale closure
   const activeTabRef = useRef<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const persistedCount = useRef(0)
 
   useEffect(() => {
     if (msgsKey) localStorage.setItem(msgsKey, JSON.stringify(messages))
   }, [messages, msgsKey])
 
-  // Load history from SQLite on mount — only when continuous mode is on
-  useEffect(() => {
-    if (!tabId || !continuousState) return
-    window.api.getMessages(tabId, 200).then(r => {
-      if ('messages' in r && r.messages.length > 0) {
-        const loaded = r.messages.map(m => ({
-          role: m.role as 'user' | 'assistant',
-          content: m.content,
-          provider: m.provider,
-          model: m.model,
-        }))
-        setMessages(loaded)
-        persistedCount.current = loaded.length
-      }
-    })
-  }, [tabId, continuousState])
-
-  // Persist new messages to SQLite — only when continuous mode is on
-  useEffect(() => {
-    if (!tabId || !continuousState) return
-    const newMsgs = messages.slice(persistedCount.current)
-    if (!newMsgs.length) return
-    for (const msg of newMsgs) {
-      if (!msg.imageUrl) {
-        window.api.addMessage(tabId, msg.role, msg.content, msg.provider, msg.model)
-      }
-    }
-    persistedCount.current = messages.length
-  }, [messages, tabId, continuousState])
 
   useEffect(() => {
     if (inputKey) localStorage.setItem(inputKey, input)
@@ -412,6 +382,15 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
         }
         setMessages(prev => [...prev, msg])
 
+        // Log exchange to {workingDir}/logs/{type}/
+        const workingDir = getWorkingDir()
+        if (workingDir && !result.error) {
+          window.api.logMessage(workingDir, workflowType, 'user', aiPrompt)
+          window.api.logMessage(workingDir, workflowType, 'assistant', result.content, {
+            provider: route.provider, model: route.model, latencyMs: result.latencyMs,
+          })
+        }
+
         // Auto-save code when there's a single provider and a code block
         if (routes.length === 1 && attachedFile && !result.error && hasCodeBlock(result.content)) {
           const code = extractCode(result.content)
@@ -430,8 +409,6 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
       // Non-continuous: wipe messages after each exchange so next send has no history
       if (!continuousState) {
         setMessages([])
-        persistedCount.current = 0
-        if (tabId) window.api.clearMessages(tabId)
       }
     }
   }
@@ -587,8 +564,6 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
         {messages.length > 0 && !savedMsg && !tmpStatus && (
           <button className="btn-ghost" onClick={() => {
             setMessages([])
-            persistedCount.current = 0
-            if (tabId) window.api.clearMessages(tabId)
           }} style={{ marginLeft: 'auto', fontSize: 11, padding: '3px 8px' }}>
             Clear
           </button>

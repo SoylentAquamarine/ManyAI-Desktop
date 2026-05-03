@@ -240,8 +240,9 @@ export async function runAgentLoop(opts: {
   history: { role: 'user' | 'assistant'; content: string }[]
   onEvent: (e: AgentEvent) => void
   tabId?: string
+  workingDir?: string
 }): Promise<string> {
-  const { provider, apiKey, systemPrompt, userMessage, history, onEvent, tabId } = opts
+  const { provider, apiKey, systemPrompt, userMessage, history, onEvent } = opts
 
   // Discover MCP tools from connected servers
   const mcpToolDefs: typeof TOOLS = []
@@ -324,8 +325,10 @@ export async function runAgentLoop(opts: {
       const displayResult = result.startsWith('__IMG__:') ? '[image loaded]' : result
       onEvent({ toolName: name, args, result: displayResult, emoji })
 
-      if (tabId) {
-        window.api.logAgent(tabId, name, JSON.stringify(args), displayResult.slice(0, 500), !result.startsWith('Error:'))
+      if (opts.workingDir) {
+        window.api.logMessage(opts.workingDir, 'programming', 'tool', displayResult.slice(0, 1000), {
+          toolName: name, args: JSON.stringify(args),
+        })
       }
 
       if (result.startsWith('__IMG__:')) {

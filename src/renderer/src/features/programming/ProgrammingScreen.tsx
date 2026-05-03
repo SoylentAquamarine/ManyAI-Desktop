@@ -154,6 +154,7 @@ export default function ProgrammingScreen({ tabId }: Props) {
         systemPrompt: buildSystemPrompt(),
         userMessage: text,
         history,
+        workingDir: root || undefined,
         onEvent: ({ toolName, args, emoji }) => {
           const label = String(args.path ?? args.content ?? '')
           setMessages(m => [...m, { role: 'assistant', type: 'activity', content: `${emoji} ${toolName} · ${label}` }])

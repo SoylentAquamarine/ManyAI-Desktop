@@ -415,6 +415,37 @@ export function registerFileIpc(): void {
     return err ? { error: err } : { ok: true }
   })
 
+  // ── log-message ───────────────────────────────────────────────────────────
+  // Appends a conversation entry to {workingDir}/logs/{type}/YYYY-MM-DD.log.
+  // Rotates to YYYY-MM-DD-N.log when the current file exceeds 512 KB.
+  ipcMain.handle('log-message', (_event, workingDir: string, type: string, role: string, content: string,
+    meta?: { provider?: string; model?: string; latencyMs?: number; toolName?: string; args?: string }
+  ) => {
+    try {
+      const dir = path.join(workingDir, 'logs', type)
+      fs.mkdirSync(dir, { recursive: true })
+
+      const today = new Date().toISOString().slice(0, 10)
+      const MAX_BYTES = 512 * 1024
+      let logPath = path.join(dir, `${today}.log`)
+      if (fs.existsSync(logPath) && fs.statSync(logPath).size > MAX_BYTES) {
+        let n = 2
+        while (fs.existsSync(path.join(dir, `${today}-${n}.log`))) n++
+        logPath = path.join(dir, `${today}-${n}.log`)
+      }
+
+      const ts = new Date().toISOString().replace('T', ' ').slice(0, 19)
+      let header = `[${ts}] ${role.toUpperCase()}`
+      if (meta?.toolName) header += ` — ${meta.toolName}`
+      if (meta?.provider) header += ` (${meta.provider}/${meta.model ?? ''}${meta.latencyMs ? `, ${meta.latencyMs}ms` : ''})`
+      const body = meta?.args ? `args: ${meta.args}\n${content}` : content
+      fs.appendFileSync(logPath, `${header}\n${body}\n${'─'.repeat(72)}\n\n`, 'utf-8')
+      return { ok: true }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
   // ── fetch-url ──────────────────────────────────────────────────────────────
   // Fetches a URL through the main process to bypass renderer CORS restrictions.
   // Used by the RSS reader and any future workflow that needs to pull remote data.
