@@ -62,10 +62,21 @@ let _ready = false
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
+// localStorage keys that may hold stale cached workflow data
+const WORKFLOW_LS_KEYS = [
+  'manyai_custom_workflows',
+  'manyai_workflows',
+  'manyai_removed_builtins',
+  'manyai_removed_providers',
+]
+
 export async function initWorkflows(): Promise<void> {
   if (_ready) return
   const workingDir = getWorkingDir()
   if (!workingDir) { _ready = true; return }
+
+  // JSON files are the sole source of truth — purge all stale localStorage caches
+  WORKFLOW_LS_KEYS.forEach(k => localStorage.removeItem(k))
 
   const cfg = await window.api.getConfig()
   _builtinEnabled = (cfg.config.builtinEnabled as Record<string, boolean> | undefined) ?? {}

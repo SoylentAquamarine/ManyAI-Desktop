@@ -125,9 +125,9 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
     if (msgsKey) localStorage.setItem(msgsKey, JSON.stringify(messages))
   }, [messages, msgsKey])
 
-  // Load history from SQLite on mount (overrides localStorage with full history)
+  // Load history from SQLite on mount — only when continuous mode is on
   useEffect(() => {
-    if (!tabId) return
+    if (!tabId || !continuousState) return
     window.api.getMessages(tabId, 200).then(r => {
       if ('messages' in r && r.messages.length > 0) {
         const loaded = r.messages.map(m => ({
@@ -140,11 +140,11 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
         persistedCount.current = loaded.length
       }
     })
-  }, [tabId])
+  }, [tabId, continuousState])
 
-  // Persist new messages to SQLite (delta only — skips already-persisted and image messages)
+  // Persist new messages to SQLite — only when continuous mode is on
   useEffect(() => {
-    if (!tabId) return
+    if (!tabId || !continuousState) return
     const newMsgs = messages.slice(persistedCount.current)
     if (!newMsgs.length) return
     for (const msg of newMsgs) {
@@ -153,7 +153,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
       }
     }
     persistedCount.current = messages.length
-  }, [messages, tabId])
+  }, [messages, tabId, continuousState])
 
   useEffect(() => {
     if (inputKey) localStorage.setItem(inputKey, input)
@@ -427,6 +427,12 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
     } finally {
       setLoading(false)
       textareaRef.current?.focus()
+      // Non-continuous: wipe messages after each exchange so next send has no history
+      if (!continuousState) {
+        setMessages([])
+        persistedCount.current = 0
+        if (tabId) window.api.clearMessages(tabId)
+      }
     }
   }
 
