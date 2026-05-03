@@ -15,6 +15,7 @@ export default function McpScreen() {
   const [configs, setConfigs]   = useState<McpServerConfig[]>([])
   const [form, setForm]         = useState<McpServerConfig>(BLANK)
   const [showForm, setShowForm] = useState(false)
+  const [editingName, setEditingName] = useState<string | null>(null)
   const [saving, setSaving]     = useState(false)
   const [msg, setMsg]           = useState<string | null>(null)
   const [argsText, setArgsText] = useState('')
@@ -50,6 +51,7 @@ export default function McpScreen() {
     if (r.error) { flash(`Error: ${r.error}`); return }
     flash(r.ok ? `Connected: ${form.name}` : `Failed: ${r.error}`)
     setShowForm(false)
+    setEditingName(null)
     setForm(BLANK); setArgsText(''); setEnvText('')
     reload()
   }
@@ -77,7 +79,11 @@ export default function McpScreen() {
             Connect external MCP servers to give the agent additional tools.
           </div>
         </div>
-        <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => setShowForm(s => !s)}>
+        <button className="btn-primary" style={{ fontSize: 12 }} onClick={() => {
+          setShowForm(s => !s)
+          setEditingName(null)
+          setForm(BLANK); setArgsText(''); setEnvText('')
+        }}>
           {showForm ? 'Cancel' : '+ Add Server'}
         </button>
       </div>
@@ -93,9 +99,12 @@ export default function McpScreen() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
 
             <label style={{ fontSize: 12 }}>
-              <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 3 }}>Name</span>
+              <span style={{ color: 'var(--text-dim)', display: 'block', marginBottom: 3 }}>
+                Name{editingName ? ' (locked while editing)' : ''}
+              </span>
               <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="my-filesystem" style={{ width: '100%', fontSize: 12 }} />
+                placeholder="my-filesystem" readOnly={!!editingName}
+                style={{ width: '100%', fontSize: 12, opacity: editingName ? 0.6 : 1 }} />
             </label>
 
             <label style={{ fontSize: 12 }}>
@@ -135,7 +144,7 @@ export default function McpScreen() {
 
             <button className="btn-primary" style={{ fontSize: 12, alignSelf: 'flex-start' }}
               onClick={handleAdd} disabled={saving}>
-              {saving ? 'Connecting…' : 'Connect'}
+              {saving ? 'Connecting…' : editingName ? 'Save & Reconnect' : 'Connect'}
             </button>
           </div>
         </div>
@@ -172,6 +181,15 @@ export default function McpScreen() {
                     <div style={{ fontSize: 11, color: '#e55', marginTop: 2 }}>{status.error}</div>
                   )}
                 </div>
+                <button className="btn-ghost" style={{ fontSize: 11 }} onClick={() => {
+                  setForm(cfg)
+                  setArgsText((cfg.args ?? []).join('\n'))
+                  setEnvText(Object.entries(cfg.env ?? {}).map(([k, v]) => `${k}=${v}`).join('\n'))
+                  setEditingName(cfg.name)
+                  setShowForm(true)
+                }}>
+                  Edit
+                </button>
                 <button className="btn-ghost" style={{ fontSize: 11 }} onClick={() => handleReconnect(cfg.name)}>
                   Reconnect
                 </button>
