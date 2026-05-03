@@ -35,6 +35,16 @@ $ npm run build:linux
 
 ## Changelog
 
+### 2026-05-03 — System Prompt Native API Routing, Logging Fixes, Provider Schema Extension
+
+- System prompt now sent natively per provider API format — Gemini uses `systemInstruction`, Anthropic uses `system`, OpenAI-compat prepends a `system` role message.
+- Added `systemPromptStyle` field to provider JSON schema (`system-role`, `system-field`, `system-instruction`) so each provider declares its own format; app is a generic executor.
+- Provider add/edit form now includes a System Prompt Style dropdown so the field is configurable from the UI without editing JSON directly.
+- Fixed `WorkflowPickerModal` to call `enabledUserWorkflows()` — built-in modules (IRC, RSS, Terminal, Programming) no longer appear in the New Tab picker.
+- Fixed conversation logging: user message now logged once (raw text) before parallel provider calls; assistant response logged after — both sides captured correctly.
+- Fixed log file rotation bug: new file only created when the current rotation file also exceeds 512KB; previously created a new file on every write after the base file rotated.
+- Log entries now use friendly section headers (`User Posted Content` / `Answer from Provider`) with timestamp and provider/model info.
+
 ### 2026-05-03 — MCP Client, SQLite Persistence, Built-in Modules, Expanded Agent Tools
 
 - Integrated MCP (Model Context Protocol) client: `McpClientManager` in main process connects to stdio and HTTP MCP servers, persists configs to `userData/mcp-servers.json`, and reconnects all on app start.

@@ -430,16 +430,29 @@ export function registerFileIpc(): void {
       let logPath = path.join(dir, `${today}.log`)
       if (fs.existsSync(logPath) && fs.statSync(logPath).size > MAX_BYTES) {
         let n = 2
-        while (fs.existsSync(path.join(dir, `${today}-${n}.log`))) n++
-        logPath = path.join(dir, `${today}-${n}.log`)
+        while (true) {
+          const candidate = path.join(dir, `${today}-${n}.log`)
+          if (!fs.existsSync(candidate) || fs.statSync(candidate).size <= MAX_BYTES) {
+            logPath = candidate
+            break
+          }
+          n++
+        }
       }
 
       const ts = new Date().toISOString().replace('T', ' ').slice(0, 19)
-      let header = `[${ts}] ${role.toUpperCase()}`
-      if (meta?.toolName) header += ` — ${meta.toolName}`
-      if (meta?.provider) header += ` (${meta.provider}/${meta.model ?? ''}${meta.latencyMs ? `, ${meta.latencyMs}ms` : ''})`
+      const DIVIDER = '*'.repeat(40)
+      let sectionHeader: string
+      if (role === 'user') {
+        sectionHeader = `${DIVIDER}\nUser Posted Content   [${ts}]\n${DIVIDER}`
+      } else if (meta?.toolName) {
+        sectionHeader = `${DIVIDER}\nTool: ${meta.toolName}   [${ts}]\n${DIVIDER}`
+      } else {
+        const providerLabel = meta?.provider ? ` — ${meta.provider}/${meta.model ?? ''}${meta.latencyMs ? ` (${meta.latencyMs}ms)` : ''}` : ''
+        sectionHeader = `${DIVIDER}\nAnswer from Provider${providerLabel}   [${ts}]\n${DIVIDER}`
+      }
       const body = meta?.args ? `args: ${meta.args}\n${content}` : content
-      fs.appendFileSync(logPath, `${header}\n${body}\n${'─'.repeat(72)}\n\n`, 'utf-8')
+      fs.appendFileSync(logPath, `\n${sectionHeader}\n\n${body}\n`, 'utf-8')
       return { ok: true }
     } catch (e: unknown) {
       return { error: e instanceof Error ? e.message : String(e) }

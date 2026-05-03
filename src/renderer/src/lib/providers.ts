@@ -44,6 +44,14 @@ export interface Provider {
   apiFormat?: 'openai-compat' | 'gemini' | 'anthropic' | 'cloudflare' | 'pollinations' | string
   /** How to call the image API. Default: "openai-compat-image" */
   imageApiFormat?: 'openai-image' | 'pollinations-image' | 'openai-compat-image' | string
+  /**
+   * How the system prompt is sent to this provider.
+   * system-role        — prepend { role: "system", content } to messages array (OpenAI default)
+   * system-field       — top-level "system" string field in the request body (Anthropic)
+   * system-instruction — top-level "systemInstruction" object with parts array (Gemini)
+   * Absent             — defaults to system-role
+   */
+  systemPromptStyle?: 'system-role' | 'system-field' | 'system-instruction'
   /** Provider works without a key but can accept one if provided. */
   keyOptional?: boolean
   /**

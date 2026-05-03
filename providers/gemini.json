@@ -16,5 +16,6 @@
   "supportsVision": true,
   "instructionsUrl": "aistudio.google.com",
   "sortOrder": 3,
-  "apiFormat": "gemini"
+  "apiFormat": "gemini",
+  "systemPromptStyle": "system-instruction"
 }

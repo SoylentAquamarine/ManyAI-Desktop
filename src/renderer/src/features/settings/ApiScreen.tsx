@@ -39,6 +39,7 @@ const BLANK_PROVIDER: Provider = {
   keyHint: '',
   apiFormat: 'openai-compat',
   imageApiFormat: '',
+  systemPromptStyle: 'system-role',
   sortOrder: undefined,
   extraHeaders: {},
   proxyMode: 'direct',
@@ -134,6 +135,11 @@ function rowsToHeaders(rows: HeaderRow[]): Record<string, string> | undefined {
 
 const API_FORMATS = ['openai-compat', 'gemini', 'anthropic', 'cloudflare', 'pollinations']
 const IMAGE_API_FORMATS = ['', 'openai-image', 'pollinations-image', 'openai-compat-image']
+const SYSTEM_PROMPT_STYLES = [
+  { value: 'system-role',        label: 'system-role (OpenAI default)' },
+  { value: 'system-field',       label: 'system-field (Anthropic)' },
+  { value: 'system-instruction', label: 'system-instruction (Gemini)' },
+]
 
 function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
   const [form, setForm] = useState<Provider>({ ...BLANK_PROVIDER, ...initial })
@@ -171,6 +177,7 @@ function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
       extraHeaders,
       imageApiFormat: form.imageApiFormat || undefined,
       keyHint: form.keyHint || undefined,
+      systemPromptStyle: form.systemPromptStyle ?? 'system-role',
     })
   }
 
@@ -221,6 +228,12 @@ function ProviderForm({ initial, isNew, onSave, onCancel }: ProviderFormProps) {
             {label('Image API Format')}
             <select value={form.imageApiFormat ?? ''} onChange={e => set({ imageApiFormat: e.target.value || undefined })} style={{ width: '100%' }}>
               {IMAGE_API_FORMATS.map(f => <option key={f} value={f}>{f || '(none)'}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            {label('System Prompt Style')}
+            <select value={form.systemPromptStyle ?? 'system-role'} onChange={e => set({ systemPromptStyle: e.target.value as Provider['systemPromptStyle'] })} style={{ width: '100%' }}>
+              {SYSTEM_PROMPT_STYLES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
           <div style={{ flex: 1 }}>

@@ -128,7 +128,14 @@
 
   <h2>Provider Registry</h2>
   <p>Providers defined in <code>providers/*.json</code> (one file per provider): <code>anthropic</code>, <code>cerebras</code>, <code>cloudflare</code>, <code>cohere</code>, <code>fireworks</code>, <code>gemini</code>, <code>groq</code>, <code>huggingface</code>, <code>laptop</code> (local Ollama), <code>mistral</code>, <code>openai</code>, <code>openrouter</code>, <code>pollinations</code>, <code>sambanova</code>.</p>
-  <p>Each provider JSON defines: name, baseUrl, models (each with <code>id</code>, <code>name</code>, <code>capabilities[]</code>). <code>capabilities</code> drives workflow routing — a model is only offered for a workflow if its capabilities include all of the workflow's <code>workflowType</code> values.</p>
+  <p>Each provider JSON defines: name, baseUrl, models (each with <code>id</code>, <code>name</code>, <code>capabilities[]</code>), <code>apiFormat</code>, and <code>systemPromptStyle</code>. <code>capabilities</code> drives workflow routing. <code>systemPromptStyle</code> declares how system prompts are sent to the provider's API:</p>
+  <table>
+    <tr><th>Value</th><th>Behavior</th><th>Providers</th></tr>
+    <tr><td><code>system-role</code></td><td>Prepend <code>{ role: "system", content }</code> to messages array (default)</td><td>OpenAI, Groq, Mistral, etc.</td></tr>
+    <tr><td><code>system-field</code></td><td>Top-level <code>system</code> string field in request body</td><td>Anthropic</td></tr>
+    <tr><td><code>system-instruction</code></td><td>Top-level <code>systemInstruction: { parts: [{ text }] }</code> in request body</td><td>Gemini</td></tr>
+  </table>
+  <p>The application is a generic executor — it reads <code>systemPromptStyle</code> from JSON and applies the correct API shape. All provider-specific behaviour is declared in the JSON file, not hardcoded by provider name. The add/edit provider form exposes this field as a dropdown.</p>
 
   <h2>Built-in Modules (4) — opt-in via Settings → Built-in tab</h2>
   <p>IRC, RSS, Terminal, and Programming are modular built-ins. They are not workflow-picker items. Each has a checkbox in Settings → Built-in; checking it opens a tab, unchecking closes all tabs of that type. Toggle state is derived from <code>tabs.some(t =&gt; t.workflowType === type)</code> — no separate enabled flag.</p>

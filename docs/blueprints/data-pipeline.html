@@ -122,32 +122,38 @@
 </ol>
 <p>This works around the OpenAI API constraint that tool result messages cannot contain image content.</p>
 
-<h2>SQLite Persistence (<code>src/main/db.ts</code>)</h2>
-<p>A <code>better-sqlite3</code> database at <code>userData/manyai.db</code> provides durable storage for chat history, routing decisions, and agent audit logs. WAL mode is enabled for safe concurrent reads from the renderer.</p>
+<h2>File-Based Logging (<code>src/main/ipc/fileIpc.ts</code>)</h2>
+<p>Conversation and tool activity are written to plain-text log files in the working directory. SQLite (<code>userData/manyai.db</code>) is reserved for configuration only — no logging tables.</p>
 
-<h3>Tables</h3>
-<table>
-  <tr><th>Table</th><th>Purpose</th></tr>
-  <tr><td><code>messages</code></td><td>Chat messages per tab — role, content, provider, model, timestamp</td></tr>
-  <tr><td><code>routing_log</code></td><td>Per-call routing decisions — workflow, provider, model, latency, success</td></tr>
-  <tr><td><code>agent_audit</code></td><td>Agent tool calls — tab_id, tool name, args (truncated), result (truncated), success flag</td></tr>
-</table>
+<h3>Log Layout</h3>
+<pre>{workingDir}/logs/{workflowType}/YYYY-MM-DD.log</pre>
+<p>When a file exceeds 512 KB, subsequent writes go to <code>YYYY-MM-DD-2.log</code>, then <code>YYYY-MM-DD-3.log</code>, etc. A new rotation file is only created when the current one also exceeds 512 KB — appending always targets the latest file with remaining space.</p>
 
-<h3>IPC Handlers (<code>src/main/ipc/dbIpc.ts</code>)</h3>
+<h3>IPC Handler</h3>
 <table>
   <tr><th>Channel</th><th>Description</th></tr>
-  <tr><td><code>db-add-message</code></td><td>Inserts a single message row</td></tr>
-  <tr><td><code>db-get-messages</code></td><td>Returns the last N messages for a tab (default 200)</td></tr>
-  <tr><td><code>db-clear-messages</code></td><td>Deletes all messages for a tab</td></tr>
-  <tr><td><code>db-log-routing</code></td><td>Inserts a routing_log row</td></tr>
-  <tr><td><code>db-get-routing-stats</code></td><td>Returns per-provider success rate and average latency</td></tr>
-  <tr><td><code>db-log-agent</code></td><td>Inserts an agent_audit row</td></tr>
-  <tr><td><code>db-get-agent-log</code></td><td>Returns recent agent audit rows for a tab</td></tr>
+  <tr><td><code>log-message</code></td><td>Appends one entry to the appropriate log file. Args: <code>workingDir, type, role, content, meta?</code></td></tr>
 </table>
 
-<h3>Delta Persistence Pattern</h3>
-<p>ChatScreen uses a <code>persistedCount</code> ref to track how many messages have already been written to SQLite. On each messages state change, only <code>messages.slice(persistedCount.current)</code> is written — avoiding duplicate inserts without needing a read-before-write. Image messages are skipped (data URIs are not stored).</p>
-<p>On tab load, <code>window.api.getMessages(tabId, 200)</code> restores the last 200 messages from SQLite, and <code>persistedCount.current</code> is initialized to the count of loaded messages.</p>
+<h3>Entry Format</h3>
+<p>Each entry uses a friendly section header:</p>
+<pre>****************************************
+User Posted Content   [2026-05-03 14:22:11]
+****************************************
+
+[user text]
+
+****************************************
+Answer from Provider — gemini/gemini-2.5-flash-lite (1842ms)   [2026-05-03 14:22:13]
+****************************************
+
+[assistant response]</pre>
+
+<h3>Logging Points</h3>
+<ul>
+  <li><strong>ChatScreen</strong>: user message logged once (raw text) before the parallel provider call; each assistant response logged inside the provider loop with provider/model/latency metadata.</li>
+  <li><strong>Agent loop</strong>: each tool call result logged to <code>logs/programming/</code> with tool name and truncated args.</li>
+</ul>
 
 </main>
 

@@ -1,4 +1,4 @@
-import { enabledWorkflows } from '../lib/workflows'
+import { enabledUserWorkflows } from '../lib/workflows'
 import type { TaskType } from '../lib/providers'
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
 }
 
 export default function WorkflowPickerModal({ onSelect, onCancel }: Props) {
-  const workflows = enabledWorkflows()
+  const workflows = enabledUserWorkflows()
 
   return (
     <div

@@ -17,5 +17,6 @@
   "supportsVision": true,
   "instructionsUrl": "console.anthropic.com",
   "sortOrder": 12,
-  "apiFormat": "anthropic"
+  "apiFormat": "anthropic",
+  "systemPromptStyle": "system-field"
 }

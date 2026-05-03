@@ -208,20 +208,21 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
       fileInjected.current = true
     }
 
-    // Silently prepend workflow context (system prompt + context files)
+    // Load workflow definition: extract system prompt (sent natively per API format)
+    // and inject context files directly into the user message
     const wfDef = workflowType ? getWorkflow(workflowType) : undefined
+    const wfSystemPrompt = wfDef?.systemPrompt?.trim() || undefined
     if (wfDef) {
-      const parts: string[] = []
-      if (wfDef.systemPrompt?.trim()) parts.push(wfDef.systemPrompt.trim())
+      const contextParts: string[] = []
       for (const cf of wfDef.contextFiles ?? []) {
         try {
           const result = await window.api.readFileByPath(cf.path)
           if (!('error' in result)) {
-            parts.push(`[${cf.name}]\n${result.content}`)
+            contextParts.push(`[${cf.name}]\n${result.content}`)
           }
         } catch { /* skip unreadable files silently */ }
       }
-      if (parts.length) aiPrompt = parts.join('\n\n---\n\n') + '\n\n---\n\n' + aiPrompt
+      if (contextParts.length) aiPrompt = contextParts.join('\n\n---\n\n') + '\n\n---\n\n' + aiPrompt
     }
 
     // Resolve routes before adding the user message so we can tag who hears it.
@@ -326,6 +327,12 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
 
       const parallelId = `p_${Date.now()}`
 
+      // Log the user message once, before any provider calls, using raw text
+      const workingDir = getWorkingDir()
+      if (workingDir) {
+        window.api.logMessage(workingDir, workflowType, 'user', text)
+      }
+
       const buildHistory = (route: typeof routes[number]): HistoryMessage[] => {
         if (!continuousState) return []
         const id = route.instanceId ?? `${route.provider}::${route.model}`
@@ -351,7 +358,7 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
         const p = { ...allProviders[route.provider], model: route.model }
         let result: Awaited<ReturnType<typeof callProvider>>
         try {
-          result = await callProvider(p, aiPrompt, keys[route.provider], undefined, undefined, buildHistory(route))
+          result = await callProvider(p, aiPrompt, keys[route.provider], undefined, undefined, buildHistory(route), wfSystemPrompt)
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e)
           setMessages(prev => [...prev, {
@@ -382,10 +389,8 @@ export default function ChatScreen({ tabId, workflowType = 'general', continuous
         }
         setMessages(prev => [...prev, msg])
 
-        // Log exchange to {workingDir}/logs/{type}/
-        const workingDir = getWorkingDir()
+        // Log assistant response (user was already logged once before the loop)
         if (workingDir && !result.error) {
-          window.api.logMessage(workingDir, workflowType, 'user', aiPrompt)
           window.api.logMessage(workingDir, workflowType, 'assistant', result.content, {
             provider: route.provider, model: route.model, latencyMs: result.latencyMs,
           })

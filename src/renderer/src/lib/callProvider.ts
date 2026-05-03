@@ -83,6 +83,7 @@ export async function callProvider(
   imageBase64?: string,
   imageMime?: string,
   history: HistoryMessage[] = [],
+  systemPrompt?: string,
 ): Promise<AIResponse> {
   const start = Date.now();
   const elapsed = () => Date.now() - start;
@@ -119,10 +120,14 @@ export async function callProvider(
       currentParts.push({ text: prompt });
       contents.push({ role: 'user', parts: currentParts });
 
+      const body: Record<string, unknown> = { contents }
+      if (systemPrompt?.trim() && provider.systemPromptStyle === 'system-instruction') {
+        body.systemInstruction = { parts: [{ text: systemPrompt.trim() }] }
+      }
       const res = await doFetch(provider, url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         let errMsg = `HTTP ${res.status}`;
@@ -165,6 +170,7 @@ export async function callProvider(
         body: JSON.stringify({
           model: provider.model,
           max_tokens: provider.models.find(m => m.id === provider.model)?.maxTokens ?? 1024,
+          ...(systemPrompt?.trim() && provider.systemPromptStyle === 'system-field' ? { system: systemPrompt.trim() } : {}),
           messages,
         }),
       });
@@ -184,7 +190,9 @@ export async function callProvider(
       const [accountId, apiToken] = (apiKey ?? ':').split(':');
       const url = `${provider.baseUrl}/${accountId}/ai/v1/chat/completions`;
       const recentHistory = history.slice(-MAX_HISTORY);
+      const sps = provider.systemPromptStyle ?? 'system-role'
       const messages = [
+        ...(systemPrompt?.trim() && sps === 'system-role' ? [{ role: 'system', content: systemPrompt.trim() }] : []),
         ...recentHistory.map(m => ({ role: m.role, content: m.content })),
         { role: 'user', content: prompt },
       ];
@@ -209,10 +217,11 @@ export async function callProvider(
 
     // ── OpenAI-compatible — all other providers ───────────────────────────────
     const recentHistory = history.slice(-MAX_HISTORY);
-    const messages: { role: string; content: string | OpenAIContentItem[] }[] = recentHistory.map(m => ({
-      role: m.role,
-      content: m.content,
-    }));
+    const spsOai = provider.systemPromptStyle ?? 'system-role'
+    const messages: { role: string; content: string | OpenAIContentItem[] }[] = [
+      ...(systemPrompt?.trim() && spsOai === 'system-role' ? [{ role: 'system', content: systemPrompt.trim() }] : []),
+      ...recentHistory.map(m => ({ role: m.role, content: m.content })),
+    ];
 
     let messageContent: string | OpenAIContentItem[];
     if (imageBase64 && imageMime) {
