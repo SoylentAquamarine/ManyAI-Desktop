@@ -66,7 +66,7 @@ export default function App() {
   })
   const [workflowVersion, setWorkflowVersion] = useState(0)
   const [settingsTriggerAdd, setSettingsTriggerAdd] = useState(false)
-  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'api' | 'workflows' | 'smartrouting' | 'health' | 'backup' | 'about'>('general')
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'general' | 'api' | 'builtin' | 'workflows' | 'smartrouting' | 'health' | 'backup' | 'about'>('general')
   const [noWorkDirModal, setNoWorkDirModal] = useState(false)
 
   useEffect(() => {
@@ -221,6 +221,26 @@ export default function App() {
     setNoWorkDirModal(false)
   }
 
+  const isBuiltinOpen = (type: string) => tabs.some(t => t.workflowType === type as TaskType)
+
+  const toggleBuiltin = (type: string) => {
+    if (isBuiltinOpen(type)) {
+      // Close all tabs of this type
+      setTabs(prev => {
+        const remaining = prev.filter(t => t.workflowType !== type as TaskType)
+        const activeWasClosed = prev.some(t => t.workflowType === type as TaskType && t.id === activeTabId)
+        const newActiveId = activeWasClosed
+          ? (remaining.length > 0 ? remaining[0].id : '')
+          : activeTabId
+        if (activeWasClosed) setActiveTabId(newActiveId)
+        persistTabs(remaining, newActiveId)
+        return remaining
+      })
+    } else {
+      addTab(type as TaskType)
+    }
+  }
+
   const toggleContinuous = (workflowType: string) => {
     setContinuousMap(prev => {
       const next = { ...prev, [workflowType]: !(prev[workflowType] ?? true) }
@@ -297,6 +317,8 @@ export default function App() {
               initialTab={settingsInitialTab}
               triggerAdd={settingsTriggerAdd}
               onTriggerAddConsumed={() => setSettingsTriggerAdd(false)}
+              isBuiltinOpen={isBuiltinOpen}
+              onToggleBuiltin={toggleBuiltin}
             />
           )}
         </div>

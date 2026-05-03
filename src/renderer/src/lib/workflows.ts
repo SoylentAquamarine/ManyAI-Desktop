@@ -190,6 +190,11 @@ export function enabledWorkflows(): WorkflowDef[] {
   return loadWorkflows().filter(w => w.enabled)
 }
 
+/** Workflows available in the "New Tab" picker — excludes system built-ins (IRC, RSS, Terminal, Programming). */
+export function enabledUserWorkflows(): WorkflowDef[] {
+  return loadWorkflows().filter(w => w.enabled && !SYSTEM_TYPES.has(w.type))
+}
+
 export function getWorkflow(type: string): WorkflowDef | undefined {
   return loadWorkflows().find(w => w.type === type)
 }

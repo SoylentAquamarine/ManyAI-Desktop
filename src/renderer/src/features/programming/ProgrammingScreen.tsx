@@ -33,6 +33,7 @@ interface Props { tabId: string }
 
 export default function ProgrammingScreen({ tabId }: Props) {
   const [root, setRoot] = useState<string>(() => localStorage.getItem(LS_ROOT(tabId)) ?? '')
+  const [treeRevision, setTreeRevision] = useState(0)
   const [tree, setTree] = useState<FileEntry[]>([])
   const [treeLoading, setTreeLoading] = useState(false)
   const [treeError, setTreeError] = useState('')
@@ -61,7 +62,7 @@ export default function ProgrammingScreen({ tabId }: Props) {
       if ('error' in result) { setTreeError(result.error); return }
       setTree(result.entries as FileEntry[])
     })
-  }, [root])
+  }, [root, treeRevision])
 
   const browseFolder = async () => {
     const result = await window.api.selectDirectory(root || undefined)
@@ -235,6 +236,15 @@ export default function ProgrammingScreen({ tabId }: Props) {
           />
           <button className="btn-ghost" style={{ fontSize: 11, padding: '3px 8px', flexShrink: 0 }} onClick={browseFolder}>
             Browse
+          </button>
+          <button
+            className="btn-ghost"
+            style={{ fontSize: 11, padding: '3px 8px', flexShrink: 0 }}
+            onClick={() => setTreeRevision(r => r + 1)}
+            disabled={!root || treeLoading}
+            title="Refresh file tree"
+          >
+            ↺
           </button>
         </div>
 

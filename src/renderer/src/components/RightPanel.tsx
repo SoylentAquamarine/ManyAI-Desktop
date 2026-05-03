@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  enabledWorkflows, loadWorkflows, upsertCustomWorkflow,
+  enabledWorkflows, enabledUserWorkflows, loadWorkflows, upsertCustomWorkflow,
   loadRemovedBuiltins, saveRemovedBuiltins,
   type WorkflowDef, type ContextFile,
 } from '../lib/workflows'
@@ -115,7 +115,7 @@ export default function RightPanel({
   activeWorkflow, continuousState, onToggleContinuous,
   onWorkflowSaved, activeWorkflowType,
 }: Props) {
-  const workflows = enabledWorkflows()
+  const workflows = enabledUserWorkflows()
   const [prefs, setPrefs] = useState<RoutingPrefs>(() => loadRoutingPrefs())
 
   // Re-read prefs when the active workflow changes — catches the async init case

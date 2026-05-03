@@ -21,20 +21,22 @@ import { encryptText, decryptText } from '../../lib/crypto'
 import { loadZoom, increaseZoom, decreaseZoom, ZOOM_MIN, ZOOM_MAX } from '../../lib/zoom'
 import { FONTS, loadFont, saveFont } from '../../lib/font'
 
-type SettingsTab = 'general' | 'api' | 'workflows' | 'smartrouting' | 'health' | 'backup' | 'about'
+type SettingsTab = 'general' | 'api' | 'builtin' | 'workflows' | 'smartrouting' | 'health' | 'backup' | 'about'
 
 interface SettingsScreenProps {
-  /** Which tab to open on mount. */
   initialTab?: SettingsTab
-  /** When true, WorkflowsScreen will auto-open the add-workflow form. */
   triggerAdd?: boolean
   onTriggerAddConsumed?: () => void
+  isBuiltinOpen?: (type: string) => boolean
+  onToggleBuiltin?: (type: string) => void
 }
 
 export default function SettingsScreen({
   initialTab = 'general',
   triggerAdd = false,
   onTriggerAddConsumed,
+  isBuiltinOpen,
+  onToggleBuiltin,
 }: SettingsScreenProps) {
   const [tab, setTab] = useState<SettingsTab>(initialTab)
 
@@ -65,6 +67,7 @@ export default function SettingsScreen({
       }}>
         {tabBtn('general',      'General')}
         {tabBtn('api',          'Providers')}
+        {tabBtn('builtin',      'Built-in')}
         {tabBtn('workflows',    'Workflows')}
         {tabBtn('smartrouting', 'Smart Routing')}
         {tabBtn('health',       'Health')}
@@ -75,6 +78,12 @@ export default function SettingsScreen({
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'general'   && <GeneralSettings />}
         {tab === 'api'       && <ApiScreen />}
+        {tab === 'builtin'   && (
+          <BuiltinSettings
+            isOpen={isBuiltinOpen ?? (() => false)}
+            onToggle={onToggleBuiltin ?? (() => {})}
+          />
+        )}
         {tab === 'workflows' && (
           <WorkflowsScreen
             autoOpenAdd={triggerAdd}
@@ -86,6 +95,48 @@ export default function SettingsScreen({
         {tab === 'backup' && <BackupConfig />}
         {tab === 'about'  && <AboutScreen />}
       </div>
+    </div>
+  )
+}
+
+// ── BuiltinSettings ───────────────────────────────────────────────────────────
+
+const BUILTIN_MODULES = [
+  { type: 'irc',         icon: '💬', label: 'IRC',         description: 'IRC chat client — connect to servers and channels' },
+  { type: 'terminal',    icon: '🖥️',  label: 'Terminal',    description: 'SSH, Telnet, SFTP, and FTP client via xterm.js' },
+  { type: 'rss',         icon: '📰', label: 'RSS',          description: 'RSS feed reader — subscribe and read articles' },
+  { type: 'programming', icon: '⚙️',  label: 'Programming', description: 'Autonomous coding agent with full filesystem tools' },
+]
+
+function BuiltinSettings({ isOpen, onToggle }: { isOpen: (type: string) => boolean; onToggle: (type: string) => void }) {
+  return (
+    <div style={{ padding: '20px 24px', maxWidth: 540 }}>
+      <div style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 20, lineHeight: 1.6 }}>
+        Built-in modules are loaded on demand. Checking a module opens a new tab for it; unchecking closes all its tabs.
+        These are not workflows — they appear here, not in the tab picker.
+      </div>
+      {BUILTIN_MODULES.map(b => (
+        <label
+          key={b.type}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 16,
+            padding: '14px 0', borderBottom: '1px solid var(--border)',
+            cursor: 'pointer',
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={isOpen(b.type)}
+            onChange={() => onToggle(b.type)}
+            style={{ width: 18, height: 18, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
+          />
+          <span style={{ fontSize: 22, flexShrink: 0 }}>{b.icon}</span>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{b.label}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-dim)', marginTop: 3 }}>{b.description}</div>
+          </div>
+        </label>
+      ))}
     </div>
   )
 }
