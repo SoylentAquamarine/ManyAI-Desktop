@@ -99,6 +99,18 @@ export const filesApi = {
   }): Promise<{ status: number; body: string } | { error: string }> =>
     ipcRenderer.invoke('proxy-request', opts),
 
+  /** Rename (or move) a file. Creates destination parent dirs automatically. */
+  renameFile: (oldPath: string, newPath: string): Promise<{ ok: boolean } | { error: string }> =>
+    ipcRenderer.invoke('rename-file', oldPath, newPath),
+
+  /** Delete a file at the given absolute path. */
+  deleteFile: (filePath: string): Promise<{ ok: boolean } | { error: string }> =>
+    ipcRenderer.invoke('delete-file', filePath),
+
+  /** Read a local image file and return it as a base64 data URI. */
+  readImageFile: (filePath: string): Promise<{ dataUri: string } | { error: string }> =>
+    ipcRenderer.invoke('read-image-file', filePath),
+
   /** Return a recursive file tree for a directory. Flags files over 100 KB as oversized. */
   readDir: (dirPath: string): Promise<{ entries: unknown[] } | { error: string }> =>
     ipcRenderer.invoke('read-dir', dirPath),

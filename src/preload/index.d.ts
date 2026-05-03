@@ -84,6 +84,15 @@ declare global {
         body?: string
       }) => Promise<{ status: number; body: string } | { error: string }>
 
+      /** Rename (or move) a file. Creates destination parent dirs automatically. */
+      renameFile: (oldPath: string, newPath: string) => Promise<{ ok: boolean } | { error: string }>
+
+      /** Delete a file at the given absolute path. */
+      deleteFile: (filePath: string) => Promise<{ ok: boolean } | { error: string }>
+
+      /** Read a local image file and return it as a base64 data URI. */
+      readImageFile: (filePath: string) => Promise<{ dataUri: string } | { error: string }>
+
       /** Return a recursive file tree for a directory. Flags files over 100 KB as oversized. */
       readDir: (dirPath: string) => Promise<{ entries: unknown[] } | { error: string }>
 

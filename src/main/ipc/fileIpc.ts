@@ -310,6 +310,44 @@ export function registerFileIpc(): void {
     }
   })
 
+  // ── rename-file ────────────────────────────────────────────────────────────
+  ipcMain.handle('rename-file', (_event, oldPath: string, newPath: string) => {
+    try {
+      fs.mkdirSync(path.dirname(newPath), { recursive: true })
+      fs.renameSync(oldPath, newPath)
+      return { ok: true }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
+  // ── delete-file ────────────────────────────────────────────────────────────
+  ipcMain.handle('delete-file', (_event, filePath: string) => {
+    try {
+      fs.unlinkSync(filePath)
+      return { ok: true }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
+  // ── read-image-file ────────────────────────────────────────────────────────
+  // Reads a local image as a base64 data URI for vision-capable models.
+  ipcMain.handle('read-image-file', (_event, filePath: string) => {
+    try {
+      const buf = fs.readFileSync(filePath)
+      const ext = path.extname(filePath).toLowerCase().replace('.', '')
+      const mime = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg'
+                 : ext === 'png' ? 'image/png'
+                 : ext === 'gif' ? 'image/gif'
+                 : ext === 'webp' ? 'image/webp'
+                 : 'image/jpeg'
+      return { dataUri: `data:${mime};base64,${buf.toString('base64')}` }
+    } catch (e: unknown) {
+      return { error: e instanceof Error ? e.message : String(e) }
+    }
+  })
+
   // ── read-dir ───────────────────────────────────────────────────────────────
   // Returns a recursive file tree. Skips hidden files, node_modules, .git, dist.
   // Files over 100 KB are flagged oversized: true so the UI can grey them out.
